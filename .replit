@@ -3,6 +3,7 @@ modules = ["python-3.11", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["arrow-cpp", "glibcLocales", "pkg-config"]
 
 [unitTest]
 language = "python3"
@@ -45,7 +46,3 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 39103
-externalPort = 3000
