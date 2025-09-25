@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+pandas
+psycopg2-binary
+sentence-transformers
+transformers
+tokenizers
+torch
+scipy
+numpy
+pyarrow>=16
