@@ -22,6 +22,14 @@ def init_models(db):
         feature = db.Column(db.Text, nullable=True)
         description = db.Column(db.Text, nullable=True)
         
+        # Nutritional information
+        calories = db.Column(db.Integer, nullable=True)
+        fat_g = db.Column(db.Numeric(5, 1), nullable=True)
+        carbs_g = db.Column(db.Numeric(5, 1), nullable=True)
+        sugar_g = db.Column(db.Numeric(5, 1), nullable=True)
+        protein_g = db.Column(db.Numeric(5, 1), nullable=True)
+        sodium_mg = db.Column(db.Integer, nullable=True)
+        
         def __repr__(self):
             return f'<Product {self.id}: {self.title[:50]}...>'
         
