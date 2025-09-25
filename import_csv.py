@@ -15,7 +15,7 @@ def import_grocery_data():
         db.session.commit()
         
         # Read CSV file
-        df = pd.read_csv('attached_assets/GroceryDataset_1758834314981.csv')
+        df = pd.read_csv('attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv')
         
         imported_count = 0
         
@@ -23,6 +23,23 @@ def import_grocery_data():
             # Parse price and rating
             price_numeric = Product.parse_price(row.get('Price'))
             rating_numeric, review_count = Product.parse_rating(row.get('Rating'))
+            
+            # Parse nutritional information
+            def safe_int(value):
+                if pd.isna(value) or value == '' or value is None:
+                    return None
+                try:
+                    return int(float(value))
+                except (ValueError, TypeError):
+                    return None
+            
+            def safe_float(value):
+                if pd.isna(value) or value == '' or value is None:
+                    return None
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    return None
             
             # Create product instance
             product = Product(
@@ -36,7 +53,14 @@ def import_grocery_data():
                 title=row.get('Title', ''),
                 currency=row.get('Currency', ''),
                 feature=row.get('Feature', ''),
-                description=row.get('Product Description', '')
+                description=row.get('Product Description', ''),
+                # Nutritional information
+                calories=safe_int(row.get('Calories')),
+                fat_g=safe_float(row.get('Fat_g')),
+                carbs_g=safe_float(row.get('Carbs_g')),
+                sugar_g=safe_float(row.get('Sugar_g')),
+                protein_g=safe_float(row.get('Protein_g')),
+                sodium_mg=safe_int(row.get('Sodium_mg'))
             )
             
             db.session.add(product)
