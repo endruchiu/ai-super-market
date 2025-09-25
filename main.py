@@ -9,9 +9,10 @@ app = Flask(__name__)
 # Build semantic index once and keep a lightweight products frame for listing
 PRODUCTS_DF = None
 
-@app.before_first_request
 def _init_index():
     global PRODUCTS_DF
+    if PRODUCTS_DF is not None:
+        return
     idx = ensure_index()  # uses env GROCERY_CSV or default path
     PRODUCTS_DF = idx["df"]
     # keep only columns we display in /api/products
