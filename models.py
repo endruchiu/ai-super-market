@@ -10,11 +10,11 @@ def init_models(db):
         __table_args__ = {'extend_existing': True}
     
         id = db.Column(db.Integer, primary_key=True)
-        sub_category = db.Column(db.String(100), nullable=False)
-        price_text = db.Column(db.String(50), nullable=True)  # Original price string
+        sub_category = db.Column(db.String(200), nullable=False)
+        price_text = db.Column(db.String(100), nullable=True)  # Original price string
         price_numeric = db.Column(db.Numeric(10, 2), nullable=True)  # Parsed numeric price
-        discount = db.Column(db.String(100), nullable=True)
-        rating_text = db.Column(db.String(200), nullable=True)  # Original rating string
+        discount = db.Column(db.String(200), nullable=True)
+        rating_text = db.Column(db.String(500), nullable=True)  # Original rating string
         rating_numeric = db.Column(db.Numeric(3, 2), nullable=True)  # Parsed numeric rating (0-5)
         review_count = db.Column(db.Integer, nullable=True)  # Number of reviews
         title = db.Column(db.Text, nullable=False)
