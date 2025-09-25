@@ -49,7 +49,8 @@ Preferred communication style: Simple, everyday language.
 - **PostgreSQL** (via DATABASE_URL environment variable) - Primary data storage for products, shopping carts, and user budgets
 
 ### Data Sources
-- **CSV files** - Product catalog data import from `attached_assets/GroceryDataset_1758834314981.csv`
+- **CSV files** - Product catalog data import from `attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv` (nutrition-enhanced dataset with 1,757 products)
+- **Nutritional Information** - Complete nutrition facts including calories, fat, carbs, sugar, protein, and sodium content for all products
 
 ### Infrastructure Requirements
 - **Environment variables** for database connection and Flask secret key configuration
