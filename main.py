@@ -152,7 +152,7 @@ def api_products():
 
 @app.route("/add_to_cart", methods=["POST"])
 def add_to_cart():
-    """Add item to shopping cart"""
+    """Add item to shopping cart with budget checking and alternatives"""
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
     
@@ -160,7 +160,23 @@ def add_to_cart():
     product_id = request.form.get('product_id')
     quantity = int(request.form.get('quantity', 1))
     
-    # Check if item already in cart
+    # Get the product being added
+    product = Product.query.get(product_id)
+    if not product:
+        return redirect(url_for('index'))
+    
+    # Calculate current cart total
+    cart_items = ShoppingCart.query.filter_by(session_id=session_id).all()
+    current_total = sum(float(item.product.price_numeric or 0) * item.quantity for item in cart_items)
+    
+    # Calculate new total if this item is added
+    item_cost = float(product.price_numeric or 0) * quantity
+    new_total = current_total + item_cost
+    
+    # Check budget
+    user_budget = UserBudget.query.filter_by(session_id=session_id).first()
+    
+    # Add item to cart regardless of budget (user might want to proceed)
     existing_item = ShoppingCart.query.filter_by(
         session_id=session_id, 
         product_id=product_id
@@ -177,6 +193,11 @@ def add_to_cart():
         db.session.add(cart_item)
     
     db.session.commit()
+    
+    # If budget is exceeded, show alternatives page
+    if user_budget and new_total > float(user_budget.budget_amount):
+        return redirect(url_for('budget_exceeded', product_id=product_id, overage=new_total - float(user_budget.budget_amount)))
+    
     return redirect(url_for('index'))
 
 
@@ -380,6 +401,197 @@ def import_data():
         return f"<h1>Import Complete</h1><p>Imported {count} products successfully!</p><p><a href='/'>Back to Home</a></p>"
     except Exception as e:
         return f"<h1>Import Error</h1><p>Error: {str(e)}</p><p><a href='/'>Back to Home</a></p>"
+
+
+def find_cheaper_alternatives(product, max_price, limit=5):
+    """Find cheaper alternatives for a product"""
+    alternatives = []
+    
+    # First, try same category with lower price
+    same_category = Product.query.filter(
+        Product.sub_category == product.sub_category,
+        Product.price_numeric < max_price,
+        Product.price_numeric.isnot(None),
+        Product.id != product.id
+    ).order_by(Product.price_numeric.desc()).limit(limit).all()
+    
+    alternatives.extend(same_category)
+    
+    # If not enough alternatives, search by keywords from title
+    if len(alternatives) < limit:
+        # Extract keywords from product title (remove common words)
+        import re
+        common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'throughout', 'beside', 'underneath', 'within', 'without', 'toward', 'towards', 'until', 'upon', 'a', 'an', 'as', 'are', 'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'oz', 'lb', 'lbs', 'pack', 'count', 'inch', 'pieces'}
+        
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', product.title.lower())
+        keywords = [word for word in words if word not in common_words][:3]  # Take first 3 meaningful words
+        
+        for keyword in keywords:
+            keyword_matches = Product.query.filter(
+                Product.title.ilike(f'%{keyword}%'),
+                Product.price_numeric < max_price,
+                Product.price_numeric.isnot(None),
+                Product.id != product.id,
+                ~Product.id.in_([alt.id for alt in alternatives])  # Exclude already found alternatives
+            ).order_by(Product.price_numeric.desc()).limit(limit - len(alternatives)).all()
+            
+            alternatives.extend(keyword_matches)
+            if len(alternatives) >= limit:
+                break
+    
+    return alternatives[:limit]
+
+
+@app.route("/budget_exceeded")
+def budget_exceeded():
+    """Show budget exceeded page with cheaper alternatives"""
+    if 'session_id' not in session:
+        return redirect(url_for('index'))
+    
+    session_id = session['session_id']
+    product_id = request.args.get('product_id')
+    overage = float(request.args.get('overage', 0))
+    
+    if not product_id:
+        return redirect(url_for('index'))
+    
+    # Get the product that caused the overage
+    product = Product.query.get(product_id)
+    if not product:
+        return redirect(url_for('index'))
+    
+    # Get user budget
+    user_budget = UserBudget.query.filter_by(session_id=session_id).first()
+    if not user_budget:
+        return redirect(url_for('index'))
+    
+    # Find cheaper alternatives
+    max_price = float(product.price_numeric or 0) - overage - 0.01  # Need to save at least the overage amount
+    alternatives = find_cheaper_alternatives(product, max_price)
+    
+    # Get current cart info
+    cart_items = ShoppingCart.query.filter_by(session_id=session_id).all()
+    cart_total = sum(float(item.product.price_numeric or 0) * item.quantity for item in cart_items)
+    
+    return f"""
+    <html>
+    <head><title>Budget Exceeded - Alternatives Available</title></head>
+    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #ffebee; border: 1px solid #f44336; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <h2 style="color: #d32f2f; margin-top: 0;">🚫 Budget Exceeded!</h2>
+            <p><strong>Your budget:</strong> ${user_budget.budget_amount}</p>
+            <p><strong>Current cart total:</strong> ${cart_total:.2f}</p>
+            <p><strong>Amount over budget:</strong> ${overage:.2f}</p>
+        </div>
+        
+        <div style="background-color: #e8f5e8; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <h3>💡 We found cheaper alternatives for: <em>{product.title}</em></h3>
+            <p><strong>Original price:</strong> {product.price_text}</p>
+        </div>
+        
+        {"".join([f'''
+        <div style="border: 1px solid #4CAF50; margin: 10px 0; padding: 15px; border-radius: 5px; background-color: #f1f8e9;">
+            <h4 style="margin-top: 0; color: #2e7d32;">{alt.title}</h4>
+            <p><strong>Price:</strong> {alt.price_text} | <strong>Category:</strong> {alt.sub_category}</p>
+            <p><strong>You save:</strong> ${float(product.price_numeric or 0) - float(alt.price_numeric or 0):.2f}</p>
+            <div style="display: flex; gap: 10px;">
+                <form action="/replace_item" method="post" style="display: inline;">
+                    <input type="hidden" name="old_product_id" value="{product.id}">
+                    <input type="hidden" name="new_product_id" value="{alt.id}">
+                    <button type="submit" style="background-color: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                        Replace with this item
+                    </button>
+                </form>
+                <form action="/add_alternative" method="post" style="display: inline;">
+                    <input type="hidden" name="product_id" value="{alt.id}">
+                    <input type="number" name="quantity" value="1" min="1" max="10" style="width: 60px; padding: 4px;">
+                    <button type="submit" style="background-color: #2196F3; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                        Add this too
+                    </button>
+                </form>
+            </div>
+        </div>
+        ''' for alt in alternatives]) if alternatives else "<p>Sorry, no cheaper alternatives found. Consider removing some items from your cart.</p>"}
+        
+        <div style="margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
+            <h3>What would you like to do?</h3>
+            <p>
+                <a href="/cart" style="background-color: #ff9800; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px;">
+                    📝 Edit Cart
+                </a>
+                <a href="/" style="background-color: #9e9e9e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px;">
+                    🛒 Continue Shopping
+                </a>
+                <a href="/budget" style="background-color: #673ab7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+                    💰 Increase Budget
+                </a>
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+
+@app.route("/replace_item", methods=["POST"])
+def replace_item():
+    """Replace an item in cart with a cheaper alternative"""
+    if 'session_id' not in session:
+        return redirect(url_for('index'))
+    
+    session_id = session['session_id']
+    old_product_id = request.form.get('old_product_id')
+    new_product_id = request.form.get('new_product_id')
+    
+    # Remove old item
+    old_item = ShoppingCart.query.filter_by(
+        session_id=session_id, 
+        product_id=old_product_id
+    ).first()
+    
+    if old_item:
+        quantity = old_item.quantity
+        db.session.delete(old_item)
+        
+        # Add new item with same quantity
+        new_item = ShoppingCart(
+            session_id=session_id,
+            product_id=new_product_id,
+            quantity=quantity
+        )
+        db.session.add(new_item)
+        db.session.commit()
+    
+    return redirect(url_for('cart'))
+
+
+@app.route("/add_alternative", methods=["POST"])
+def add_alternative():
+    """Add an alternative item to cart"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    
+    session_id = session['session_id']
+    product_id = request.form.get('product_id')
+    quantity = int(request.form.get('quantity', 1))
+    
+    # Check if item already in cart
+    existing_item = ShoppingCart.query.filter_by(
+        session_id=session_id, 
+        product_id=product_id
+    ).first()
+    
+    if existing_item:
+        existing_item.quantity += quantity
+    else:
+        cart_item = ShoppingCart(
+            session_id=session_id,
+            product_id=product_id,
+            quantity=quantity
+        )
+        db.session.add(cart_item)
+    
+    db.session.commit()
+    return redirect(url_for('cart'))
 
 
 if __name__ == "__main__":
