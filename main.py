@@ -196,9 +196,11 @@ def add_to_cart():
     
     # If budget is exceeded, show alternatives page
     if user_budget and new_total > float(user_budget.budget_amount):
-        return redirect(url_for('budget_exceeded', product_id=product_id, overage=new_total - float(user_budget.budget_amount)))
+        from flask import Response
+        overage = new_total - float(user_budget.budget_amount)
+        return Response(status=303, headers={'Location': url_for('budget_exceeded', product_id=product_id, quantity=quantity, overage=overage)})
     
-    return redirect(url_for('index'))
+    return Response(status=303, headers={'Location': url_for('index')})
 
 
 @app.route("/cart")
@@ -413,7 +415,7 @@ def find_cheaper_alternatives(product, max_price, limit=5):
         Product.price_numeric < max_price,
         Product.price_numeric.isnot(None),
         Product.id != product.id
-    ).order_by(Product.price_numeric.desc()).limit(limit).all()
+    ).order_by(Product.price_numeric.asc()).limit(limit).all()
     
     alternatives.extend(same_category)
     
@@ -433,7 +435,7 @@ def find_cheaper_alternatives(product, max_price, limit=5):
                 Product.price_numeric.isnot(None),
                 Product.id != product.id,
                 ~Product.id.in_([alt.id for alt in alternatives])  # Exclude already found alternatives
-            ).order_by(Product.price_numeric.desc()).limit(limit - len(alternatives)).all()
+            ).order_by(Product.price_numeric.asc()).limit(limit - len(alternatives)).all()
             
             alternatives.extend(keyword_matches)
             if len(alternatives) >= limit:
@@ -449,7 +451,8 @@ def budget_exceeded():
         return redirect(url_for('index'))
     
     session_id = session['session_id']
-    product_id = request.args.get('product_id')
+    product_id = int(request.args.get('product_id'))
+    quantity = int(request.args.get('quantity', 1))
     overage = float(request.args.get('overage', 0))
     
     if not product_id:
@@ -465,8 +468,9 @@ def budget_exceeded():
     if not user_budget:
         return redirect(url_for('index'))
     
-    # Find cheaper alternatives
-    max_price = float(product.price_numeric or 0) - overage - 0.01  # Need to save at least the overage amount
+    # Find cheaper alternatives - calculate per-unit savings needed
+    overage_per_unit = overage / quantity
+    max_price = float(product.price_numeric or 0) - overage_per_unit - 0.01
     alternatives = find_cheaper_alternatives(product, max_price)
     
     # Get current cart info
@@ -561,7 +565,8 @@ def replace_item():
         db.session.add(new_item)
         db.session.commit()
     
-    return redirect(url_for('cart'))
+    from flask import Response
+    return Response(status=303, headers={'Location': url_for('view_cart')})
 
 
 @app.route("/add_alternative", methods=["POST"])
@@ -591,7 +596,8 @@ def add_alternative():
         db.session.add(cart_item)
     
     db.session.commit()
-    return redirect(url_for('cart'))
+    from flask import Response
+    return Response(status=303, headers={'Location': url_for('view_cart')})
 
 
 if __name__ == "__main__":
