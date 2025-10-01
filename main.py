@@ -1,4 +1,5 @@
 import os
+import hashlib
 from flask import Flask, jsonify, request, Response, session, render_template, send_from_directory
 import pandas as pd
 import numpy as np
@@ -51,6 +52,27 @@ def _init_index():
     for c in keep:
         if c not in PRODUCTS_DF.columns:
             PRODUCTS_DF[c] = np.nan
+    
+    # Generate stable unique product IDs by hashing Title + SubCategory deterministically
+    def generate_product_id(row):
+        # Combine title and subcategory into a single unique key
+        key = f"{row['Title']}|{row['Sub Category']}"
+        # Use deterministic hash that's stable across restarts
+        hash_bytes = hashlib.blake2b(key.encode('utf-8'), digest_size=8).digest()
+        # Convert to positive int64
+        return int.from_bytes(hash_bytes, 'big', signed=False) & ((1 << 63) - 1)
+    
+    PRODUCTS_DF['id'] = PRODUCTS_DF.apply(generate_product_id, axis=1)
+    
+    # Verify uniqueness of IDs
+    if not PRODUCTS_DF['id'].is_unique:
+        print("Warning: Duplicate product IDs detected, de-duplicating...")
+        PRODUCTS_DF = PRODUCTS_DF.drop_duplicates(subset=['id'], keep='first')
+    
+    # Set id as index for O(1) lookups
+    PRODUCTS_DF.set_index('id', inplace=True)
+    assert PRODUCTS_DF.index.is_unique, "Product IDs must be unique"
+    
     print(f"✓ Loaded {len(PRODUCTS_DF)} products successfully")
 
 # Initialize the index at startup to avoid timeout on first request
@@ -83,8 +105,10 @@ def api_products():
 
     def to_item(row):
         # Minimal product dict compatible with cart/recommender
+        # Use the DataFrame index (product ID) directly - already computed in _init_index
+        # Convert to string to avoid JavaScript safe integer issues (2^53-1 limit)
         item = {
-            "id": int(pd.util.hash_pandas_object(pd.Series([row["Title"], row["Sub Category"]])).astype(np.int64).iloc[0]),
+            "id": str(int(row.name)),  # Convert int64 to string for JSON safety
             "title": str(row["Title"]),
             "subcat": str(row["Sub Category"]),
             "price": float(row["_price_final"]) if pd.notna(row["_price_final"]) else None,
@@ -125,6 +149,147 @@ def api_budget_recommendations():
     budget = float(payload.get("budget", 0))
     res = recommend_substitutions(cart, budget)
     return jsonify(res)
+
+@app.route("/api/checkout", methods=["POST"])
+def api_checkout():
+    """Complete the purchase and persist order history"""
+    try:
+        payload = request.get_json(force=True)
+        cart = payload.get("cart", [])
+        
+        if not cart:
+            return jsonify({"success": False, "error": "Cart is empty"}), 400
+        
+        # Get or create session_id
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        session_id = session['user_session']
+        
+        # Get or create user
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            user = User(session_id=session_id)
+            db.session.add(user)
+            db.session.flush()
+        else:
+            user.last_active = db.func.current_timestamp()
+        
+        # Validate cart items and calculate totals server-side
+        validated_items = []
+        total_amount = 0.0
+        item_count = 0
+        
+        for item in cart:
+            product_id_str = item.get('id')
+            if product_id_str is None:
+                continue  # Skip items without product_id
+            
+            # Convert string ID back to int64 for server-side lookup
+            try:
+                product_id = int(product_id_str)
+            except (ValueError, TypeError):
+                print(f"Invalid product ID format: {product_id_str}")
+                return jsonify({"success": False, "error": "Invalid product in cart"}), 400
+            
+            # Validate and parse quantity
+            try:
+                quantity = int(item.get('qty', 1))
+                quantity = max(1, min(quantity, 1000))  # Clamp to reasonable range
+            except (ValueError, TypeError):
+                print(f"Invalid quantity for product {product_id}, defaulting to 1")
+                quantity = 1
+            
+            # Look up authoritative price from indexed PRODUCTS_DF
+            try:
+                product_row = PRODUCTS_DF.loc[product_id]
+            except KeyError:
+                print(f"Error: Product {product_id} not found in catalog, rejecting item")
+                return jsonify({"success": False, "error": "Invalid product in cart"}), 400
+            
+            # Use server-side authoritative price
+            server_price = product_row.get('_price_final')
+            if pd.isna(server_price):
+                unit_price = 0.0
+            else:
+                unit_price = float(server_price)
+            
+            # Get authoritative title and subcat from server
+            title = str(product_row.get('Title', ''))
+            subcat = str(product_row.get('Sub Category', ''))
+            
+            # Calculate line total
+            line_total = unit_price * quantity
+            total_amount += line_total
+            item_count += quantity
+            
+            validated_items.append({
+                'product_id': product_id,
+                'title': title,
+                'subcat': subcat,
+                'quantity': quantity,
+                'unit_price': unit_price,
+                'line_total': line_total,
+                'was_substitute': bool(item.get('isSubstitute', False))
+            })
+        
+        # Reject empty orders
+        if not validated_items:
+            return jsonify({"success": False, "error": "No valid items in cart"}), 400
+        
+        # Create order with server-validated totals
+        order = Order(
+            user_id=user.id,
+            total_amount=total_amount,
+            item_count=item_count
+        )
+        db.session.add(order)
+        db.session.flush()
+        
+        # Create order items and purchase events with validated data
+        for item in validated_items:
+            # Create order item
+            order_item = OrderItem(
+                order_id=order.id,
+                product_id=item['product_id'],
+                product_title=item['title'],
+                product_subcat=item['subcat'],
+                quantity=item['quantity'],
+                unit_price=item['unit_price'],
+                line_total=item['line_total']
+            )
+            db.session.add(order_item)
+            
+            # Create purchase event
+            purchase_event = UserEvent(
+                user_id=user.id,
+                event_type='purchase',
+                product_id=item['product_id'],
+                product_title=item['title'],
+                product_subcat=item['subcat'],
+                event_data={
+                    'order_id': order.id,
+                    'quantity': item['quantity'],
+                    'unit_price': item['unit_price'],
+                    'was_substitute': item['was_substitute']
+                }
+            )
+            db.session.add(purchase_event)
+        
+        # Commit all changes
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "order_id": order.id,
+            "total_amount": float(total_amount),
+            "item_count": item_count,
+            "message": "Order completed successfully!"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Checkout error: {e}")
+        return jsonify({"success": False, "error": "Checkout failed. Please try again."}), 500
 
 @app.route("/static/<path:filename>")
 def static_files(filename):

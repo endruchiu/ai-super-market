@@ -82,12 +82,9 @@ def init_models(db):
         
         id = db.Column(db.Integer, primary_key=True)
         session_id = db.Column(db.String(255), nullable=False)  # Track by session
-        product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+        product_id = db.Column(db.BigInteger, nullable=False, index=True)  # BigInteger for 63-bit IDs, no FK since products in memory
         quantity = db.Column(db.Integer, default=1, nullable=False)
         added_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-        
-        # Relationship to Product
-        product = db.relationship('Product', backref='cart_items')
         
         def __repr__(self):
             return f'<CartItem {self.id}: {self.quantity}x Product {self.product_id}>'
@@ -147,15 +144,12 @@ def init_models(db):
         
         id = db.Column(db.Integer, primary_key=True)
         order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, index=True)
-        product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+        product_id = db.Column(db.BigInteger, nullable=False, index=True)  # BigInteger for 63-bit IDs, no FK since products in memory
         product_title = db.Column(db.Text, nullable=False)
         product_subcat = db.Column(db.String(200), nullable=False, index=True)
         quantity = db.Column(db.Integer, nullable=False)
         unit_price = db.Column(db.Numeric(10, 2), nullable=False)
         line_total = db.Column(db.Numeric(10, 2), nullable=False)
-        
-        # Relationships
-        product = db.relationship('Product', backref='order_items')
         
         def __repr__(self):
             return f'<OrderItem {self.id}: {self.quantity}x {self.product_title[:30]}...>'
@@ -168,14 +162,11 @@ def init_models(db):
         id = db.Column(db.Integer, primary_key=True)
         user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
         event_type = db.Column(db.String(50), nullable=False, index=True)
-        product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True, index=True)
+        product_id = db.Column(db.BigInteger, nullable=True, index=True)  # BigInteger for 63-bit IDs, no FK since products in memory
         product_title = db.Column(db.Text, nullable=True)
         product_subcat = db.Column(db.String(200), nullable=True, index=True)
         event_data = db.Column(db.JSON, nullable=True)
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
-        
-        # Relationships
-        product = db.relationship('Product', backref='user_events')
         
         def __repr__(self):
             return f'<UserEvent {self.id}: {self.event_type} by User {self.user_id}>'

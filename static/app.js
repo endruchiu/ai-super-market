@@ -328,6 +328,64 @@ async function getSuggestions() {
   document.getElementById('suggestions').style.display = 'block';
 }
 
+async function checkout() {
+  if (CART.length === 0) {
+    alert('Your cart is empty!');
+    return;
+  }
+  
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  checkoutBtn.disabled = true;
+  checkoutBtn.innerHTML = '<span>Processing...</span>';
+  
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cart: CART })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      const successMsg = document.createElement('div');
+      successMsg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
+      successMsg.innerHTML = '<div class="flex items-center space-x-3">' +
+        '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+        '</svg>' +
+        '<div>' +
+          '<div class="font-bold">Order Completed!</div>' +
+          '<div class="text-sm text-green-100 mt-1">Order #' + data.order_id + ' - $' + fmt(data.total_amount) + ' (' + data.item_count + ' items)</div>' +
+        '</div>' +
+      '</div>';
+      
+      document.body.appendChild(successMsg);
+      setTimeout(function() {
+        successMsg.style.opacity = '0';
+        successMsg.style.transform = 'translateY(-20px)';
+        setTimeout(function() { successMsg.remove(); }, 300);
+      }, 4000);
+      
+      CART = [];
+      updateBadge();
+      hideCart();
+      document.getElementById('suggestions').style.display = 'none';
+    } else {
+      alert('Checkout failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Checkout error:', error);
+    alert('Checkout failed: ' + error.message);
+  } finally {
+    checkoutBtn.disabled = false;
+    checkoutBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+    '</svg>' +
+    '<span>Complete Purchase</span>';
+  }
+}
+
 // Auto-load products on page load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');

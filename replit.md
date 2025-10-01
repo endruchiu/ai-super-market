@@ -20,6 +20,8 @@ Preferred communication style: Simple, everyday language.
 - **Product model** with both text and parsed numeric fields for prices and ratings to maintain data integrity while enabling calculations
 - **Shopping cart functionality** with session-based cart management
 - **Budget tracking system** with UserBudget model for spending limits and monitoring
+- **Purchase history tracking** with User, Order, OrderItem, and UserEvent models for AI-powered recommendations
+- **Deterministic product IDs** using blake2b hash (Title|SubCategory) for stability across restarts with BigInteger support
 - **Batch processing** for efficient data imports with commit batching every 100 records
 
 ### Data Processing
@@ -31,11 +33,14 @@ Preferred communication style: Simple, everyday language.
 - **Factory pattern** for model initialization allowing for flexible database configuration
 - **Global model registration** making models available across the application after initialization
 - **Environment-based configuration** for database URLs and secret keys
+- **In-memory product catalog** using pandas DataFrame (PRODUCTS_DF) for O(1) lookups without database overhead
+- **JavaScript-safe IDs** returned as strings in JSON API to avoid precision loss beyond 53 bits
 
 ### Performance Optimizations
 - **Database connection pooling** with pool recycling and pre-ping health checks
 - **Batch commits** during data import operations to improve performance
 - **Numeric field extraction** for efficient querying and calculations
+- **In-memory product storage** eliminates database queries for product lookups during browsing and checkout
 
 ## Frontend Design
 
@@ -55,6 +60,7 @@ Preferred communication style: Simple, everyday language.
 - **Budget Controls** - Styled input fields with dollar sign prefix and category dropdown
 - **Product Table** - Hover effects, category pills, and gradient add buttons
 - **Shopping Cart** - Item cards with quantity controls and budget warning alerts
+- **Checkout Button** - One-click checkout with success notifications and cart clearing
 - **AI Recommendations** - Beautiful cards with savings indicators and apply buttons
 - **Responsive Design** - Mobile-friendly layout with flexible grid system
 
@@ -78,3 +84,35 @@ Preferred communication style: Simple, everyday language.
 ### Infrastructure Requirements
 - **Environment variables** for database connection and Flask secret key configuration
 - **File system access** for CSV data import operations
+
+## Recent Changes (October 1, 2025)
+
+### Checkout & Purchase History Implementation
+- **Checkout endpoint** (`/api/checkout`) with comprehensive server-side validation:
+  - Authoritative price lookups from PRODUCTS_DF (never trust client prices)
+  - Quantity validation and clamping (1-1000 per item)
+  - Empty cart rejection (400 error)
+  - Unknown product rejection (400 error)
+  - NaN price handling (defaults to 0.0)
+  - Transaction management with commit/rollback
+  - Generic client-safe error messages
+
+- **Purchase history persistence**:
+  - Creates/retrieves User records by session_id
+  - Creates Order with validated total_amount and item_count
+  - Creates OrderItem with product snapshot (title, subcat, price, quantity)
+  - Creates UserEvent (event_type='purchase') for behavior tracking
+  - All within single database transaction for consistency
+
+- **Product ID system**:
+  - Deterministic blake2b hash ensures stable IDs across server restarts
+  - IDs returned as strings in JSON API to avoid JavaScript 53-bit precision limit
+  - Server-side parsing converts string IDs back to int64 for PRODUCTS_DF lookups
+  - BigInteger columns in database support 63-bit IDs without overflow
+  - No foreign key constraints since products stored in-memory only
+
+- **Frontend integration**:
+  - Added "Checkout Now" button to cart UI
+  - Success notification with auto-dismiss animation
+  - Cart clearing after successful checkout
+  - Error handling with user-friendly messages
