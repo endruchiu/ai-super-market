@@ -22,6 +22,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLRO
 
 # Local imports
 from recommendation_engine import load_datasets
+from evaluate_recommendations import evaluate_recommendations, print_evaluation_results
 
 
 def build_cf_model(num_users, num_products, embedding_dim=32, l2_reg=1e-6):
@@ -428,6 +429,51 @@ if __name__ == '__main__':
         print(f"Test Loss: {test_loss:.4f}")
         print(f"Test Accuracy: {test_acc:.4f}")
         print(f"Test AUC: {test_auc:.4f}")
+        
+        # Evaluate Precision@K, Recall@K, MAP@K
+        print("\nEvaluating recommendation quality (Precision@K, Recall@K, MAP@K)...")
+        print("Generating recommendations for test users...")
+        
+        # Get test users and their ground truth items
+        test_user_ids = set(X_test[0])
+        user_recommendations = {}
+        user_relevant_items = {}
+        
+        # Extract ground truth (positive test samples)
+        for i, (user_idx, product_idx, label) in enumerate(zip(X_test[0], X_test[1], y_test)):
+            if label == 1:  # Positive sample (ground truth)
+                if user_idx not in user_relevant_items:
+                    user_relevant_items[user_idx] = set()
+                user_relevant_items[user_idx].add(product_idx)
+        
+        # Generate recommendations for each test user
+        # Use model to score all products for each user
+        num_products = mappings['num_products']
+        all_product_indices = np.arange(num_products)
+        
+        for user_idx in user_relevant_items.keys():
+            # Create batch: user_idx repeated for each product
+            user_batch = np.full(num_products, user_idx)
+            
+            # Predict scores for all products
+            scores = model.predict([user_batch, all_product_indices], verbose=0).flatten()
+            
+            # Sort products by score (descending)
+            top_indices = np.argsort(scores)[::-1]
+            
+            # Take top 50 recommendations
+            # NOTE: We include test positives in recommendations to measure if model ranks them highly
+            # The Precision@K metric will check how many test positives appear in top-K
+            user_recommendations[user_idx] = top_indices[:50].tolist()
+        
+        # Evaluate at different K values
+        eval_results = evaluate_recommendations(
+            user_recommendations,
+            user_relevant_items,
+            k_values=[5, 10, 20, 50]
+        )
+        
+        print_evaluation_results(eval_results)
     
     # Save model and artifacts
     save_model_and_artifacts(
