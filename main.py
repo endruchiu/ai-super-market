@@ -1,10 +1,38 @@
 import os
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, session
 import pandas as pd
 import numpy as np
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+import uuid
 from semantic_budget import ensure_index, recommend_substitutions
 
+# SQLAlchemy base class
+class Base(DeclarativeBase):
+    pass
+
+# Initialize Flask app
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///grocery_app.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 280,
+    'pool_pre_ping': True,
+}
+
+# Initialize database
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
+
+# Import and initialize models
+from models import init_models
+Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent = init_models(db)
+
+# Create tables
+with app.app_context():
+    db.create_all()
+    print("✓ Database tables created successfully")
 
 # Build semantic index once and keep a lightweight products frame for listing
 PRODUCTS_DF = None

@@ -105,5 +105,79 @@ def init_models(db):
         
         def __repr__(self):
             return f'<Budget {self.id}: ${self.budget_amount} ({self.warning_threshold}%)>'
+
+    class User(db.Model):
+        """User model for tracking customer identity and preferences"""
+        __tablename__ = 'users'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        session_id = db.Column(db.String(255), nullable=False, unique=True, index=True)
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+        last_active = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+        
+        # Relationships
+        orders = db.relationship('Order', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+        events = db.relationship('UserEvent', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+        
+        def __repr__(self):
+            return f'<User {self.id}: session {self.session_id[:8]}...>'
+
+    class Order(db.Model):
+        """Order model for completed purchases"""
+        __tablename__ = 'orders'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+        total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+        item_count = db.Column(db.Integer, nullable=False)
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
+        
+        # Relationships
+        order_items = db.relationship('OrderItem', backref='order', lazy='dynamic', cascade='all, delete-orphan')
+        
+        def __repr__(self):
+            return f'<Order {self.id}: ${self.total_amount} ({self.item_count} items)>'
+
+    class OrderItem(db.Model):
+        """Individual items within an order"""
+        __tablename__ = 'order_items'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, index=True)
+        product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+        product_title = db.Column(db.Text, nullable=False)
+        product_subcat = db.Column(db.String(200), nullable=False, index=True)
+        quantity = db.Column(db.Integer, nullable=False)
+        unit_price = db.Column(db.Numeric(10, 2), nullable=False)
+        line_total = db.Column(db.Numeric(10, 2), nullable=False)
+        
+        # Relationships
+        product = db.relationship('Product', backref='order_items')
+        
+        def __repr__(self):
+            return f'<OrderItem {self.id}: {self.quantity}x {self.product_title[:30]}...>'
+
+    class UserEvent(db.Model):
+        """User browsing and interaction events for behavior tracking"""
+        __tablename__ = 'user_events'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+        event_type = db.Column(db.String(50), nullable=False, index=True)
+        product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True, index=True)
+        product_title = db.Column(db.Text, nullable=True)
+        product_subcat = db.Column(db.String(200), nullable=True, index=True)
+        event_data = db.Column(db.JSON, nullable=True)
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
+        
+        # Relationships
+        product = db.relationship('Product', backref='user_events')
+        
+        def __repr__(self):
+            return f'<UserEvent {self.id}: {self.event_type} by User {self.user_id}>'
     
-    return Product, ShoppingCart, UserBudget
+    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent
