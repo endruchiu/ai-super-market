@@ -113,7 +113,7 @@
       </div>
     </div>
 
-    <!-- AI Recommendations -->
+    <!-- AI Budget Recommendations -->
     <div id="suggestions" class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl p-6 border-2 border-indigo-300" style="display:none;">
       <div class="flex items-center space-x-3 mb-4">
         <div class="bg-indigo-600 p-2 rounded-lg">
@@ -124,6 +124,42 @@
         <h3 class="text-xl font-bold text-indigo-900">AI Budget-Saving Recommendations</h3>
       </div>
       <div id="sugs" class="space-y-4"></div>
+    </div>
+
+    <!-- Personalized Recommendations (CF Model) -->
+    <div id="cfRecommendations" class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl shadow-xl p-6 border-2 border-purple-300" style="display:none;">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="bg-purple-600 p-2 rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-purple-900">Personalized Recommendations</h3>
+        </div>
+        <button onclick="getCFRecommendations()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">
+          Refresh
+        </button>
+      </div>
+      <div id="cfRecsContent" class="space-y-4"></div>
+    </div>
+
+    <!-- Blended Recommendations (CF + Semantic) -->
+    <div id="blendedRecommendations" class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-xl p-6 border-2 border-emerald-300" style="display:none;">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="bg-emerald-600 p-2 rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-emerald-900">Hybrid AI Recommendations</h3>
+        </div>
+        <button onclick="getBlendedRecommendations()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">
+          Refresh
+        </button>
+      </div>
+      <div id="blendedRecsContent" class="space-y-4"></div>
     </div>
 
   </div>

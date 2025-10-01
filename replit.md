@@ -61,7 +61,10 @@ Preferred communication style: Simple, everyday language.
 - **Product Table** - Hover effects, category pills, and gradient add buttons
 - **Shopping Cart** - Item cards with quantity controls and budget warning alerts
 - **Checkout Button** - One-click checkout with success notifications and cart clearing
-- **AI Recommendations** - Beautiful cards with savings indicators and apply buttons
+- **AI Recommendations** - Three recommendation systems with auto-load on page load:
+  - **Budget-Saving Recommendations** (Blue/Indigo) - Semantic similarity for budget-conscious replacements
+  - **Personalized Recommendations** (Purple/Pink) - CF model based on purchase history
+  - **Hybrid AI Recommendations** (Emerald/Teal) - 60% CF + 40% semantic similarity blend
 - **Responsive Design** - Mobile-friendly layout with flexible grid system
 
 ## External Dependencies
@@ -115,11 +118,43 @@ Preferred communication style: Simple, everyday language.
   - Evaluates at K=5,10,20,50 with formatted table output
   - Tested and verified with example data
 
+- **CF Recommendation API** (`/api/cf/recommendations`):
+  - Loads trained model weights and embeddings for inference
+  - Generates personalized recommendations based on user's purchase history
+  - User profile: Average of product embeddings from past purchases
+  - Scores all products via user-product embedding similarity
+  - Returns top-K recommendations with product details
+  - Gracefully handles "model not trained" state with helpful error messages
+
+- **Blended Recommendation API** (`/api/blended/recommendations`):
+  - Combines CF (60%) + Semantic similarity (40%) for hybrid recommendations
+  - CF component: Uses trained model embeddings for personalized scoring
+  - Semantic component: Cosine similarity between user profile and product embeddings
+  - Properly normalized vectors ensure consistent [0,1] score range
+  - Weighted combination: `0.6 * cf_score + 0.4 * semantic_score`
+  - Returns top-K blended recommendations sorted by combined score
+
+- **Critical Product ID Fix**:
+  - Unified product ID generation across all modules (blake2b hash)
+  - Fixed semantic_budget.py to use same hash as main.py and CF training
+  - Ensures consistent product identification for checkout, recommendations, and CF training
+  - Added hashlib import and cleared cached semantic index to regenerate with correct IDs
+
+- **Frontend Integration** (Task 8 completed):
+  - Added two new recommendation sections with auto-load on page load
+  - **Personalized Recommendations** (Purple/Pink theme) - Pure CF model recommendations
+  - **Hybrid AI Recommendations** (Emerald/Teal theme) - 60% CF + 40% semantic blend
+  - JavaScript functions: `getCFRecommendations()` and `getBlendedRecommendations()`
+  - Auto-load via DOMContentLoaded handler with 500ms delay
+  - Manual refresh buttons for each section
+  - Graceful "model not trained" messaging with instructions
+  - Product cards display: title, category, size, nutrition, price, score
+  - Functional "Add to Cart" buttons for all recommended products
+  - All UI text in English as required
+
 - **Next Steps**:
-  - Build CF recommendation API endpoint
-  - Create blended recommendations (CF + semantic similarity)
-  - Update frontend for personalized recommendations
-  - Train model once sufficient purchase history accumulates
+  - Train model once sufficient purchase history accumulates (need real user data)
+  - Monitor recommendation quality and adjust weights if needed
 
 ### Checkout & Purchase History Implementation
 - **Checkout endpoint** (`/api/checkout`) with comprehensive server-side validation:
