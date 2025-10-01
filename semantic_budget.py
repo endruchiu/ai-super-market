@@ -213,27 +213,27 @@ def _maybe_explainer():
 
 def _template_explain(slots:Dict[str,Any]) -> str:
     tags = set([t.lower() for t in slots.get("tags",[])])
-    subcat = slots.get("subcat","同类")
+    subcat = slots.get("subcat","same category")
     save = slots.get("save",0.0)
     sr = slots.get("size_ratio",None)
     if "no_size" in tags:
-        return f"同类{subcat}，无规格可比，按单件价更省，估计省${save:.2f}"
+        return f"Same category ({subcat}), no size comparison available, saves ${save:.2f} per unit"
     if "size_close" in tags and sr is not None:
-        return f"同类{subcat}，规格相近(×{sr:.2f})，单价更低，估计省${save:.2f}"
+        return f"Same category ({subcat}), similar size (×{sr:.2f}), lower unit price, saves ${save:.2f}"
     if "health_better" in tags:
-        return f"同类{subcat}，更低糖/热量且更省，估计省${save:.2f}"
-    return f"同类{subcat}，功能接近且更便宜，估计省${save:.2f}"
+        return f"Same category ({subcat}), lower sugar/calories and saves ${save:.2f}"
+    return f"Same category ({subcat}), similar function and cheaper, saves ${save:.2f}"
 
 def _explain(slots:Dict[str,Any]) -> str:
     pipe = _maybe_explainer()
     if pipe is None:
         return _template_explain(slots)
     prompt = (
-        "你是电商购物助手。根据事实生成<=20字中文解释，只用事实，避免臆测。\n"
-        f"事实：原：{slots.get('src_name')}；候选：{slots.get('cand_name')}；"
-        f"类目：{slots.get('subcat')}；规格比：{slots.get('size_ratio','未知')}；"
-        f"相似度：{slots.get('similarity'):.2f}；预计节省：${slots.get('save'):.2f}；"
-        f"标签：{','.join(slots.get('tags',[]))}\n输出："
+        "You are a shopping assistant. Generate a brief explanation in 20 words or less based on facts.\n"
+        f"Facts: Original: {slots.get('src_name')}; Candidate: {slots.get('cand_name')}; "
+        f"Category: {slots.get('subcat')}; Size ratio: {slots.get('size_ratio','unknown')}; "
+        f"Similarity: {slots.get('similarity'):.2f}; Expected savings: ${slots.get('save'):.2f}; "
+        f"Tags: {','.join(slots.get('tags',[]))}\nOutput:"
     )
     try:
         out = pipe(prompt, max_new_tokens=32, num_beams=2)[0]["generated_text"]
@@ -337,7 +337,7 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
     buffer = max(buffer_min, buffer_ratio * budget)
     
     if total <= budget + buffer:
-        return {"total": total, "budget": budget, "suggestions": [], "message": f"当前总价 ${total:.2f} 在预算内"}
+        return {"total": total, "budget": budget, "suggestions": [], "message": f"Current total ${total:.2f} is within budget"}
 
     target_savings = total - budget + buffer
     
@@ -361,7 +361,7 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         all_cands.extend(cands)
     
     if not all_cands:
-        return {"total": total, "budget": budget, "suggestions": [], "message": f"未找到合适替代品，当前总价 ${total:.2f}"}
+        return {"total": total, "budget": budget, "suggestions": [], "message": f"No suitable substitutes found, current total ${total:.2f}"}
     
     # Score candidates
     max_save = max(c.saving for c in all_cands) if all_cands else 1.0
@@ -412,7 +412,7 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         if len(suggestions) >= 5:
             break
     
-    msg = f"当前总价 ${total:.2f}，超预算 ${total-budget:.2f}。推荐 {len(suggestions)} 个替代品可省约 ${accum_save:.2f}"
+    msg = f"Current total ${total:.2f}, over budget by ${total-budget:.2f}. Recommended {len(suggestions)} substitutes can save about ${accum_save:.2f}"
     
     return {
         "total": total,

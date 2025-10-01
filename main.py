@@ -308,9 +308,9 @@ async function getSuggestions(){
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
-        <div><b>替换</b> ${s.replace} → <b>${s.with}</b></div>
-        <div>预计节省：$${s.expected_saving}（相似度 ${s.similarity}）</div>
-        <div style="color:#555;">理由：${s.reason}</div>`;
+        <div><b>Replace</b> ${s.replace} → <b>${s.with}</b></div>
+        <div>Expected Savings: $${s.expected_saving} (Similarity: ${s.similarity})</div>
+        <div style="color:#555;">Reason: ${s.reason}</div>`;
       sugsDiv.appendChild(card);
     });
   }
