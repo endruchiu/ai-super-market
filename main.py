@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import uuid
 from semantic_budget import ensure_index, recommend_substitutions
+from cf_inference import get_cf_recommendations, get_user_purchase_history
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -149,6 +150,100 @@ def api_budget_recommendations():
     budget = float(payload.get("budget", 0))
     res = recommend_substitutions(cart, budget)
     return jsonify(res)
+
+@app.route("/api/cf/recommendations", methods=["GET"])
+def api_cf_recommendations():
+    """
+    Get collaborative filtering (CF) personalized recommendations for current user.
+    
+    Query params:
+      - top_k (optional): Number of recommendations (default 10, max 50)
+      - exclude_purchased (optional): 'true' to exclude already-purchased items (default true)
+    
+    Returns:
+        {
+            "recommendations": [
+                {"product_id": "123", "score": 0.85, "rank": 1, "product_info": {...}},
+                ...
+            ],
+            "user_id": "session_id",
+            "model_available": true/false,
+            "reason": "Model not trained" or "Unknown user" (if no recommendations)
+        }
+    """
+    from cf_inference import load_cf_model
+    
+    # Get or create session_id
+    if 'user_session' not in session:
+        session['user_session'] = str(uuid.uuid4())
+    
+    user_id = session['user_session']
+    
+    # Validate and clamp top_k
+    try:
+        top_k = int(request.args.get("top_k", 10))
+        top_k = max(1, min(top_k, 50))  # Clamp to [1, 50]
+    except (ValueError, TypeError):
+        top_k = 10
+    
+    # Parse exclude_purchased
+    try:
+        exclude_purchased = request.args.get("exclude_purchased", "true").lower() in ["true", "1", "yes"]
+    except:
+        exclude_purchased = True
+    
+    # Check if model is available
+    model, artifacts = load_cf_model()
+    model_available = (model is not None and artifacts is not None)
+    
+    if not model_available:
+        return jsonify({
+            "recommendations": [],
+            "user_id": user_id,
+            "model_available": False,
+            "reason": "Model not trained yet. Make purchases to accumulate history, then run: python train_cf_model.py"
+        })
+    
+    # Get purchase history to exclude if requested
+    exclude_products = []
+    if exclude_purchased:
+        exclude_products = get_user_purchase_history(user_id)
+    
+    # Get CF recommendations
+    recs = get_cf_recommendations(user_id, top_k=top_k, exclude_products=exclude_products)
+    
+    # If no recommendations for this user
+    if len(recs) == 0:
+        return jsonify({
+            "recommendations": [],
+            "user_id": user_id,
+            "model_available": True,
+            "reason": "Unknown user (no purchase history). Make purchases to get personalized recommendations."
+        })
+    
+    # Enrich with product info
+    enriched_recs = []
+    for rec in recs:
+        product_id = int(rec["product_id"])
+        
+        # Look up product info from PRODUCTS_DF
+        if product_id in PRODUCTS_DF.index:
+            product_row = PRODUCTS_DF.loc[product_id]
+            rec["product_info"] = {
+                "title": str(product_row["Title"]),
+                "subcat": str(product_row["Sub Category"]),
+                "price": float(product_row["_price_final"]) if pd.notna(product_row["_price_final"]) else None,
+            }
+        else:
+            rec["product_info"] = None
+        
+        enriched_recs.append(rec)
+    
+    return jsonify({
+        "recommendations": enriched_recs,
+        "user_id": user_id,
+        "model_available": True
+    })
 
 @app.route("/api/checkout", methods=["POST"])
 def api_checkout():
