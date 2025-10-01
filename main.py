@@ -8,6 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 import uuid
 from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
+from blended_recommendations import get_blended_recommendations
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -243,6 +244,95 @@ def api_cf_recommendations():
         "recommendations": enriched_recs,
         "user_id": user_id,
         "model_available": True
+    })
+
+@app.route("/api/blended/recommendations", methods=["GET"])
+def api_blended_recommendations():
+    """
+    Get blended recommendations combining CF (60%) and semantic similarity (40%).
+    
+    Query params:
+      - top_k (optional): Number of recommendations (default 10, max 50)
+    
+    Returns:
+        {
+            "recommendations": [
+                {
+                    "product_id": "123",
+                    "cf_score": 0.85,
+                    "semantic_score": 0.72,
+                    "blended_score": 0.80,
+                    "rank": 1,
+                    "product_info": {...}
+                },
+                ...
+            ],
+            "user_id": "session_id",
+            "model_available": true/false,
+            "reason": "..." (if no recommendations)
+        }
+    """
+    # Get or create session_id
+    if 'user_session' not in session:
+        session['user_session'] = str(uuid.uuid4())
+    
+    user_id = session['user_session']
+    
+    # Validate and clamp top_k
+    try:
+        top_k = int(request.args.get("top_k", 10))
+        top_k = max(1, min(top_k, 50))
+    except (ValueError, TypeError):
+        top_k = 10
+    
+    # Get blended recommendations (checks model internally)
+    recs = get_blended_recommendations(user_id, top_k=top_k)
+    
+    # Check if model was available (empty recs = no model or unknown user)
+    from cf_inference import load_cf_model
+    model, artifacts = load_cf_model()
+    model_available = (model is not None and artifacts is not None)
+    
+    if not model_available:
+        return jsonify({
+            "recommendations": [],
+            "user_id": user_id,
+            "model_available": False,
+            "reason": "Model not trained yet. Make purchases to accumulate history, then run: python train_cf_model.py"
+        })
+    
+    # If no recommendations for this user
+    if len(recs) == 0:
+        return jsonify({
+            "recommendations": [],
+            "user_id": user_id,
+            "model_available": True,
+            "reason": "Unknown user (no purchase history). Make purchases to get personalized recommendations."
+        })
+    
+    # Enrich with product info
+    enriched_recs = []
+    for rec in recs:
+        product_id = int(rec["product_id"])
+        
+        # Look up product info from PRODUCTS_DF
+        if product_id in PRODUCTS_DF.index:
+            product_row = PRODUCTS_DF.loc[product_id]
+            rec["product_info"] = {
+                "title": str(product_row["Title"]),
+                "subcat": str(product_row["Sub Category"]),
+                "price": float(product_row["_price_final"]) if pd.notna(product_row["_price_final"]) else None,
+            }
+        else:
+            rec["product_info"] = None
+        
+        enriched_recs.append(rec)
+    
+    return jsonify({
+        "recommendations": enriched_recs,
+        "user_id": user_id,
+        "model_available": True,
+        "weights": {"cf": 0.6, "semantic": 0.4}
     })
 
 @app.route("/api/checkout", methods=["POST"])

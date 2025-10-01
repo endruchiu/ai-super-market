@@ -15,6 +15,7 @@ import re
 import json
 import math
 import time
+import hashlib
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -165,7 +166,15 @@ def ensure_index(csv_path: Optional[str]=None, cache_dir: Optional[str]=None) ->
 
     # Text for embeddings (now includes nutrition if present)
     df["_text"] = df.apply(_build_text, axis=1)
-    df["product_id"] = pd.util.hash_pandas_object(df[["Title","Sub Category"]], index=False).astype(np.int64)
+    
+    # Generate product IDs using the SAME method as main.py (blake2b hash)
+    # This ensures product IDs match between CF, semantic, and PRODUCTS_DF
+    def generate_product_id(row):
+        key = f"{row['Title']}|{row['Sub Category']}"
+        hash_bytes = hashlib.blake2b(key.encode('utf-8'), digest_size=8).digest()
+        return int.from_bytes(hash_bytes, 'big', signed=False) & ((1 << 63) - 1)
+    
+    df["product_id"] = df.apply(generate_product_id, axis=1)
 
     # Keep valid rows
     df = df[df["_price_final"].notna()].reset_index(drop=True)
