@@ -398,12 +398,35 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         }
         reason = _explain(slots)
         
+        # Build full product details for replacement item
+        replacement_product = {
+            "title": str(cand_row["Title"]),
+            "subcat": str(cand_row["Sub Category"]),
+            "price": float(cand_row["_price_final"]),
+            "qty": src_item["qty"],  # Keep same quantity
+            "size_value": float(cand_row["_size_value"]) if pd.notna(cand_row.get("_size_value")) else None,
+            "size_unit": str(cand_row["_size_unit"]) if pd.notna(cand_row.get("_size_unit")) else None,
+            "feature": str(cand_row.get("Feature", "")),
+            "desc": str(cand_row.get("Product Description", ""))
+        }
+        # Add nutrition if available
+        nutr = {}
+        for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
+            if k in cand_row and pd.notna(cand_row[k]):
+                try:
+                    nutr[k] = float(cand_row[k])
+                except:
+                    pass
+        if nutr:
+            replacement_product["nutrition"] = nutr
+        
         suggestions.append({
             "replace": src_item["title"],
             "with": str(cand_row["Title"]),
             "expected_saving": f"{c.saving:.2f}",
             "similarity": f"{c.similarity:.2f}",
-            "reason": reason
+            "reason": reason,
+            "replacement_product": replacement_product  # Full product details
         })
         
         covered.add(c.src_idx)

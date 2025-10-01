@@ -289,6 +289,32 @@ window.addEventListener('DOMContentLoaded', function() {
   refreshProducts();
 });
 
+function applyReplacement(originalTitle, replacementProduct) {
+  console.log('Applying replacement:', originalTitle, '->', replacementProduct.title);
+  
+  // Find and remove the original item from cart
+  const idx = CART.findIndex(x => x.title === originalTitle);
+  if (idx === -1) {
+    alert('Original item not found in cart. It may have been removed.');
+    return;
+  }
+  
+  // Remove original item
+  CART.splice(idx, 1);
+  
+  // Add replacement item
+  CART.push(replacementProduct);
+  
+  // Update UI
+  updateBadge();
+  viewCart();
+  
+  alert(`Replaced "${originalTitle}" with "${replacementProduct.title}"`);
+  
+  // Optionally refresh suggestions
+  getSuggestions();
+}
+
 async function getSuggestions(){
   const budget = parseFloat(document.getElementById('budget').value || '0');
   if (!CART.length){ alert('Cart is empty'); return; }
@@ -307,10 +333,28 @@ async function getSuggestions(){
     data.suggestions.forEach(s => {
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = `
-        <div><b>Replace</b> ${s.replace} → <b>${s.with}</b></div>
-        <div>Expected Savings: $${s.expected_saving} (Similarity: ${s.similarity})</div>
-        <div style="color:#555;">Reason: ${s.reason}</div>`;
+      
+      const replaceText = document.createElement('div');
+      replaceText.innerHTML = `<b>Replace</b> ${s.replace} → <b>${s.with}</b>`;
+      
+      const savingsText = document.createElement('div');
+      savingsText.textContent = `Expected Savings: $${s.expected_saving} (Similarity: ${s.similarity})`;
+      
+      const reasonText = document.createElement('div');
+      reasonText.style.color = '#555';
+      reasonText.textContent = `Reason: ${s.reason}`;
+      
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'btn';
+      applyBtn.textContent = 'Apply Replacement';
+      applyBtn.style.marginTop = '8px';
+      applyBtn.onclick = () => applyReplacement(s.replace, s.replacement_product);
+      
+      card.appendChild(replaceText);
+      card.appendChild(savingsText);
+      card.appendChild(reasonText);
+      card.appendChild(applyBtn);
+      
       sugsDiv.appendChild(card);
     });
   }
