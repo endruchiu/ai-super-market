@@ -259,7 +259,7 @@ class Candidate:
 def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str, item_price:float,
                                  item_subcat:str, item_size:Tuple[Optional[float],Optional[str]],
                                  item_nutr:Dict[str,float],
-                                 topk:int=60, sim_threshold:float=0.55) -> List[Candidate]:
+                                 topk:int=100, sim_threshold:float=0.50) -> List[Candidate]:
     q = _encode([item_text])[0]
     mask = (df["Sub Category"]==item_subcat).to_numpy()
     idxs = np.where(mask)[0]
@@ -287,8 +287,10 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
             tags.append("no_size")
         elif 0.6 <= sr <= 1.4:
             tags.append("size_close")
+        elif sr < 0.6:
+            tags.append("size_smaller")
         else:
-            continue
+            tags.append("size_larger")
 
         # Optional health gain: if candidate sugar <= source sugar and calories <= source calories
         hg = 0.0
@@ -313,7 +315,7 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
 def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
                             lam: float=0.6, sim_threshold: Optional[float]=None,
                             buffer_ratio: float=0.05, buffer_min: float=1.0,
-                            topk:int=60) -> Dict[str,Any]:
+                            topk:int=100) -> Dict[str,Any]:
     """
     cart item format:
       - title (str)
@@ -375,13 +377,14 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
     all_cands.sort(key=lambda x: x.score, reverse=True)
     
     suggestions = []
-    covered = set()
+    item_replacement_count = {}  # Track how many replacements we've suggested per item
     accum_save = 0.0
     
     for c in all_cands:
-        if c.src_idx in covered:
+        # Allow up to 3 replacement options per cart item
+        if item_replacement_count.get(c.src_idx, 0) >= 3:
             continue
-        if accum_save >= target_savings and len(suggestions) >= 3:
+        if len(suggestions) >= 10:  # Increased max suggestions
             break
         
         src_item = cart[c.src_idx]
@@ -429,11 +432,9 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
             "replacement_product": replacement_product  # Full product details
         })
         
-        covered.add(c.src_idx)
+        # Track replacements per item
+        item_replacement_count[c.src_idx] = item_replacement_count.get(c.src_idx, 0) + 1
         accum_save += c.saving
-        
-        if len(suggestions) >= 5:
-            break
     
     msg = f"Current total ${total:.2f}, over budget by ${total-budget:.2f}. Recommended {len(suggestions)} substitutes can save about ${accum_save:.2f}"
     
