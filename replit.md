@@ -108,10 +108,17 @@ Preferred communication style: Simple, everyday language.
   
 - **Dependencies**: Installed tensorflow-cpu, scikit-learn for deep learning pipeline
 
+- **Evaluation Metrics** (`evaluate_recommendations.py`):
+  - Precision@K: Fraction of top-K recommendations that are relevant
+  - Recall@K: Fraction of relevant items in top-K recommendations
+  - MAP@K (Mean Average Precision): Accounts for rank position of relevant items
+  - Evaluates at K=5,10,20,50 with formatted table output
+  - Tested and verified with example data
+
 - **Next Steps**:
-  - Add Precision@K evaluation metric for recommendation quality
   - Build CF recommendation API endpoint
   - Create blended recommendations (CF + semantic similarity)
+  - Update frontend for personalized recommendations
   - Train model once sufficient purchase history accumulates
 
 ### Checkout & Purchase History Implementation
