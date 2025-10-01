@@ -73,6 +73,8 @@ Preferred communication style: Simple, everyday language.
 - **SQLAlchemy** - Database abstraction and ORM functionality
 - **sentence-transformers** - AI model for semantic product similarity (all-MiniLM-L6-v2)
 - **torch** - PyTorch backend for transformer models
+- **tensorflow-cpu** - Deep learning framework for collaborative filtering model
+- **scikit-learn** - Machine learning utilities for data splitting and preprocessing
 
 ### Database
 - **PostgreSQL** (via DATABASE_URL environment variable) - Primary data storage for products, shopping carts, and user budgets
@@ -86,6 +88,31 @@ Preferred communication style: Simple, everyday language.
 - **File system access** for CSV data import operations
 
 ## Recent Changes (October 1, 2025)
+
+### Deep Learning Recommendation System (CF Model)
+- **Data Extraction Pipeline** (`recommendation_engine.py`):
+  - Extracts unified event dataset from Order/OrderItem/UserEvent tables
+  - Format: event_time, event_type, product_id, user_id, user_session (matches e-commerce dataset structure)
+  - Event type normalization for consistent aggregation
+  - Aggregates user-product behavior with implicit feedback scoring
+  - Formula: 1.0*views + 2.0*cart_adds - 0.5*cart_removes + 3.0*purchases
+  - Creates dense ID mappings for efficient embedding lookup
+  - Persists as Parquet files with pickle mappings
+
+- **Keras Collaborative Filtering Model** (`train_cf_model.py`):
+  - Architecture: User embedding (dim=32) × Product embedding (dim=32) → Dot product → Sigmoid
+  - Training: Binary cross-entropy with sample weighting and negative sampling (5:1 ratio)
+  - Regularization: L2 (1e-6), early stopping, learning rate reduction
+  - Evaluation: Accuracy, AUC metrics on val/test splits
+  - Saves model weights, embeddings, and artifacts for fast inference
+  
+- **Dependencies**: Installed tensorflow-cpu, scikit-learn for deep learning pipeline
+
+- **Next Steps**:
+  - Add Precision@K evaluation metric for recommendation quality
+  - Build CF recommendation API endpoint
+  - Create blended recommendations (CF + semantic similarity)
+  - Train model once sufficient purchase history accumulates
 
 ### Checkout & Purchase History Implementation
 - **Checkout endpoint** (`/api/checkout`) with comprehensive server-side validation:
