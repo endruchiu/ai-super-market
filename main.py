@@ -222,11 +222,13 @@ async function refreshProducts(){
 }
 
 function addToCart(p){
+  console.log('Adding to cart:', p.title);
   // simplify: push one qty
   const idx = CART.findIndex(x => x.title===p.title && x.subcat===p.subcat);
   if (idx>=0) CART[idx].qty += 1;
   else CART.push({...p, qty:1});
   updateBadge();
+  console.log('Cart now has', CART.length, 'items');
 }
 
 function updateBadge(){
@@ -235,26 +237,44 @@ function updateBadge(){
 }
 
 function viewCart(){
+  console.log('View Cart clicked. Cart has', CART.length, 'items:', CART);
   const div = document.getElementById('cartItems');
+  if (!div) {
+    console.error('cartItems div not found!');
+    return;
+  }
   div.innerHTML = '';
-  let sum = 0;
-  CART.forEach((x, i) => {
-    const line = x.price * x.qty;
-    sum += line;
-    const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
-    const row = document.createElement('div');
-    row.className = 'card';
-    row.innerHTML = `
-      <div style="font-weight:600">${x.title}</div>
-      <div>SubCat: ${x.subcat} | Size: ${size}</div>
-      <div>Price: $${fmt(x.price)} × ${x.qty} = $${fmt(line)}</div>
-      <div><button class="btn secondary" onclick="decQty(${i})">-</button>
-           <button class="btn" onclick="incQty(${i})">+</button>
-           <button class="btn secondary" onclick="removeItem(${i})">Remove</button></div>`;
-    div.appendChild(row);
-  });
-  document.getElementById('subtotal').textContent = 'Subtotal: $' + fmt(sum);
-  document.getElementById('cartPanel').style.display = 'block';
+  
+  if (CART.length === 0) {
+    div.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:#666;">Your cart is empty. Add some products to get started!</div>';
+    document.getElementById('subtotal').textContent = 'Subtotal: $0.00';
+  } else {
+    let sum = 0;
+    CART.forEach((x, i) => {
+      const line = x.price * x.qty;
+      sum += line;
+      const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
+      const row = document.createElement('div');
+      row.className = 'card';
+      row.innerHTML = `
+        <div style="font-weight:600">${x.title}</div>
+        <div>SubCat: ${x.subcat} | Size: ${size}</div>
+        <div>Price: $${fmt(x.price)} × ${x.qty} = $${fmt(line)}</div>
+        <div><button class="btn secondary" onclick="decQty(${i})">-</button>
+             <button class="btn" onclick="incQty(${i})">+</button>
+             <button class="btn secondary" onclick="removeItem(${i})">Remove</button></div>`;
+      div.appendChild(row);
+    });
+    document.getElementById('subtotal').textContent = 'Subtotal: $' + fmt(sum);
+  }
+  
+  const panel = document.getElementById('cartPanel');
+  if (!panel) {
+    console.error('cartPanel not found!');
+    return;
+  }
+  panel.style.display = 'block';
+  console.log('Cart panel should now be visible');
 }
 
 function hideCart(){ document.getElementById('cartPanel').style.display = 'none'; }
