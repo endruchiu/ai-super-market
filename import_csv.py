@@ -1,4 +1,4 @@
-import pandas as pd
+jimport pandas as pd
 from main import app, db
 from models import init_models
 

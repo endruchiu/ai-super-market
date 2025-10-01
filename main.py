@@ -128,59 +128,128 @@ def api_budget_recommendations():
 
 @app.route("/")
 def index():
-    # Inline minimalist UI
+    # Modern Tailwind CSS UI
     html = """
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Budget-Aware Substitutions (Semantic + Nutrition)</title>
+  <title>AI Grocery Shopping - Budget Smart Recommendations</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body{font-family:system-ui,Arial,sans-serif;max-width:1100px;margin:0 auto;padding:24px;}
-    h1{font-size:20px;margin:0 0 8px;}
-    .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-    .col{flex:1}
-    .card{border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin:8px 0}
-    .btn{background:#111827;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer}
-    .btn.secondary{background:#374151}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:14px;vertical-align:top}
-    .pill{display:inline-block;padding:2px 8px;background:#f3f4f6;border-radius:999px;font-size:12px;margin-right:6px}
-    #suggestions .card{background:#f9fafb}
-    code{background:#f3f4f6;padding:1px 4px;border-radius:4px}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
   </style>
 </head>
-<body>
-  <h1>🛒 Budget-Aware Substitutions (Semantic + Nutrition)</h1>
-  <div class="row">
-    <div class="col">
-      <label>Budget ($): <input id="budget" type="number" min="0" step="0.01" value="40" /></label>
-      <button class="btn" onclick="refreshProducts()">Load Products</button>
-      <select id="subcatSel" onchange="refreshProducts()"><option value="">All Subcats</option></select>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  
+  <!-- Header -->
+  <div class="bg-white shadow-lg border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">AI Grocery Shopping</h1>
+            <p class="text-sm text-gray-600">Smart budget recommendations powered by AI</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span id="cartBadge" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-semibold text-sm">
+            🛒 Cart: 0 items
+          </span>
+          <button onclick="viewCart()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105">
+            View Cart
+          </button>
+        </div>
+      </div>
     </div>
-    <div><span class="pill" id="cartBadge">Cart: 0 items</span> <button class="btn secondary" onclick="viewCart()">View Cart</button></div>
   </div>
 
-  <div id="products" class="card">
-    <div style="margin-bottom:8px;font-weight:600;">Products</div>
-    <table id="prodTable"><thead><tr>
-      <th>Title</th><th>SubCat</th><th>Price</th><th>Size</th><th>Nutrition</th><th></th>
-    </tr></thead><tbody></tbody></table>
-  </div>
-
-  <div id="cartPanel" class="card" style="display:none;">
-    <div class="row"><div style="font-weight:600;">Cart</div><div id="subtotal" class="pill"></div></div>
-    <div id="cartItems"></div>
-    <div style="margin-top:8px;">
-      <button class="btn secondary" onclick="hideCart()">Hide Cart</button>
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <!-- Budget Controls -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Your Budget</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">$</span>
+            <input id="budget" type="number" min="0" step="0.01" value="40" 
+                   class="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-semibold text-lg"/>
+          </div>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Category Filter</label>
+          <select id="subcatSel" onchange="refreshProducts()" 
+                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button onclick="refreshProducts()" 
+                  class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105">
+            🔄 Refresh Products
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div id="suggestions" class="card" style="display:none;background:#f0f9ff;border:2px solid #3b82f6;">
-    <div style="font-weight:600;color:#1e40af;font-size:16px;margin-bottom:8px;">💡 Budget-Saving Recommendations</div>
-    <div id="sugs"></div>
+    <!-- Products Table -->
+    <div id="products" class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+      <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-800">Available Products</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table id="prodTable" class="w-full">
+          <thead class="bg-gray-50 border-b-2 border-gray-200">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Product</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Category</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Price</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Size</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nutrition</th>
+              <th class="px-6 py-4"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cart Panel -->
+    <div id="cartPanel" class="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-200" style="display:none;">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">Shopping Cart</h2>
+        <div id="subtotal" class="text-lg font-semibold text-gray-700"></div>
+      </div>
+      <div id="cartItems" class="space-y-4"></div>
+      <div class="mt-6 flex justify-end">
+        <button onclick="hideCart()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200">
+          Close Cart
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div id="suggestions" class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl p-6 border-2 border-indigo-300" style="display:none;">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="bg-indigo-600 p-2 rounded-lg">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-indigo-900">💡 AI Budget-Saving Recommendations</h3>
+      </div>
+      <div id="sugs" class="space-y-4"></div>
+    </div>
+
   </div>
 
 <script>
@@ -214,28 +283,35 @@ async function refreshProducts(){
   tb.innerHTML = '';
   data.items.forEach(p => {
     const tr = document.createElement('tr');
+    tr.className = 'hover:bg-gray-50 transition-colors';
     const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0,3).map(([k,v]) => k+': '+v).join(', ') : '';
     const size = (p.size_value && p.size_unit) ? (p.size_value + p.size_unit) : '—';
     
     const titleCell = document.createElement('td');
+    titleCell.className = 'px-6 py-4 text-sm font-medium text-gray-900';
     titleCell.textContent = p.title;
     
     const subcatCell = document.createElement('td');
-    subcatCell.textContent = p.subcat;
+    subcatCell.className = 'px-6 py-4 text-sm text-gray-600';
+    subcatCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${p.subcat}</span>`;
     
     const priceCell = document.createElement('td');
+    priceCell.className = 'px-6 py-4 text-sm font-bold text-green-600';
     priceCell.textContent = '$' + fmt(p.price||0);
     
     const sizeCell = document.createElement('td');
+    sizeCell.className = 'px-6 py-4 text-sm text-gray-500';
     sizeCell.textContent = size;
     
     const nutrCell = document.createElement('td');
+    nutrCell.className = 'px-6 py-4 text-xs text-gray-500';
     nutrCell.textContent = nutr;
     
     const addCell = document.createElement('td');
+    addCell.className = 'px-6 py-4 text-right';
     const addBtn = document.createElement('button');
-    addBtn.className = 'btn';
-    addBtn.textContent = 'Add';
+    addBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
+    addBtn.textContent = '➕ Add';
     addBtn.onclick = () => addToCart(p);
     addCell.appendChild(addBtn);
     
@@ -266,7 +342,7 @@ function addToCart(p){
 
 function updateBadge(){
   const items = CART.reduce((s,x)=>s+x.qty, 0);
-  document.getElementById('cartBadge').textContent = 'Cart: ' + items + ' items';
+  document.getElementById('cartBadge').innerHTML = `🛒 Cart: <span class="font-bold">${items}</span> items`;
 }
 
 function viewCart(){
@@ -281,7 +357,7 @@ function viewCart(){
   const budget = parseFloat(document.getElementById('budget').value || '0');
   
   if (CART.length === 0) {
-    div.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:#666;">Your cart is empty. Add some products to get started!</div>';
+    div.innerHTML = '<div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-12 text-center"><p class="text-gray-500 text-lg">Your cart is empty</p><p class="text-gray-400 text-sm mt-2">Add some products to get started!</p></div>';
     document.getElementById('subtotal').textContent = 'Subtotal: $0.00';
   } else {
     let sum = 0;
@@ -290,18 +366,29 @@ function viewCart(){
       sum += line;
       const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
       const row = document.createElement('div');
-      row.className = 'card';
+      row.className = 'bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all';
       
       // Add substitution badge if item was replaced
-      const badge = x.isSubstitute ? '<span style="background:#10b981;color:white;padding:2px 8px;border-radius:12px;font-size:11px;margin-left:8px;">✓ Budget-Friendly</span>' : '';
+      const badge = x.isSubstitute ? '<span class="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">✓ Budget-Friendly</span>' : '';
       
       row.innerHTML = `
-        <div style="font-weight:600">${x.title}${badge}</div>
-        <div>SubCat: ${x.subcat} | Size: ${size}</div>
-        <div>Price: $${fmt(x.price)} × ${x.qty} = $${fmt(line)}</div>
-        <div><button class="btn secondary" onclick="decQty(${i})">-</button>
-             <button class="btn" onclick="incQty(${i})">+</button>
-             <button class="btn secondary" onclick="removeItem(${i})">Remove</button></div>`;
+        <div class="font-semibold text-gray-900 mb-2">${x.title}${badge}</div>
+        <div class="text-sm text-gray-600 mb-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${x.subcat}</span>
+          <span class="ml-2 text-gray-500">Size: ${size}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="text-sm">
+            <span class="font-bold text-green-600">$${fmt(x.price)}</span> 
+            <span class="text-gray-500">× ${x.qty} = </span>
+            <span class="font-bold text-gray-900">$${fmt(line)}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="decQty(${i})" class="bg-gray-500 hover:bg-gray-600 text-white font-bold w-8 h-8 rounded-lg transition-colors">-</button>
+            <button onclick="incQty(${i})" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-8 h-8 rounded-lg transition-colors">+</button>
+            <button onclick="removeItem(${i})" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">Remove</button>
+          </div>
+        </div>`;
       div.appendChild(row);
     });
     
@@ -309,18 +396,28 @@ function viewCart(){
     const warningThreshold75 = budget * 0.75;
     let warningHtml = '';
     if (sum > budget) {
-      warningHtml = `<div style="background:#fee2e2;border-left:4px solid #dc2626;padding:12px;margin:12px 0;border-radius:4px;">
-        <strong style="color:#dc2626;">⚠ Over Budget!</strong><br>
-        Your cart total ($${fmt(sum)}) exceeds your budget ($${fmt(budget)}) by $${fmt(sum - budget)}
+      warningHtml = `<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+          <span class="font-bold text-red-700">⚠ Over Budget!</span>
+        </div>
+        <p class="text-red-600 text-sm mt-1">Your cart total ($${fmt(sum)}) exceeds your budget ($${fmt(budget)}) by $${fmt(sum - budget)}</p>
       </div>`;
     } else if (sum >= warningThreshold75) {
-      warningHtml = `<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:12px 0;border-radius:4px;">
-        <strong style="color:#f59e0b;">⚡ Budget Alert</strong><br>
-        You've used ${Math.round((sum/budget)*100)}% of your budget ($${fmt(sum)} of $${fmt(budget)})
+      warningHtml = `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded-lg">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span class="font-bold text-yellow-700">⚡ Budget Alert</span>
+        </div>
+        <p class="text-yellow-600 text-sm mt-1">You've used ${Math.round((sum/budget)*100)}% of your budget ($${fmt(sum)} of $${fmt(budget)})</p>
       </div>`;
     }
     
-    document.getElementById('subtotal').innerHTML = warningHtml + 'Subtotal: $' + fmt(sum);
+    document.getElementById('subtotal').innerHTML = warningHtml + '<span class="text-2xl font-bold text-gray-900">Subtotal: <span class="text-indigo-600">$' + fmt(sum) + '</span></span>';
   }
   
   const panel = document.getElementById('cartPanel');
@@ -380,10 +477,23 @@ function applyReplacement(originalTitle, replacementProduct) {
   
   // Show success message (non-intrusive)
   const msg = document.createElement('div');
-  msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:16px 24px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:1000;';
-  msg.innerHTML = `<strong>✓ Replaced!</strong><br>${originalTitle.substring(0,40)}... → ${replacementProduct.title.substring(0,40)}...`;
+  msg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
+  msg.innerHTML = `
+    <div class="flex items-center space-x-3">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <div>
+        <div class="font-bold">✓ Replacement Applied!</div>
+        <div class="text-sm text-green-100 mt-1">${originalTitle.substring(0,35)}... → ${replacementProduct.title.substring(0,35)}...</div>
+      </div>
+    </div>`;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  setTimeout(() => {
+    msg.style.opacity = '0';
+    msg.style.transform = 'translateY(-20px)';
+    setTimeout(() => msg.remove(), 300);
+  }, 3000);
 }
 
 async function getSuggestions(){
@@ -398,28 +508,53 @@ async function getSuggestions(){
   const sugsDiv = document.getElementById('sugs');
   sugsDiv.innerHTML = '';
   if (!data.suggestions || !data.suggestions.length){
-    sugsDiv.innerHTML = '<div class="card">No suggestions (maybe already within budget).</div>';
+    sugsDiv.innerHTML = '<div class="bg-white border border-indigo-200 rounded-xl p-6 text-center text-gray-500">No suggestions available - you\'re within budget! 🎉</div>';
   } else {
-    sugsDiv.innerHTML = '<div style="margin-bottom:8px;">'+data.message+'</div>';
+    sugsDiv.innerHTML = `<div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-4 rounded-r-lg">
+      <p class="text-indigo-800 font-medium">${data.message}</p>
+    </div>`;
     data.suggestions.forEach(s => {
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = 'bg-white border border-indigo-200 rounded-xl p-5 hover:shadow-lg transition-all';
       
       const replaceText = document.createElement('div');
-      replaceText.innerHTML = `<b>Replace</b> ${s.replace} → <b>${s.with}</b>`;
+      replaceText.className = 'mb-3';
+      replaceText.innerHTML = `
+        <div class="flex items-center space-x-2 mb-2">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+          </svg>
+          <span class="text-gray-700">Replace:</span>
+        </div>
+        <div class="ml-7">
+          <div class="text-sm text-gray-600 line-through">${s.replace.substring(0, 60)}...</div>
+          <div class="text-lg font-bold text-indigo-900 mt-1">${s.with.substring(0, 60)}...</div>
+        </div>`;
       
       const savingsText = document.createElement('div');
-      savingsText.textContent = `Expected Savings: $${s.expected_saving} (Similarity: ${s.similarity})`;
+      savingsText.className = 'flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg';
+      savingsText.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="font-bold text-green-700">Save $${s.expected_saving}</span>
+        </div>
+        <span class="text-sm text-gray-600">Similarity: <span class="font-semibold">${s.similarity}</span></span>`;
       
       const reasonText = document.createElement('div');
-      reasonText.style.color = '#555';
-      reasonText.textContent = `Reason: ${s.reason}`;
+      reasonText.className = 'text-sm text-gray-600 mb-4 italic';
+      reasonText.innerHTML = `<span class="font-semibold text-gray-700">Reason:</span> ${s.reason}`;
       
       const applyBtn = document.createElement('button');
-      applyBtn.className = 'btn';
-      applyBtn.textContent = '✓ Apply This Replacement';
-      applyBtn.style.marginTop = '8px';
-      applyBtn.style.background = '#10b981';
+      applyBtn.className = 'w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
+      applyBtn.innerHTML = `
+        <div class="flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span>Apply This Replacement</span>
+        </div>`;
       applyBtn.onclick = () => applyReplacement(s.replace, s.replacement_product);
       
       card.appendChild(replaceText);

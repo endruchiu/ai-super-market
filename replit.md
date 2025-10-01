@@ -37,6 +37,27 @@ Preferred communication style: Simple, everyday language.
 - **Batch commits** during data import operations to improve performance
 - **Numeric field extraction** for efficient querying and calculations
 
+## Frontend Design
+
+### Modern UI with Tailwind CSS
+- **Tailwind CSS CDN** - Utility-first CSS framework for modern, responsive design
+- **Inter Font** - Professional Google Font for enhanced typography
+- **Gradient Backgrounds** - Blue/indigo color scheme for visual appeal
+- **Component Design**:
+  - Responsive header with branded shopping cart icon
+  - Clean white cards with shadows and borders
+  - Smooth hover effects and transitions
+  - Color-coded badges (blue for categories, green for savings)
+  - Icon-enhanced buttons and alerts
+  - Animated success notifications with fade effects
+
+### UI Features
+- **Budget Controls** - Styled input fields with dollar sign prefix and category dropdown
+- **Product Table** - Hover effects, category pills, and gradient add buttons
+- **Shopping Cart** - Item cards with quantity controls and budget warning alerts
+- **AI Recommendations** - Beautiful cards with savings indicators and apply buttons
+- **Responsive Design** - Mobile-friendly layout with flexible grid system
+
 ## External Dependencies
 
 ### Python Libraries
@@ -44,6 +65,8 @@ Preferred communication style: Simple, everyday language.
 - **Flask-SQLAlchemy** - Database ORM integration
 - **pandas** - CSV data processing and manipulation for product imports
 - **SQLAlchemy** - Database abstraction and ORM functionality
+- **sentence-transformers** - AI model for semantic product similarity (all-MiniLM-L6-v2)
+- **torch** - PyTorch backend for transformer models
 
 ### Database
 - **PostgreSQL** (via DATABASE_URL environment variable) - Primary data storage for products, shopping carts, and user budgets
