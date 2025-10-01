@@ -156,10 +156,18 @@ let CART = [];
 function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
 
 async function refreshProducts(){
-  const subcat = document.getElementById('subcatSel').value || '';
-  const qs = subcat ? ('?subcat=' + encodeURIComponent(subcat)) : '';
-  const res = await fetch('/api/products' + qs);
-  const data = await res.json();
+  try {
+    const subcat = document.getElementById('subcatSel').value || '';
+    const qs = subcat ? ('?subcat=' + encodeURIComponent(subcat)) : '';
+    console.log('Fetching products from:', '/api/products' + qs);
+    const res = await fetch('/api/products' + qs);
+    if (!res.ok) {
+      console.error('API error:', res.status, res.statusText);
+      alert('Failed to load products. Error: ' + res.status);
+      return;
+    }
+    const data = await res.json();
+    console.log('Got products:', data);
 
   // fill subcat select once
   const sel = document.getElementById('subcatSel');
@@ -175,15 +183,42 @@ async function refreshProducts(){
     const tr = document.createElement('tr');
     const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0,3).map(([k,v]) => k+': '+v).join(', ') : '';
     const size = (p.size_value && p.size_unit) ? (p.size_value + p.size_unit) : '—';
-    tr.innerHTML = `
-      <td>${p.title}</td>
-      <td>${p.subcat}</td>
-      <td>$${fmt(p.price||0)}</td>
-      <td>${size}</td>
-      <td>${nutr}</td>
-      <td><button class="btn" onclick='addToCart(${JSON.stringify(p).replaceAll("'", "\\'")})'>Add</button></td>`;
+    
+    const titleCell = document.createElement('td');
+    titleCell.textContent = p.title;
+    
+    const subcatCell = document.createElement('td');
+    subcatCell.textContent = p.subcat;
+    
+    const priceCell = document.createElement('td');
+    priceCell.textContent = '$' + fmt(p.price||0);
+    
+    const sizeCell = document.createElement('td');
+    sizeCell.textContent = size;
+    
+    const nutrCell = document.createElement('td');
+    nutrCell.textContent = nutr;
+    
+    const addCell = document.createElement('td');
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn';
+    addBtn.textContent = 'Add';
+    addBtn.onclick = () => addToCart(p);
+    addCell.appendChild(addBtn);
+    
+    tr.appendChild(titleCell);
+    tr.appendChild(subcatCell);
+    tr.appendChild(priceCell);
+    tr.appendChild(sizeCell);
+    tr.appendChild(nutrCell);
+    tr.appendChild(addCell);
+    
     tb.appendChild(tr);
   });
+  } catch (error) {
+    console.error('Error loading products:', error);
+    alert('Failed to load products: ' + error.message);
+  }
 }
 
 function addToCart(p){
@@ -227,6 +262,12 @@ function hideCart(){ document.getElementById('cartPanel').style.display = 'none'
 function incQty(i){ CART[i].qty += 1; viewCart(); updateBadge(); }
 function decQty(i){ CART[i].qty = Math.max(1, CART[i].qty - 1); viewCart(); updateBadge(); }
 function removeItem(i){ CART.splice(i,1); viewCart(); updateBadge(); }
+
+// Auto-load products on page load
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('Page loaded, auto-loading products...');
+  refreshProducts();
+});
 
 async function getSuggestions(){
   const budget = parseFloat(document.getElementById('budget').value || '0');
