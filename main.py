@@ -140,13 +140,12 @@ def index():
     <div class="row"><div style="font-weight:600;">Cart</div><div id="subtotal" class="pill"></div></div>
     <div id="cartItems"></div>
     <div style="margin-top:8px;">
-      <button class="btn" onclick="getSuggestions()">Suggest Replacements</button>
-      <button class="btn secondary" onclick="hideCart()">Hide</button>
+      <button class="btn secondary" onclick="hideCart()">Hide Cart</button>
     </div>
   </div>
 
-  <div id="suggestions" class="card" style="display:none;">
-    <div style="font-weight:600;">Suggestions</div>
+  <div id="suggestions" class="card" style="display:none;background:#f0f9ff;border:2px solid #3b82f6;">
+    <div style="font-weight:600;color:#1e40af;font-size:16px;margin-bottom:8px;">💡 Budget-Saving Recommendations</div>
     <div id="sugs"></div>
   </div>
 
@@ -245,6 +244,8 @@ function viewCart(){
   }
   div.innerHTML = '';
   
+  const budget = parseFloat(document.getElementById('budget').value || '0');
+  
   if (CART.length === 0) {
     div.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:#666;">Your cart is empty. Add some products to get started!</div>';
     document.getElementById('subtotal').textContent = 'Subtotal: $0.00';
@@ -256,8 +257,12 @@ function viewCart(){
       const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
       const row = document.createElement('div');
       row.className = 'card';
+      
+      // Add substitution badge if item was replaced
+      const badge = x.isSubstitute ? '<span style="background:#10b981;color:white;padding:2px 8px;border-radius:12px;font-size:11px;margin-left:8px;">✓ Budget-Friendly</span>' : '';
+      
       row.innerHTML = `
-        <div style="font-weight:600">${x.title}</div>
+        <div style="font-weight:600">${x.title}${badge}</div>
         <div>SubCat: ${x.subcat} | Size: ${size}</div>
         <div>Price: $${fmt(x.price)} × ${x.qty} = $${fmt(line)}</div>
         <div><button class="btn secondary" onclick="decQty(${i})">-</button>
@@ -265,7 +270,23 @@ function viewCart(){
              <button class="btn secondary" onclick="removeItem(${i})">Remove</button></div>`;
       div.appendChild(row);
     });
-    document.getElementById('subtotal').textContent = 'Subtotal: $' + fmt(sum);
+    
+    // Budget warning display
+    const warningThreshold75 = budget * 0.75;
+    let warningHtml = '';
+    if (sum > budget) {
+      warningHtml = `<div style="background:#fee2e2;border-left:4px solid #dc2626;padding:12px;margin:12px 0;border-radius:4px;">
+        <strong style="color:#dc2626;">⚠ Over Budget!</strong><br>
+        Your cart total ($${fmt(sum)}) exceeds your budget ($${fmt(budget)}) by $${fmt(sum - budget)}
+      </div>`;
+    } else if (sum >= warningThreshold75) {
+      warningHtml = `<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:12px 0;border-radius:4px;">
+        <strong style="color:#f59e0b;">⚡ Budget Alert</strong><br>
+        You've used ${Math.round((sum/budget)*100)}% of your budget ($${fmt(sum)} of $${fmt(budget)})
+      </div>`;
+    }
+    
+    document.getElementById('subtotal').innerHTML = warningHtml + 'Subtotal: $' + fmt(sum);
   }
   
   const panel = document.getElementById('cartPanel');
@@ -275,6 +296,16 @@ function viewCart(){
   }
   panel.style.display = 'block';
   console.log('Cart panel should now be visible');
+  
+  // Auto-show suggestions if over budget
+  const sum = CART.reduce((s,x) => s + (x.price * x.qty), 0);
+  if (sum > budget && budget > 0) {
+    console.log('Over budget, auto-showing suggestions...');
+    setTimeout(() => getSuggestions(), 100);
+  } else {
+    // Hide suggestions if within budget
+    document.getElementById('suggestions').style.display = 'none';
+  }
 }
 
 function hideCart(){ document.getElementById('cartPanel').style.display = 'none'; }
@@ -302,6 +333,10 @@ function applyReplacement(originalTitle, replacementProduct) {
   // Remove original item
   CART.splice(idx, 1);
   
+  // Mark as substitute for UI indicator
+  replacementProduct.isSubstitute = true;
+  replacementProduct.replacedItem = originalTitle;
+  
   // Add replacement item
   CART.push(replacementProduct);
   
@@ -309,10 +344,12 @@ function applyReplacement(originalTitle, replacementProduct) {
   updateBadge();
   viewCart();
   
-  alert(`Replaced "${originalTitle}" with "${replacementProduct.title}"`);
-  
-  // Optionally refresh suggestions
-  getSuggestions();
+  // Show success message (non-intrusive)
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:16px 24px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:1000;';
+  msg.innerHTML = `<strong>✓ Replaced!</strong><br>${originalTitle.substring(0,40)}... → ${replacementProduct.title.substring(0,40)}...`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
 }
 
 async function getSuggestions(){
@@ -346,8 +383,9 @@ async function getSuggestions(){
       
       const applyBtn = document.createElement('button');
       applyBtn.className = 'btn';
-      applyBtn.textContent = 'Apply Replacement';
+      applyBtn.textContent = '✓ Apply This Replacement';
       applyBtn.style.marginTop = '8px';
+      applyBtn.style.background = '#10b981';
       applyBtn.onclick = () => applyReplacement(s.replace, s.replacement_product);
       
       card.appendChild(replaceText);
