@@ -41,6 +41,7 @@ def _init_index():
     global PRODUCTS_DF
     if PRODUCTS_DF is not None:
         return
+    print("Loading semantic index and product data...")
     idx = ensure_index()  # uses env GROCERY_CSV or default path
     PRODUCTS_DF = idx["df"]
     # keep only columns we display in /api/products
@@ -50,6 +51,11 @@ def _init_index():
     for c in keep:
         if c not in PRODUCTS_DF.columns:
             PRODUCTS_DF[c] = np.nan
+    print(f"✓ Loaded {len(PRODUCTS_DF)} products successfully")
+
+# Initialize the index at startup to avoid timeout on first request
+print("Initializing product catalog...")
+_init_index()
 
 @app.route("/healthz")
 def healthz():
