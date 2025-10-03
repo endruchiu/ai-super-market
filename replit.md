@@ -61,10 +61,10 @@ Preferred communication style: Simple, everyday language.
 - **Product Table** - Hover effects, category pills, and gradient add buttons
 - **Shopping Cart** - Item cards with quantity controls and budget warning alerts
 - **Checkout Button** - One-click checkout with success notifications and cart clearing
-- **AI Recommendations** - Three recommendation systems with auto-load on page load:
-  - **Budget-Saving Recommendations** (Blue/Indigo) - Semantic similarity for budget-conscious replacements
-  - **Personalized Recommendations** (Purple/Pink) - CF model based on purchase history
-  - **Hybrid AI Recommendations** (Emerald/Teal) - 60% CF + 40% semantic similarity blend
+- **AI Recommendations** - Three recommendation systems that automatically trigger when cart total exceeds budget:
+  - **Budget-Saving Recommendations** (Blue/Indigo) - Semantic similarity for budget-conscious replacements (works for all users)
+  - **Personalized Recommendations** (Purple/Pink) - CF model based on purchase history (requires user purchase history)
+  - **Hybrid AI Recommendations** (Emerald/Teal) - 60% CF + 40% semantic similarity blend (requires user purchase history)
 - **Responsive Design** - Mobile-friendly layout with flexible grid system
 
 ## External Dependencies
@@ -90,9 +90,36 @@ Preferred communication style: Simple, everyday language.
 - **Environment variables** for database connection and Flask secret key configuration
 - **File system access** for CSV data import operations
 
-## Recent Changes (October 1, 2025)
+## Recent Changes
 
-### Deep Learning Recommendation System (CF Model)
+### Budget-Aware Recommendation System (October 3, 2025)
+
+- **Frontend Trigger Logic**:
+  - Modified `viewCart()` function to automatically trigger all three recommendation systems when cart total exceeds budget
+  - Removed auto-load on page load behavior - recommendations now only appear when cart > budget
+  - All three recommendation panels (semantic, CF, hybrid) now hide when cart is within budget
+  - Clean UI/UX with clear visual feedback when budget is exceeded
+
+- **Backend API Updates**:
+  - Changed `/api/cf/recommendations` from GET to POST method
+  - Changed `/api/blended/recommendations` from GET to POST method
+  - Both endpoints now accept cart items and budget as POST parameters
+  - Server-side calculation of cart total with price validation
+  - Returns cheaper alternatives only when cart total exceeds budget threshold
+
+- **Cart-Aware Filtering**:
+  - All three systems now filter recommendations to show only cheaper items in same subcategory
+  - CF recommendations: Filters personalized suggestions for cheaper alternatives
+  - Blended recommendations: Filters hybrid suggestions for cheaper alternatives
+  - Semantic recommendations: Already had this filtering, now consistent across all systems
+
+- **Purchase History Requirements**:
+  - Semantic budget recommendations: Work for all users (no purchase history needed)
+  - CF personalized recommendations: Require purchase history from demo data (empty for new users)
+  - Hybrid recommendations: Require purchase history from demo data (empty for new users)
+  - Demo users (demo_user_000 to demo_user_014) have purchase history and see all three recommendation types
+
+### Deep Learning Recommendation System (October 1, 2025)
 - **Data Extraction Pipeline** (`recommendation_engine.py`):
   - Extracts unified event dataset from Order/OrderItem/UserEvent tables
   - Format: event_time, event_type, product_id, user_id, user_session (matches e-commerce dataset structure)
