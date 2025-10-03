@@ -121,7 +121,7 @@ def get_cf_recommendations(
             return []
         
         # Get product embeddings for purchased items
-        product_embedding_layer = model.layers[1]  # Product embedding layer
+        product_embedding_layer = model.layers[3]  # Product embedding layer (layer index 3)
         purchased_indices = []
         for pid in purchased_ids:
             if pid in product_id_to_idx:
