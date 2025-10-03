@@ -127,13 +127,15 @@ with app.app_context():
             db.session.flush()
             
             for item_data in order_items:
+                line_total = item_data['price'] * item_data['quantity']
                 order_item = OrderItem(
                     order_id=order.id,
                     product_id=item_data['product_id'],
                     product_title=item_data['title'],
                     product_subcat=item_data['subcategory'],
                     unit_price=item_data['price'],
-                    quantity=item_data['quantity']
+                    quantity=item_data['quantity'],
+                    line_total=line_total
                 )
                 db.session.add(order_item)
                 
