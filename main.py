@@ -206,49 +206,50 @@ def api_cf_recommendations():
                 "message": f"Current total ${total:.2f} is within budget ${budget:.2f}"
             })
         
-        # Get CF-based cheaper alternatives for each cart item
+        # Get CF-based cheaper alternatives for each cart item (requires purchase history)
         suggestions = []
         recs = get_cf_recommendations(user_id, top_k=100, exclude_products=[])
         
-        for item in cart:
-            item_title = item.get("title", "")
-            item_subcat = item.get("subcat", "")
-            item_price = float(item.get("price", 0.0))
-            item_qty = int(item.get("qty", 1))
-            
-            # Filter CF recommendations for cheaper items in same subcategory
-            cheaper_alts = []
-            for rec in recs:
-                product_id = int(rec["product_id"])
-                if product_id in PRODUCTS_DF.index:
-                    row = PRODUCTS_DF.loc[product_id]
-                    rec_price = float(row.get("_price_final", 0))
-                    rec_subcat = str(row.get("Sub Category", ""))
-                    rec_title = str(row["Title"])
-                    
-                    # Cheaper AND same subcategory AND not the same product
-                    if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
-                        saving = (item_price - rec_price) * item_qty
-                        cheaper_alts.append({
-                            "replace": item_title,
-                            "with": rec_title,
-                            "expected_saving": f"{saving:.2f}",
-                            "similarity": f"{rec['score']:.2f}",
-                            "reason": f"CF-based recommendation: users who bought similar items chose this. Save ${saving:.2f}!",
-                            "replacement_product": {
-                                "id": str(product_id),
-                                "title": rec_title,
-                                "subcat": rec_subcat,
-                                "price": rec_price,
-                                "qty": 1,
-                                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                            }
-                        })
-            
-            # Add top 2 alternatives for this item
-            cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
-            suggestions.extend(cheaper_alts[:2])
+        # Only generate suggestions if user has purchase history
+        if len(recs) > 0:
+            for item in cart:
+                item_title = item.get("title", "")
+                item_subcat = item.get("subcat", "")
+                item_price = float(item.get("price", 0.0))
+                item_qty = int(item.get("qty", 1))
+                
+                cheaper_alts = []
+                for rec in recs:
+                    product_id = int(rec["product_id"])
+                    if product_id in PRODUCTS_DF.index:
+                        row = PRODUCTS_DF.loc[product_id]
+                        rec_price = float(row.get("_price_final", 0))
+                        rec_subcat = str(row.get("Sub Category", ""))
+                        rec_title = str(row["Title"])
+                        
+                        # Cheaper AND same subcategory AND not the same product
+                        if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
+                            saving = (item_price - rec_price) * item_qty
+                            cheaper_alts.append({
+                                "replace": item_title,
+                                "with": rec_title,
+                                "expected_saving": f"{saving:.2f}",
+                                "similarity": f"{rec['score']:.2f}",
+                                "reason": f"Based on your purchase history: users with similar tastes chose this. Save ${saving:.2f}!",
+                                "replacement_product": {
+                                    "id": str(product_id),
+                                    "title": rec_title,
+                                    "subcat": rec_subcat,
+                                    "price": rec_price,
+                                    "qty": 1,
+                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                                }
+                            })
+                
+                # Add top 2 alternatives for this item
+                cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
+                suggestions.extend(cheaper_alts[:2])
         
         return jsonify({
             "suggestions": suggestions,
@@ -351,49 +352,50 @@ def api_blended_recommendations():
                 "message": f"Current total ${total:.2f} is within budget ${budget:.2f}"
             })
         
-        # Get blended cheaper alternatives for each cart item
+        # Get blended cheaper alternatives for each cart item (requires purchase history)
         suggestions = []
         recs = get_blended_recommendations(user_id, top_k=100)
         
-        for item in cart:
-            item_title = item.get("title", "")
-            item_subcat = item.get("subcat", "")
-            item_price = float(item.get("price", 0.0))
-            item_qty = int(item.get("qty", 1))
-            
-            # Filter blended recommendations for cheaper items in same subcategory
-            cheaper_alts = []
-            for rec in recs:
-                product_id = int(rec["product_id"])
-                if product_id in PRODUCTS_DF.index:
-                    row = PRODUCTS_DF.loc[product_id]
-                    rec_price = float(row.get("_price_final", 0))
-                    rec_subcat = str(row.get("Sub Category", ""))
-                    rec_title = str(row["Title"])
-                    
-                    # Cheaper AND same subcategory AND not the same product
-                    if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
-                        saving = (item_price - rec_price) * item_qty
-                        cheaper_alts.append({
-                            "replace": item_title,
-                            "with": rec_title,
-                            "expected_saving": f"{saving:.2f}",
-                            "similarity": f"{rec['score']:.2f}",
-                            "reason": f"Hybrid AI (60% CF + 40% semantic): Best of both worlds! Save ${saving:.2f}!",
-                            "replacement_product": {
-                                "id": str(product_id),
-                                "title": rec_title,
-                                "subcat": rec_subcat,
-                                "price": rec_price,
-                                "qty": 1,
-                                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                            }
-                        })
-            
-            # Add top 2 alternatives for this item
-            cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
-            suggestions.extend(cheaper_alts[:2])
+        # Only generate suggestions if user has purchase history
+        if len(recs) > 0:
+            for item in cart:
+                item_title = item.get("title", "")
+                item_subcat = item.get("subcat", "")
+                item_price = float(item.get("price", 0.0))
+                item_qty = int(item.get("qty", 1))
+                
+                cheaper_alts = []
+                for rec in recs:
+                    product_id = int(rec["product_id"])
+                    if product_id in PRODUCTS_DF.index:
+                        row = PRODUCTS_DF.loc[product_id]
+                        rec_price = float(row.get("_price_final", 0))
+                        rec_subcat = str(row.get("Sub Category", ""))
+                        rec_title = str(row["Title"])
+                        
+                        # Cheaper AND same subcategory AND not the same product
+                        if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
+                            saving = (item_price - rec_price) * item_qty
+                            cheaper_alts.append({
+                                "replace": item_title,
+                                "with": rec_title,
+                                "expected_saving": f"{saving:.2f}",
+                                "similarity": f"{rec['score']:.2f}",
+                                "reason": f"Hybrid AI (60% CF + 40% semantic) based on your shopping habits: Best of both worlds! Save ${saving:.2f}!",
+                                "replacement_product": {
+                                    "id": str(product_id),
+                                    "title": rec_title,
+                                    "subcat": rec_subcat,
+                                    "price": rec_price,
+                                    "qty": 1,
+                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                                }
+                            })
+                
+                # Add top 2 alternatives for this item
+                cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
+                suggestions.extend(cheaper_alts[:2])
         
         return jsonify({
             "suggestions": suggestions,
