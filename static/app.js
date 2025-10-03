@@ -188,13 +188,19 @@ function viewCart() {
   panel.style.display = 'block';
   console.log('Cart panel should now be visible');
   
-  // Auto-show suggestions if over budget
+  // Auto-show all recommendation systems if over budget
   const sum = CART.reduce((s, x) => s + (x.price * x.qty), 0);
   if (sum > budget && budget > 0) {
-    console.log('Over budget, auto-showing suggestions...');
-    setTimeout(function() { getSuggestions(); }, 100);
+    console.log('Over budget! Triggering all recommendation systems...');
+    setTimeout(function() { 
+      getSuggestions();
+      getCFRecommendations();
+      getBlendedRecommendations();
+    }, 100);
   } else {
     document.getElementById('suggestions').style.display = 'none';
+    document.getElementById('cfRecommendations').style.display = 'none';
+    document.getElementById('blendedRecommendations').style.display = 'none';
   }
 }
 
@@ -526,10 +532,4 @@ async function getBlendedRecommendations() {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');
   refreshProducts();
-  
-  // Auto-load recommendations
-  setTimeout(function() {
-    getCFRecommendations();
-    getBlendedRecommendations();
-  }, 500);
 });
