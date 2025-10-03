@@ -160,12 +160,15 @@ def get_user_purchase_history(user_id: str) -> List[int]:
         List of product IDs (integers)
     """
     try:
-        from models import init_models
         from flask import current_app
-        from flask_sqlalchemy import SQLAlchemy
+        import models as models_module
         
         db = current_app.extensions['sqlalchemy']
-        _, _, _, User, Order, OrderItem, _ = init_models(db)
+        
+        # Use already-initialized models from global registry
+        User = models_module.User
+        Order = models_module.Order
+        OrderItem = models_module.OrderItem
         
         # Find user
         user = db.session.query(User).filter_by(session_id=user_id).first()
