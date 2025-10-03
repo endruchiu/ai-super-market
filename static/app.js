@@ -394,8 +394,14 @@ async function checkout() {
 
 async function getCFRecommendations() {
   console.log('getCFRecommendations() called');
+  const budget = parseFloat(document.getElementById('budget').value || '0');
+  
   try {
-    const res = await fetch('/api/cf/recommendations?top_k=10');
+    const res = await fetch('/api/cf/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cart: CART, budget: budget })
+    });
     const data = await res.json();
     console.log('CF recommendations response:', data);
     
@@ -404,49 +410,60 @@ async function getCFRecommendations() {
     
     if (!data.model_available) {
       contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center">' +
-        '<p class="text-gray-600 font-medium mb-2">Personalized recommendations not yet available</p>' +
+        '<p class="text-gray-600 font-medium mb-2">CF recommendations not yet available</p>' +
         '<p class="text-gray-500 text-sm">' + data.reason + '</p>' +
       '</div>';
       document.getElementById('cfRecommendations').style.display = 'block';
       return;
     }
     
-    if (!data.recommendations || data.recommendations.length === 0) {
-      contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center text-gray-500">No recommendations available yet. Complete a purchase to get started!</div>';
+    if (!data.suggestions || data.suggestions.length === 0) {
+      contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No CF replacements found') + '</div>';
     } else {
-      data.recommendations.forEach(function(rec) {
+      contentDiv.innerHTML = '<div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4 rounded-r-lg">' +
+        '<p class="text-purple-800 font-medium">' + data.message + '</p>' +
+      '</div>';
+      
+      data.suggestions.forEach(function(s) {
         const card = document.createElement('div');
         card.className = 'bg-white border border-purple-200 rounded-xl p-5 hover:shadow-lg transition-all';
         
-        const nutr = rec.nutrition ? Object.entries(rec.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
-        const size = (rec.size_value && rec.size_unit) ? (rec.size_value + rec.size_unit) : '—';
-        
-        card.innerHTML = '<div class="flex items-start justify-between mb-3">' +
-          '<div class="flex-1">' +
-            '<div class="text-lg font-bold text-purple-900 mb-2">' + rec.title + '</div>' +
-            '<div class="flex items-center space-x-2 mb-2">' +
-              '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + rec.subcat + '</span>' +
-              '<span class="text-sm text-gray-500">Size: ' + size + '</span>' +
-            '</div>' +
-            '<div class="text-xs text-gray-500 mb-2">' + nutr + '</div>' +
+        card.innerHTML = '<div class="mb-3">' +
+          '<div class="flex items-center space-x-2 mb-2">' +
+            '<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
+            '</svg>' +
+            '<span class="text-gray-700">Replace:</span>' +
           '</div>' +
-          '<div class="text-right ml-4">' +
-            '<div class="text-2xl font-bold text-green-600">$' + fmt(rec.price || 0) + '</div>' +
-            '<div class="text-sm text-gray-500">Score: ' + rec.score.toFixed(3) + '</div>' +
+          '<div class="ml-7">' +
+            '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
+            '<div class="text-lg font-bold text-purple-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
           '</div>' +
+        '</div>' +
+        '<div class="flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg">' +
+          '<div class="flex items-center space-x-2">' +
+            '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
+            '</svg>' +
+            '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
+          '</div>' +
+          '<span class="text-sm text-gray-600">Score: <span class="font-semibold">' + s.similarity + '</span></span>' +
+        '</div>' +
+        '<div class="text-sm text-gray-600 mb-4 italic">' +
+          '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
         '</div>';
         
-        const addBtn = document.createElement('button');
-        addBtn.className = 'w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-        addBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
+        applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
           '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
           '</svg>' +
-          '<span>Add to Cart</span>' +
+          '<span>Apply This Replacement</span>' +
         '</div>';
-        addBtn.onclick = function() { addToCart(rec); };
+        applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
         
-        card.appendChild(addBtn);
+        card.appendChild(applyBtn);
         contentDiv.appendChild(card);
       });
     }
@@ -454,14 +471,20 @@ async function getCFRecommendations() {
     document.getElementById('cfRecommendations').style.display = 'block';
   } catch (error) {
     console.error('Error fetching CF recommendations:', error);
-    alert('Failed to load personalized recommendations: ' + error.message);
+    alert('Failed to load CF recommendations: ' + error.message);
   }
 }
 
 async function getBlendedRecommendations() {
   console.log('getBlendedRecommendations() called');
+  const budget = parseFloat(document.getElementById('budget').value || '0');
+  
   try {
-    const res = await fetch('/api/blended/recommendations?top_k=10');
+    const res = await fetch('/api/blended/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cart: CART, budget: budget })
+    });
     const data = await res.json();
     console.log('Blended recommendations response:', data);
     
@@ -477,46 +500,54 @@ async function getBlendedRecommendations() {
       return;
     }
     
-    if (!data.recommendations || data.recommendations.length === 0) {
-      contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center text-gray-500">No recommendations available yet. Complete a purchase to get started!</div>';
+    if (!data.suggestions || data.suggestions.length === 0) {
+      contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No hybrid replacements found') + '</div>';
     } else {
       contentDiv.innerHTML = '<div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4 rounded-r-lg">' +
-        '<p class="text-emerald-800 font-medium text-sm">🤖 Combining 60% purchase history + 40% product similarity for best results</p>' +
+        '<p class="text-emerald-800 font-medium">🤖 ' + data.message + '</p>' +
+        '<p class="text-emerald-600 text-sm mt-1">Combining 60% CF + 40% semantic similarity for best results</p>' +
       '</div>';
       
-      data.recommendations.forEach(function(rec) {
+      data.suggestions.forEach(function(s) {
         const card = document.createElement('div');
         card.className = 'bg-white border border-emerald-200 rounded-xl p-5 hover:shadow-lg transition-all';
         
-        const nutr = rec.nutrition ? Object.entries(rec.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
-        const size = (rec.size_value && rec.size_unit) ? (rec.size_value + rec.size_unit) : '—';
-        
-        card.innerHTML = '<div class="flex items-start justify-between mb-3">' +
-          '<div class="flex-1">' +
-            '<div class="text-lg font-bold text-emerald-900 mb-2">' + rec.title + '</div>' +
-            '<div class="flex items-center space-x-2 mb-2">' +
-              '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + rec.subcat + '</span>' +
-              '<span class="text-sm text-gray-500">Size: ' + size + '</span>' +
-            '</div>' +
-            '<div class="text-xs text-gray-500 mb-2">' + nutr + '</div>' +
+        card.innerHTML = '<div class="mb-3">' +
+          '<div class="flex items-center space-x-2 mb-2">' +
+            '<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
+            '</svg>' +
+            '<span class="text-gray-700">Replace:</span>' +
           '</div>' +
-          '<div class="text-right ml-4">' +
-            '<div class="text-2xl font-bold text-green-600">$' + fmt(rec.price || 0) + '</div>' +
-            '<div class="text-sm text-gray-500">Score: ' + rec.score.toFixed(3) + '</div>' +
+          '<div class="ml-7">' +
+            '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
+            '<div class="text-lg font-bold text-emerald-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
           '</div>' +
+        '</div>' +
+        '<div class="flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg">' +
+          '<div class="flex items-center space-x-2">' +
+            '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
+            '</svg>' +
+            '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
+          '</div>' +
+          '<span class="text-sm text-gray-600">Score: <span class="font-semibold">' + s.similarity + '</span></span>' +
+        '</div>' +
+        '<div class="text-sm text-gray-600 mb-4 italic">' +
+          '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
         '</div>';
         
-        const addBtn = document.createElement('button');
-        addBtn.className = 'w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-        addBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
+        applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
           '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
           '</svg>' +
-          '<span>Add to Cart</span>' +
+          '<span>Apply This Replacement</span>' +
         '</div>';
-        addBtn.onclick = function() { addToCart(rec); };
+        applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
         
-        card.appendChild(addBtn);
+        card.appendChild(applyBtn);
         contentDiv.appendChild(card);
       });
     }
