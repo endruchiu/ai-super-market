@@ -13,6 +13,28 @@ _CF_MODEL = None
 _CF_ARTIFACTS = None
 
 
+def get_user_db_id(session_id: str) -> Optional[int]:
+    """
+    Map session_id to database user.id.
+    Returns None if user doesn't exist.
+    """
+    try:
+        import os
+        import psycopg2
+        
+        conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE session_id = %s", (session_id,))
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        return result[0] if result else None
+    except Exception as e:
+        print(f"Error mapping session_id to user.id: {e}")
+        return None
+
+
 def load_cf_model():
     """
     Load trained CF model and artifacts.
@@ -74,15 +96,24 @@ def get_cf_recommendations(
     if model is None or artifacts is None:
         return []
     
-    # Map user_id to user_idx
-    user_id_to_idx = artifacts['user_id_to_idx']
-    product_idx_to_id = artifacts['product_idx_to_id']
-    
-    if user_id not in user_id_to_idx:
-        # Unknown user - return empty (or could return popular items)
+    # Map session_id to database user.id
+    db_user_id = get_user_db_id(user_id)
+    if db_user_id is None:
+        # Unknown user - return empty
         return []
     
-    user_idx = user_id_to_idx[user_id]
+    # Map user DB ID to user_idx
+    user_id_to_idx = artifacts['user_mapping']
+    product_id_to_idx = artifacts['product_mapping']
+    
+    # Create reverse mapping: index -> product_id
+    product_idx_to_id = {idx: pid for pid, idx in product_id_to_idx.items()}
+    
+    if db_user_id not in user_id_to_idx:
+        # Unknown user (no purchase history in training data) - return empty
+        return []
+    
+    user_idx = user_id_to_idx[db_user_id]
     num_products = artifacts['num_products']
     
     # Score all products for this user
@@ -174,7 +205,7 @@ if __name__ == '__main__':
         
         # Test with first user
         if artifacts['num_users'] > 0:
-            test_user_id = list(artifacts['user_id_to_idx'].keys())[0]
+            test_user_id = list(artifacts['user_mapping'].keys())[0]
             print(f"\nGenerating recommendations for user: {test_user_id}")
             
             recs = get_cf_recommendations(test_user_id, top_k=10)
