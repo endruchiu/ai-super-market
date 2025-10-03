@@ -109,18 +109,46 @@ def get_cf_recommendations(
     # Create reverse mapping: index -> product_id
     product_idx_to_id = {idx: pid for pid, idx in product_id_to_idx.items()}
     
-    if db_user_id not in user_id_to_idx:
-        # Unknown user (no purchase history in training data) - return empty
-        return []
-    
-    user_idx = user_id_to_idx[db_user_id]
     num_products = artifacts['num_products']
     
-    # Score all products for this user
-    user_batch = np.full(num_products, user_idx)
-    all_product_indices = np.arange(num_products)
-    
-    scores = model.predict([user_batch, all_product_indices], verbose=0).flatten()
+    # Handle cold start: create user profile from purchase history if user not in training data
+    if db_user_id not in user_id_to_idx:
+        # Get user's purchase history
+        purchased_ids = get_user_purchase_history(user_id)
+        
+        if not purchased_ids:
+            # No purchases, can't recommend
+            return []
+        
+        # Get product embeddings for purchased items
+        product_embedding_layer = model.layers[1]  # Product embedding layer
+        purchased_indices = []
+        for pid in purchased_ids:
+            if pid in product_id_to_idx:
+                purchased_indices.append(product_id_to_idx[pid])
+        
+        if not purchased_indices:
+            # None of their purchases are in the model
+            return []
+        
+        # Create user profile: average of purchased product embeddings
+        purchased_embeddings = product_embedding_layer(np.array(purchased_indices))
+        user_profile_embedding = np.mean(purchased_embeddings.numpy(), axis=0)
+        
+        # Score all products using dot product with user profile
+        all_product_indices = np.arange(num_products)
+        all_product_embeddings = product_embedding_layer(all_product_indices).numpy()
+        scores = np.dot(all_product_embeddings, user_profile_embedding)
+        
+    else:
+        # Known user - use trained embedding
+        user_idx = user_id_to_idx[db_user_id]
+        
+        # Score all products for this user
+        user_batch = np.full(num_products, user_idx)
+        all_product_indices = np.arange(num_products)
+        
+        scores = model.predict([user_batch, all_product_indices], verbose=0).flatten()
     
     # Sort by score (descending)
     sorted_indices = np.argsort(scores)[::-1]
@@ -160,31 +188,28 @@ def get_user_purchase_history(user_id: str) -> List[int]:
         List of product IDs (integers)
     """
     try:
-        from flask import current_app
-        import models as models_module
+        import os
+        import psycopg2
         
-        db = current_app.extensions['sqlalchemy']
+        # Use direct SQL to avoid ORM model conflicts
+        conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+        cur = conn.cursor()
         
-        # Use already-initialized models from global registry
-        User = models_module.User
-        Order = models_module.Order
-        OrderItem = models_module.OrderItem
+        # Get purchased product IDs for this user
+        query = """
+            SELECT DISTINCT oi.product_id
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN users u ON o.user_id = u.id
+            WHERE u.session_id = %s
+        """
+        cur.execute(query, (user_id,))
+        results = cur.fetchall()
         
-        # Find user
-        user = db.session.query(User).filter_by(session_id=user_id).first()
-        if not user:
-            return []
+        cur.close()
+        conn.close()
         
-        # Get all purchased product IDs
-        purchased_ids = (
-            db.session.query(OrderItem.product_id)
-            .join(Order, OrderItem.order_id == Order.id)
-            .filter(Order.user_id == user.id)
-            .distinct()
-            .all()
-        )
-        
-        return [pid[0] for pid in purchased_ids]
+        return [row[0] for row in results]
     
     except Exception as e:
         print(f"Error fetching purchase history: {e}")
