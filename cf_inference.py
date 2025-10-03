@@ -132,12 +132,13 @@ def get_cf_recommendations(
             return []
         
         # Create user profile: average of purchased product embeddings
-        purchased_embeddings = product_embedding_layer(np.array(purchased_indices))
-        user_profile_embedding = np.mean(purchased_embeddings.numpy(), axis=0)
+        import tensorflow as tf
+        purchased_embeddings = product_embedding_layer(tf.constant(purchased_indices))
+        user_profile_embedding = tf.reduce_mean(purchased_embeddings, axis=0).numpy()
         
         # Score all products using dot product with user profile
         all_product_indices = np.arange(num_products)
-        all_product_embeddings = product_embedding_layer(all_product_indices).numpy()
+        all_product_embeddings = product_embedding_layer(tf.constant(all_product_indices)).numpy()
         scores = np.dot(all_product_embeddings, user_profile_embedding)
         
     else:
