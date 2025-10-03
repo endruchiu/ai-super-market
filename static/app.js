@@ -387,9 +387,11 @@ async function checkout() {
 }
 
 async function getCFRecommendations() {
+  console.log('getCFRecommendations() called');
   try {
     const res = await fetch('/api/cf/recommendations?top_k=10');
     const data = await res.json();
+    console.log('CF recommendations response:', data);
     
     const contentDiv = document.getElementById('cfRecsContent');
     contentDiv.innerHTML = '';
@@ -451,9 +453,11 @@ async function getCFRecommendations() {
 }
 
 async function getBlendedRecommendations() {
+  console.log('getBlendedRecommendations() called');
   try {
     const res = await fetch('/api/blended/recommendations?top_k=10');
     const data = await res.json();
+    console.log('Blended recommendations response:', data);
     
     const contentDiv = document.getElementById('blendedRecsContent');
     contentDiv.innerHTML = '';
