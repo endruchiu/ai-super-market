@@ -232,14 +232,23 @@ def api_cf_recommendations():
                             saving = (item_price - rec_price) * item_qty
                             discount_pct = int((1 - rec_price / item_price) * 100)
                             
-                            # Create compelling, specific reason
-                            reason = f"You might also like {rec_title} — similar taste, {discount_pct}% cheaper (save ${saving:.2f})"
+                            # Convert score to user-friendly confidence phrase
+                            score = float(rec.get('score', 0))
+                            if score >= 0.7:
+                                confidence = "Highly recommended for you"
+                            elif score >= 0.4:
+                                confidence = "Good match based on your taste"
+                            else:
+                                confidence = "Popular among shoppers like you"
+                            
+                            # Create compelling, specific reason with confidence
+                            reason = f"{confidence}: {rec_title} — similar taste, {discount_pct}% cheaper (save ${saving:.2f})"
                             
                             cheaper_alts.append({
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
-                                "similarity": f"{rec['score']:.2f}",
+                                "similarity": confidence,
                                 "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
@@ -267,14 +276,23 @@ def api_cf_recommendations():
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
+                                # Convert score to user-friendly confidence phrase
+                                score = float(rec.get('score', 0))
+                                if score >= 0.7:
+                                    confidence = "Strongly recommended"
+                                elif score >= 0.4:
+                                    confidence = "Recommended based on your history"
+                                else:
+                                    confidence = "Customers like you also bought"
+                                
                                 # Create compelling reason for cross-category recommendation
-                                reason = f"Based on your preferences: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
+                                reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
                                 
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
-                                    "similarity": f"{rec['score']:.2f}",
+                                    "similarity": confidence,
                                     "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
@@ -420,14 +438,25 @@ def api_blended_recommendations():
                             saving = (item_price - rec_price) * item_qty
                             discount_pct = int((1 - rec_price / item_price) * 100)
                             
+                            # Convert blended score to user-friendly confidence phrase
+                            score = float(rec.get('blended_score', 0))
+                            if score >= 0.7:
+                                confidence = "Perfect match for you"
+                            elif score >= 0.5:
+                                confidence = "Great choice based on AI analysis"
+                            elif score >= 0.3:
+                                confidence = "Smart recommendation"
+                            else:
+                                confidence = "AI-powered suggestion"
+                            
                             # Create compelling hybrid recommendation reason
-                            reason = f"Hybrid AI suggests {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
+                            reason = f"{confidence}: {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
                             
                             cheaper_alts.append({
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
-                                "similarity": f"{rec['blended_score']:.2f}",
+                                "similarity": confidence,
                                 "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
@@ -455,14 +484,25 @@ def api_blended_recommendations():
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
+                                # Convert blended score to user-friendly confidence phrase
+                                score = float(rec.get('blended_score', 0))
+                                if score >= 0.7:
+                                    confidence = "AI highly recommends"
+                                elif score >= 0.5:
+                                    confidence = "AI suggests"
+                                elif score >= 0.3:
+                                    confidence = "Worth considering"
+                                else:
+                                    confidence = "Alternative option"
+                                
                                 # Create compelling cross-category hybrid reason
-                                reason = f"Hybrid AI pick: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
+                                reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
                                 
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
-                                    "similarity": f"{rec['blended_score']:.2f}",
+                                    "similarity": confidence,
                                     "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
