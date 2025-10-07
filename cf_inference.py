@@ -6,6 +6,7 @@ Loads trained CF model and generates personalized recommendations.
 import os
 import numpy as np
 import pickle
+from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
 # Lazy loading to avoid startup delays
@@ -45,19 +46,22 @@ def load_cf_model():
     if _CF_MODEL is not None and _CF_ARTIFACTS is not None:
         return _CF_MODEL, _CF_ARTIFACTS
     
-    model_path = 'ml_data/cf_model.keras'
-    artifacts_path = 'ml_data/cf_artifacts.pkl'
+    # Use absolute paths based on this file's location
+    MODEL_DIR = Path(__file__).resolve().parent / 'ml_data'
+    model_path = MODEL_DIR / 'cf_model.keras'
+    artifacts_path = MODEL_DIR / 'cf_artifacts.pkl'
     
-    if not os.path.exists(model_path) or not os.path.exists(artifacts_path):
-        print("CF model not trained yet. Run python train_cf_model.py first.")
+    if not model_path.exists() or not artifacts_path.exists():
+        print(f"CF model not trained yet. Model path: {model_path}, Artifacts path: {artifacts_path}")
+        print("Run: python train_cf_model.py")
         return None, None
     
     try:
         # Import keras only when needed
         from tensorflow import keras
         
-        print("Loading CF model...")
-        _CF_MODEL = keras.models.load_model(model_path)
+        print(f"Loading CF model from {model_path}...")
+        _CF_MODEL = keras.models.load_model(str(model_path))
         
         with open(artifacts_path, 'rb') as f:
             _CF_ARTIFACTS = pickle.load(f)
@@ -67,6 +71,8 @@ def load_cf_model():
     
     except Exception as e:
         print(f"Error loading CF model: {e}")
+        import traceback
+        traceback.print_exc()
         return None, None
 
 
