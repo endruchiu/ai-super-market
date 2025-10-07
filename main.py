@@ -380,7 +380,7 @@ def api_blended_recommendations():
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
-                                "similarity": f"{rec['score']:.2f}",
+                                "similarity": f"{rec['blended_score']:.2f}",
                                 "reason": f"Hybrid AI (60% CF + 40% semantic) based on your shopping habits: Best of both worlds! Save ${saving:.2f}!",
                                 "replacement_product": {
                                     "id": str(product_id),

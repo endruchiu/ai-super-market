@@ -92,6 +92,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### CF Model Loading Fix (October 7, 2025)
+- **Absolute Path Resolution** (`cf_inference.py`):
+  - Fixed model loading failure by using absolute paths instead of relative paths
+  - Changed from `'ml_data/cf_model.keras'` to `Path(__file__).resolve().parent / 'ml_data' / 'cf_model.keras'`
+  - Prevents working directory issues when Flask reloader or background workers change CWD
+  - Model now loads successfully: 15 users, 228 products confirmed
+
+- **Hybrid Recommendations Bug Fix** (`main.py`):
+  - Fixed KeyError in blended recommendations endpoint (line 383)
+  - Changed `rec['score']` to `rec['blended_score']` to match actual return format
+  - Blended recommendations return: `cf_score`, `semantic_score`, `blended_score`, not `score`
+  - All three recommendation systems now fully operational
+
+- **Status**: All recommendation systems working correctly
+  - Semantic budget: ✅ Works for all users
+  - CF personalized: ✅ Works for users with purchase history
+  - Hybrid AI: ✅ Works for users with purchase history
+
 ### Budget-Aware Recommendation System (October 3, 2025)
 
 - **Frontend Trigger Logic**:
