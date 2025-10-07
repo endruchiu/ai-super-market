@@ -133,15 +133,18 @@ def get_cf_recommendations(
             if pid in product_id_to_idx:
                 purchased_indices.append(product_id_to_idx[pid])
         
-        if not purchased_indices:
-            # None of their purchases are in the model
-            return []
-        
-        # Create user profile: average of purchased product embeddings
-        # Get embedding weights directly (not calling the layer)
+        # Get embedding weights
         product_embedding_weights = product_embedding_layer.get_weights()[0]
-        purchased_embeddings = product_embedding_weights[purchased_indices]
-        user_profile_embedding = np.mean(purchased_embeddings, axis=0)
+        
+        if not purchased_indices:
+            # Fallback: None of their purchases are in the model
+            # Use average of all product embeddings as generic profile
+            print(f"Cold start fallback: User's purchases not in model. Using general recommendations.")
+            user_profile_embedding = np.mean(product_embedding_weights, axis=0)
+        else:
+            # Create user profile: average of purchased product embeddings
+            purchased_embeddings = product_embedding_weights[purchased_indices]
+            user_profile_embedding = np.mean(purchased_embeddings, axis=0)
         
         # Score all products using dot product with user profile
         all_product_embeddings = product_embedding_weights  # All product embeddings
