@@ -230,12 +230,17 @@ def api_cf_recommendations():
                         # Cheaper AND same subcategory AND not the same product
                         if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
                             saving = (item_price - rec_price) * item_qty
+                            discount_pct = int((1 - rec_price / item_price) * 100)
+                            
+                            # Create compelling, specific reason
+                            reason = f"You might also like {rec_title} — similar taste, {discount_pct}% cheaper (save ${saving:.2f})"
+                            
                             cheaper_alts.append({
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
                                 "similarity": f"{rec['score']:.2f}",
-                                "reason": f"Based on your purchase history: users with similar tastes chose this. Save ${saving:.2f}!",
+                                "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
                                     "title": rec_title,
@@ -260,12 +265,17 @@ def api_cf_recommendations():
                             # Just cheaper AND not the same product (relax subcategory requirement)
                             if rec_price < item_price and rec_title != item_title:
                                 saving = (item_price - rec_price) * item_qty
+                                discount_pct = int((1 - rec_price / item_price) * 100)
+                                
+                                # Create compelling reason for cross-category recommendation
+                                reason = f"Based on your preferences: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
+                                
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
                                     "similarity": f"{rec['score']:.2f}",
-                                    "reason": f"AI recommends this cheaper alternative. Save ${saving:.2f}!",
+                                    "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
                                         "title": rec_title,
@@ -408,12 +418,17 @@ def api_blended_recommendations():
                         # Cheaper AND same subcategory AND not the same product
                         if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
                             saving = (item_price - rec_price) * item_qty
+                            discount_pct = int((1 - rec_price / item_price) * 100)
+                            
+                            # Create compelling hybrid recommendation reason
+                            reason = f"Hybrid AI suggests {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
+                            
                             cheaper_alts.append({
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
                                 "similarity": f"{rec['blended_score']:.2f}",
-                                "reason": f"Hybrid AI (60% CF + 40% semantic) based on your shopping habits: Best of both worlds! Save ${saving:.2f}!",
+                                "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
                                     "title": rec_title,
@@ -438,12 +453,17 @@ def api_blended_recommendations():
                             # Just cheaper AND not the same product (relax subcategory requirement)
                             if rec_price < item_price and rec_title != item_title:
                                 saving = (item_price - rec_price) * item_qty
+                                discount_pct = int((1 - rec_price / item_price) * 100)
+                                
+                                # Create compelling cross-category hybrid reason
+                                reason = f"Hybrid AI pick: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
+                                
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
                                     "similarity": f"{rec['blended_score']:.2f}",
-                                    "reason": f"Hybrid AI recommends this cheaper alternative. Save ${saving:.2f}!",
+                                    "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
                                         "title": rec_title,
