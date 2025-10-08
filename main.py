@@ -173,6 +173,13 @@ def api_cf_recommendations():
     
     user_id = session['user_session']
     
+    # Ensure user exists in database for CF to work
+    user = User.query.filter_by(session_id=user_id).first()
+    if not user:
+        user = User(session_id=user_id)
+        db.session.add(user)
+        db.session.commit()
+    
     # Check if model is available
     model, artifacts = load_cf_model()
     model_available = (model is not None and artifacts is not None)
@@ -377,6 +384,13 @@ def api_blended_recommendations():
         session['user_session'] = str(uuid.uuid4())
     
     user_id = session['user_session']
+    
+    # Ensure user exists in database for blended recommendations to work
+    user = User.query.filter_by(session_id=user_id).first()
+    if not user:
+        user = User(session_id=user_id)
+        db.session.add(user)
+        db.session.commit()
     
     # Check if model was available
     from cf_inference import load_cf_model

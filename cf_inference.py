@@ -122,29 +122,30 @@ def get_cf_recommendations(
         # Get user's purchase history
         purchased_ids = get_user_purchase_history(user_id)
         
-        if not purchased_ids:
-            # No purchases, can't recommend
-            return []
-        
-        # Get product embeddings for purchased items
+        # Get product embeddings
         product_embedding_layer = model.layers[3]  # Product embedding layer (layer index 3)
-        purchased_indices = []
-        for pid in purchased_ids:
-            if pid in product_id_to_idx:
-                purchased_indices.append(product_id_to_idx[pid])
-        
-        # Get embedding weights
         product_embedding_weights = product_embedding_layer.get_weights()[0]
         
-        if not purchased_indices:
-            # Fallback: None of their purchases are in the model
-            # Use average of all product embeddings as generic profile
-            print(f"Cold start fallback: User's purchases not in model. Using general recommendations.")
+        if not purchased_ids:
+            # No purchases - use average of all product embeddings for general recommendations
+            print(f"Cold start: New user with no purchases. Using general popular recommendations.")
             user_profile_embedding = np.mean(product_embedding_weights, axis=0)
         else:
-            # Create user profile: average of purchased product embeddings
-            purchased_embeddings = product_embedding_weights[purchased_indices]
-            user_profile_embedding = np.mean(purchased_embeddings, axis=0)
+            # User has purchases - try to build profile from them
+            purchased_indices = []
+            for pid in purchased_ids:
+                if pid in product_id_to_idx:
+                    purchased_indices.append(product_id_to_idx[pid])
+            
+            if not purchased_indices:
+                # Fallback: None of their purchases are in the model
+                # Use average of all product embeddings as generic profile
+                print(f"Cold start fallback: User's purchases not in model. Using general recommendations.")
+                user_profile_embedding = np.mean(product_embedding_weights, axis=0)
+            else:
+                # Create user profile: average of purchased product embeddings
+                purchased_embeddings = product_embedding_weights[purchased_indices]
+                user_profile_embedding = np.mean(purchased_embeddings, axis=0)
         
         # Score all products using dot product with user profile
         all_product_embeddings = product_embedding_weights  # All product embeddings
