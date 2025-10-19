@@ -142,6 +142,19 @@
     <!-- RIGHT: Cart + Recommendations (40% width) -->
     <div class="flex-[2] space-y-4">
       
+      <!-- Shelf Products Panel (shown when shelf is clicked) -->
+      <div id="shelfProductsPanel" class="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-2xl shadow-xl p-4 border-2 border-purple-300" style="display:none;">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="shelfProductsTitle" class="text-lg font-bold text-purple-900">Shelf Products</h3>
+          <button onclick="hideShelfProducts()" class="text-sm px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium">
+            Close
+          </button>
+        </div>
+        <div id="shelfProductsList" class="space-y-3 overflow-y-auto" style="max-height: 300px;">
+          <!-- Shelf products will appear here -->
+        </div>
+      </div>
+      
       <!-- Product Browser -->
       <div class="bg-white rounded-2xl shadow-xl p-4 border border-gray-200">
         <div class="flex items-center justify-between mb-3">

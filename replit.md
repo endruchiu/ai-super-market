@@ -29,8 +29,14 @@ Preferred communication style: Simple, everyday language.
     - Aisle D: Pantry & Snacks
     - Aisle E: Beverages & Drinks
     - Aisle F: Household & Paper
+- **Interactive Shelf Browsing**: Users can click on any shelf to explore products in that category:
+    - Displays 3-4 mock products per shelf with name, price, and "Add to Cart" button
+    - Purple/indigo themed panel appears on the right side
+    - Highlights the selected shelf on the map
+    - Simulates the in-store experience of browsing products on a shelf
+    - Products can be added directly to cart from the shelf view
 - **Visual Navigation**: When recommendations are applied, the system highlights the target shelf and displays an animated route from entrance to product location.
-- **Components**: Responsive header, clean product cards, budget controls, shopping cart display with quantity controls, and animated success notifications.
+- **Components**: Responsive header, clean product cards, budget controls, shopping cart display with quantity controls, shelf product browser, and animated success notifications.
 - **Responsiveness**: Mobile-friendly layout with a flexible grid system.
 - **AI Recommendation UI**:
     - **Budget-Saving**: Semantic similarity-based (Blue/Indigo theme).

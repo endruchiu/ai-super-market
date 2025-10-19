@@ -5,6 +5,119 @@ let products = [];
 let storeLayout = null;
 let currentHighlightedShelf = null;
 let currentRoute = null;
+let currentShelfProducts = null;
+
+// Mock product data for each shelf
+const SHELF_PRODUCTS = {
+    "A1": [
+        {id: "organic-001", title: "Organic Apples", price: 4.99, shelf: "Organic Produce"},
+        {id: "organic-002", title: "Organic Spinach", price: 3.49, shelf: "Organic Produce"},
+        {id: "organic-003", title: "Organic Carrots", price: 2.99, shelf: "Organic Produce"},
+        {id: "organic-004", title: "Organic Tomatoes", price: 5.49, shelf: "Organic Produce"}
+    ],
+    "A2": [
+        {id: "fruit-001", title: "Fresh Strawberries", price: 6.99, shelf: "Fresh Fruits"},
+        {id: "fruit-002", title: "Bananas", price: 1.99, shelf: "Fresh Fruits"},
+        {id: "fruit-003", title: "Oranges", price: 4.49, shelf: "Fresh Fruits"},
+        {id: "fruit-004", title: "Blueberries", price: 7.99, shelf: "Fresh Fruits"}
+    ],
+    "A3": [
+        {id: "veg-001", title: "Broccoli", price: 2.49, shelf: "Fresh Vegetables"},
+        {id: "veg-002", title: "Bell Peppers", price: 3.99, shelf: "Fresh Vegetables"},
+        {id: "veg-003", title: "Lettuce", price: 2.99, shelf: "Fresh Vegetables"},
+        {id: "veg-004", title: "Cucumbers", price: 1.99, shelf: "Fresh Vegetables"}
+    ],
+    "A4": [
+        {id: "bakery-001", title: "Chocolate Croissant", price: 3.49, shelf: "Bakery & Desserts"},
+        {id: "bakery-002", title: "Apple Pie", price: 12.99, shelf: "Bakery & Desserts"},
+        {id: "bakery-003", title: "Cinnamon Rolls", price: 8.99, shelf: "Bakery & Desserts"},
+        {id: "bakery-004", title: "Tiramisu", price: 6.49, shelf: "Bakery & Desserts"}
+    ],
+    "A5": [
+        {id: "bread-001", title: "Sourdough Loaf", price: 5.99, shelf: "Fresh Bread"},
+        {id: "bread-002", title: "Whole Wheat Bread", price: 4.49, shelf: "Fresh Bread"},
+        {id: "bread-003", title: "Baguette", price: 3.99, shelf: "Fresh Bread"},
+        {id: "bread-004", title: "Ciabatta Rolls", price: 4.99, shelf: "Fresh Bread"}
+    ],
+    "B1": [
+        {id: "meat-001", title: "Ribeye Steak", price: 18.99, shelf: "Fresh Meat"},
+        {id: "meat-002", title: "Ground Beef", price: 9.99, shelf: "Fresh Meat"},
+        {id: "meat-003", title: "Pork Chops", price: 12.49, shelf: "Fresh Meat"},
+        {id: "meat-004", title: "Lamb Shoulder", price: 16.99, shelf: "Fresh Meat"}
+    ],
+    "B2": [
+        {id: "poultry-001", title: "Chicken Breast", price: 8.99, shelf: "Poultry"},
+        {id: "poultry-002", title: "Whole Chicken", price: 11.99, shelf: "Poultry"},
+        {id: "poultry-003", title: "Turkey Slices", price: 7.49, shelf: "Poultry"},
+        {id: "poultry-004", title: "Duck Breast", price: 14.99, shelf: "Poultry"}
+    ],
+    "B3": [
+        {id: "seafood-001", title: "Fresh Salmon", price: 15.99, shelf: "Seafood"},
+        {id: "seafood-002", title: "Shrimp", price: 12.99, shelf: "Seafood"},
+        {id: "seafood-003", title: "Tuna Steak", price: 13.49, shelf: "Seafood"},
+        {id: "seafood-004", title: "Cod Fillet", price: 11.99, shelf: "Seafood"}
+    ],
+    "C1": [
+        {id: "dairy-001", title: "Whole Milk", price: 3.99, shelf: "Milk & Cream"},
+        {id: "dairy-002", title: "Heavy Cream", price: 4.49, shelf: "Milk & Cream"},
+        {id: "dairy-003", title: "Almond Milk", price: 5.99, shelf: "Milk & Cream"},
+        {id: "dairy-004", title: "Greek Yogurt", price: 6.49, shelf: "Milk & Cream"}
+    ],
+    "C2": [
+        {id: "cheese-001", title: "Cheddar Cheese", price: 7.99, shelf: "Cheese"},
+        {id: "cheese-002", title: "Mozzarella", price: 6.49, shelf: "Cheese"},
+        {id: "cheese-003", title: "Parmesan", price: 9.99, shelf: "Cheese"},
+        {id: "cheese-004", title: "Brie", price: 8.49, shelf: "Cheese"}
+    ],
+    "D1": [
+        {id: "canned-001", title: "Tomato Soup", price: 2.49, shelf: "Canned Goods"},
+        {id: "canned-002", title: "Black Beans", price: 1.99, shelf: "Canned Goods"},
+        {id: "canned-003", title: "Tuna Can", price: 3.49, shelf: "Canned Goods"},
+        {id: "canned-004", title: "Corn", price: 1.79, shelf: "Canned Goods"}
+    ],
+    "D2": [
+        {id: "pasta-001", title: "Spaghetti", price: 2.99, shelf: "Pasta & Rice"},
+        {id: "pasta-002", title: "Penne", price: 2.79, shelf: "Pasta & Rice"},
+        {id: "pasta-003", title: "Basmati Rice", price: 8.99, shelf: "Pasta & Rice"},
+        {id: "pasta-004", title: "Jasmine Rice", price: 7.49, shelf: "Pasta & Rice"}
+    ],
+    "D3": [
+        {id: "snack-001", title: "Potato Chips", price: 3.99, shelf: "Snacks & Chips"},
+        {id: "snack-002", title: "Pretzels", price: 4.49, shelf: "Snacks & Chips"},
+        {id: "snack-003", title: "Trail Mix", price: 6.99, shelf: "Snacks & Chips"},
+        {id: "snack-004", title: "Popcorn", price: 3.49, shelf: "Snacks & Chips"}
+    ],
+    "E1": [
+        {id: "water-001", title: "Spring Water 24pk", price: 5.99, shelf: "Water & Juices"},
+        {id: "water-002", title: "Orange Juice", price: 4.99, shelf: "Water & Juices"},
+        {id: "water-003", title: "Apple Juice", price: 4.49, shelf: "Water & Juices"},
+        {id: "water-004", title: "Sparkling Water", price: 6.49, shelf: "Water & Juices"}
+    ],
+    "E2": [
+        {id: "soda-001", title: "Cola 12pk", price: 6.99, shelf: "Soft Drinks"},
+        {id: "soda-002", title: "Lemon Soda", price: 5.99, shelf: "Soft Drinks"},
+        {id: "soda-003", title: "Ginger Ale", price: 5.49, shelf: "Soft Drinks"},
+        {id: "soda-004", title: "Root Beer", price: 6.49, shelf: "Soft Drinks"}
+    ],
+    "E3": [
+        {id: "coffee-001", title: "Ground Coffee", price: 12.99, shelf: "Coffee & Tea"},
+        {id: "coffee-002", title: "Green Tea", price: 8.99, shelf: "Coffee & Tea"},
+        {id: "coffee-003", title: "Espresso Beans", price: 14.99, shelf: "Coffee & Tea"},
+        {id: "coffee-004", title: "Herbal Tea", price: 7.49, shelf: "Coffee & Tea"}
+    ],
+    "F1": [
+        {id: "clean-001", title: "All-Purpose Cleaner", price: 4.99, shelf: "Cleaning Supplies"},
+        {id: "clean-002", title: "Dish Soap", price: 3.49, shelf: "Cleaning Supplies"},
+        {id: "clean-003", title: "Laundry Detergent", price: 11.99, shelf: "Cleaning Supplies"},
+        {id: "clean-004", title: "Glass Cleaner", price: 4.49, shelf: "Cleaning Supplies"}
+    ],
+    "F2": [
+        {id: "paper-001", title: "Paper Towels 6pk", price: 8.99, shelf: "Paper Products"},
+        {id: "paper-002", title: "Toilet Paper 12pk", price: 12.99, shelf: "Paper Products"},
+        {id: "paper-003", title: "Napkins", price: 3.99, shelf: "Paper Products"},
+        {id: "paper-004", title: "Tissues", price: 4.49, shelf: "Paper Products"}
+    ]
+};
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
@@ -122,6 +235,16 @@ function renderStoreMap() {
                 document.getElementById('currentLocation').textContent = '';
             });
             
+            // Add click handler to show shelf products
+            shelfRect.addEventListener('click', (e) => {
+                const shelfId = e.target.getAttribute('data-shelf-id');
+                const shelfName = e.target.getAttribute('data-shelf-name');
+                showShelfProducts(shelfId, shelfName);
+            });
+            
+            // Make cursor pointer on hover
+            shelfRect.style.cursor = 'pointer';
+            
             shelfGroup.appendChild(shelfRect);
             
             // Shelf label
@@ -219,6 +342,76 @@ function resetMap() {
     clearHighlights();
     clearRoute();
     document.getElementById('currentLocation').textContent = '';
+    hideShelfProducts();
+}
+
+// ===== SHELF PRODUCT BROWSING =====
+
+function showShelfProducts(shelfId, shelfName) {
+    const shelfProducts = SHELF_PRODUCTS[shelfId];
+    
+    if (!shelfProducts) {
+        console.log('No products for shelf:', shelfId);
+        return;
+    }
+    
+    currentShelfProducts = shelfId;
+    
+    // Highlight the selected shelf
+    clearHighlights();
+    highlightShelf(shelfId);
+    
+    // Show the shelf products panel
+    const panel = document.getElementById('shelfProductsPanel');
+    const title = document.getElementById('shelfProductsTitle');
+    const container = document.getElementById('shelfProductsList');
+    
+    title.textContent = `📍 ${shelfName}`;
+    panel.style.display = 'block';
+    
+    // Render products
+    container.innerHTML = '';
+    shelfProducts.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-3 rounded-lg border-2 border-gray-300 hover:border-indigo-500 transition-all';
+        
+        card.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-bold text-gray-900">${product.title}</h4>
+                <span class="text-lg font-bold text-green-700">$${product.price.toFixed(2)}</span>
+            </div>
+            <button onclick='addShelfProductToCart(${JSON.stringify(product).replace(/'/g, "&#39;")})' 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">
+                Add to Cart
+            </button>
+        `;
+        
+        container.appendChild(card);
+    });
+    
+    console.log(`Showing ${shelfProducts.length} products from ${shelfName}`);
+}
+
+function hideShelfProducts() {
+    const panel = document.getElementById('shelfProductsPanel');
+    panel.style.display = 'none';
+    currentShelfProducts = null;
+}
+
+function addShelfProductToCart(product) {
+    console.log('Adding shelf product to cart:', product.title);
+    
+    const existing = cart.find(item => item.id === product.id);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({...product, qty: 1, subcat: product.shelf});
+    }
+    
+    updateCartDisplay();
+    updateCartBadge();
+    checkBudget();
+    showNotification(`Added ${product.title} to cart`);
 }
 
 // ===== PRODUCT MANAGEMENT =====
