@@ -36,6 +36,8 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
+- **Dynamic Focus**: All three recommendation systems (Budget-Saving, CF, Hybrid) focus on the most recently added cart item when over budget, providing dynamic recommendations that adjust automatically as users add items.
+- **3-Tier Fallback**: CF and Hybrid systems use a robust fallback strategy: exact subcategory match → related category match → any cheaper alternative.
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
