@@ -1,0 +1,127 @@
+{
+  "user_context": {
+    "user_type": "New user (tests cold start handling)",
+    "budget": 40.0,
+    "cart_total": 56.99,
+    "over_budget": 16.990000000000002,
+    "cart_items": [
+      {
+        "id": "7875624813017570385",
+        "title": "David's Cookies Mile High Peanut Butter Cake, 6.8 lbs",
+        "subcat": "Dessert",
+        "price": 56.99,
+        "qty": 1
+      }
+    ]
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "System A provides multiple, same-category alternatives (including same-brand and peanut butter-adjacent options) that reduce the cart to at or under the $40 budget. System B offers a single CF suggestion that still exceeds budget and is weak for a cold-start user. A thus delivers better savings and a more compelling replace action.",
+      "scores": {
+        "relevance": {
+          "A": 8,
+          "B": 6
+        },
+        "savings": {
+          "A": 9,
+          "B": 5
+        },
+        "practicality": {
+          "A": 7,
+          "B": 4
+        },
+        "ux": {
+          "A": 8,
+          "B": 3
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "System A provides multiple, same-category (and even same-brand) dessert substitutes with clear savings that can bring the cart under the $40 budget. System B offers only one option that is still over budget, reducing its usefulness and click likelihood.",
+      "scores": {
+        "relevance": {
+          "A": 8,
+          "B": 6
+        },
+        "savings": {
+          "A": 9,
+          "B": 5
+        },
+        "practicality": {
+          "A": 7,
+          "B": 5
+        },
+        "ux": {
+          "A": 9,
+          "B": 4
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "B",
+      "reasoning": "Both systems propose the same cheaper dessert, yielding identical savings but still not meeting the $40 budget. System B\u2019s framing as an \u201cAlternative option\u201d is more appropriate for a new user and feels more transparent than CF-based phrasing. This likely improves trust and click-through, given the cold-start context.",
+      "scores": {
+        "relevance": {
+          "A": 6,
+          "B": 6
+        },
+        "savings": {
+          "A": 6,
+          "B": 6
+        },
+        "practicality": {
+          "A": 4,
+          "B": 4
+        },
+        "ux": {
+          "A": 5,
+          "B": 7
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 6,
+      "savings": 9,
+      "diversity": 5,
+      "explanation_quality": 3,
+      "feasibility": 4,
+      "overall_score": 5,
+      "reasoning": "Recommendations stay within Bakery & Desserts and two retain the same brand, and each option would bring the cart under budget with correct savings math. However, all swaps change the item type from a large cake to cookies/brownies with no size/serving or occasion comparison, and the explanations are generic and repetitive. This lowers the likelihood a user seeking a cake would accept the substitutions."
+    },
+    "personalized_cf": {
+      "relevance": 5,
+      "savings": 6,
+      "diversity": 1,
+      "explanation_quality": 6,
+      "feasibility": 4,
+      "overall_score": 4,
+      "reasoning": "The recommendation stays within the dessert category and the $12 (\u224821%) saving is accurate, but it still leaves the user over a $40 budget. Swapping a large celebration cake for a box of madeleines may not fit the same use case. Only one suggestion hurts diversity and the generic \u201ccustomers like you\u201d rationale isn\u2019t tailored to a cold-start user or the budget goal."
+    },
+    "hybrid_ai": {
+      "relevance": 4,
+      "savings": 7,
+      "diversity": 1,
+      "explanation_quality": 6,
+      "feasibility": 3,
+      "overall_score": 4,
+      "reasoning": "The recommendation is in the same broad category and accurately claims a $12 (21%) savings, but it still exceeds the $40 budget. It\u2019s not a like-for-like swap (whole peanut butter cake vs. madeleines), reducing acceptability, and only one option is provided with a minimal explanation."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": "budget_saving",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "personalized_cf",
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 2,
+      "personalized_cf": 0,
+      "hybrid_ai": 1
+    }
+  }
+}
