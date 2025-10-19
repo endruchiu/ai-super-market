@@ -1,566 +1,597 @@
-// Shopping Cart Application
-let CART = [];
+// AI Supermarket - Virtual Shopping Experience
+// State management
+let cart = [];
+let products = [];
+let storeLayout = null;
+let currentHighlightedShelf = null;
+let currentRoute = null;
 
-function fmt(n) { 
-  return (Math.round(n * 100) / 100).toFixed(2); 
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded, initializing supermarket...');
+    loadStoreLayout();
+    refreshProducts();
+    updateCartBadge();
+});
+
+// ===== STORE LAYOUT & MAP =====
+
+async function loadStoreLayout() {
+    try {
+        const response = await fetch('/api/store/layout');
+        storeLayout = await response.json();
+        renderStoreMap();
+        console.log('Store layout loaded:', storeLayout);
+    } catch (error) {
+        console.error('Failed to load store layout:', error);
+    }
 }
+
+function renderStoreMap() {
+    if (!storeLayout) return;
+    
+    const svg = document.getElementById('storeMap');
+    const existingContent = svg.querySelector('defs');
+    svg.innerHTML = '';
+    if (existingContent) {
+        svg.appendChild(existingContent);
+    }
+    
+    // Draw entrance marker
+    const entrance = storeLayout.entrance;
+    svg.innerHTML += `
+        <text x="${entrance.x}" y="${entrance.y - 10}" font-size="14" font-weight="bold" fill="#059669" text-anchor="start">
+            🚪 ENTRANCE
+        </text>
+        <circle cx="${entrance.x + 40}" cy="${entrance.y}" r="8" fill="#059669" />
+    `;
+    
+    // Draw checkout marker
+    const checkout = storeLayout.checkout;
+    svg.innerHTML += `
+        <text x="${checkout.x}" y="${checkout.y - 10}" font-size="14" font-weight="bold" fill="#dc2626" text-anchor="end">
+            CHECKOUT 🛒
+        </text>
+        <circle cx="${checkout.x}" cy="${checkout.y}" r="8" fill="#dc2626" />
+    `;
+    
+    // Draw each aisle and its shelves
+    storeLayout.aisles.forEach(aisle => {
+        // Draw aisle container
+        const aisleGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        aisleGroup.id = `aisle-${aisle.id}`;
+        
+        // Aisle background
+        const aisleRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        aisleRect.setAttribute("x", aisle.x);
+        aisleRect.setAttribute("y", aisle.y);
+        aisleRect.setAttribute("width", aisle.width);
+        aisleRect.setAttribute("height", aisle.height);
+        aisleRect.setAttribute("class", "aisle-rect");
+        aisleRect.setAttribute("rx", "8");
+        aisleGroup.appendChild(aisleRect);
+        
+        // Aisle label
+        const aisleLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        aisleLabel.setAttribute("x", aisle.x + aisle.width / 2);
+        aisleLabel.setAttribute("y", aisle.y - 10);
+        aisleLabel.setAttribute("text-anchor", "middle");
+        aisleLabel.setAttribute("font-size", "16");
+        aisleLabel.setAttribute("font-weight", "bold");
+        aisleLabel.setAttribute("fill", "#4f46e5");
+        aisleLabel.textContent = `AISLE ${aisle.id}`;
+        aisleGroup.appendChild(aisleLabel);
+        
+        // Aisle name subtitle
+        const aisleName = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        aisleName.setAttribute("x", aisle.x + aisle.width / 2);
+        aisleName.setAttribute("y", aisle.y + 15);
+        aisleName.setAttribute("text-anchor", "middle");
+        aisleName.setAttribute("font-size", "11");
+        aisleName.setAttribute("font-weight", "600");
+        aisleName.setAttribute("fill", "#6366f1");
+        aisleName.textContent = aisle.name;
+        aisleGroup.appendChild(aisleName);
+        
+        // Draw shelves within the aisle
+        aisle.shelves.forEach(shelf => {
+            const shelfGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            shelfGroup.id = `shelf-${shelf.id}`;
+            
+            const shelfY = aisle.y + shelf.y_offset + 30;
+            const shelfHeight = 60;
+            
+            const shelfRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            shelfRect.setAttribute("x", aisle.x + 5);
+            shelfRect.setAttribute("y", shelfY);
+            shelfRect.setAttribute("width", aisle.width - 10);
+            shelfRect.setAttribute("height", shelfHeight);
+            shelfRect.setAttribute("class", "shelf-rect");
+            shelfRect.setAttribute("rx", "4");
+            shelfRect.setAttribute("data-shelf-id", shelf.id);
+            shelfRect.setAttribute("data-shelf-name", shelf.name);
+            shelfRect.setAttribute("data-aisle-name", aisle.name);
+            
+            // Add hover tooltip behavior
+            shelfRect.addEventListener('mouseenter', (e) => {
+                const shelfName = e.target.getAttribute('data-shelf-name');
+                const aisleName = e.target.getAttribute('data-aisle-name');
+                document.getElementById('currentLocation').textContent = `${aisleName} - ${shelfName}`;
+            });
+            shelfRect.addEventListener('mouseleave', () => {
+                document.getElementById('currentLocation').textContent = '';
+            });
+            
+            shelfGroup.appendChild(shelfRect);
+            
+            // Shelf label
+            const shelfLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            shelfLabel.setAttribute("x", aisle.x + aisle.width / 2);
+            shelfLabel.setAttribute("y", shelfY + shelfHeight / 2 + 4);
+            shelfLabel.setAttribute("text-anchor", "middle");
+            shelfLabel.setAttribute("font-size", "10");
+            shelfLabel.setAttribute("font-weight", "600");
+            shelfLabel.setAttribute("fill", "#5b21b6");
+            shelfLabel.textContent = shelf.name;
+            shelfGroup.appendChild(shelfLabel);
+            
+            aisleGroup.appendChild(shelfGroup);
+        });
+        
+        svg.appendChild(aisleGroup);
+    });
+}
+
+function highlightShelf(shelfId) {
+    // Clear previous highlights
+    clearHighlights();
+    
+    // Highlight the target shelf
+    const shelfRect = document.querySelector(`[data-shelf-id="${shelfId}"]`);
+    if (shelfRect) {
+        shelfRect.classList.add('highlighted');
+        currentHighlightedShelf = shelfId;
+        
+        // Also highlight the parent aisle
+        const aisleId = shelfId.charAt(0);
+        const aisleRect = document.querySelector(`#aisle-${aisleId} .aisle-rect`);
+        if (aisleRect) {
+            aisleRect.classList.add('highlighted');
+        }
+        
+        console.log(`Highlighted shelf: ${shelfId}`);
+    }
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.highlighted').forEach(el => el.classList.remove('highlighted'));
+    currentHighlightedShelf = null;
+    clearRoute();
+}
+
+function showRouteToShelf(targetShelfId) {
+    // Get coordinates for the target shelf
+    fetch('/api/store/location', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({subcat: targetShelfId})
+    })
+    .then(res => res.json())
+    .then(toLocation => {
+        // Calculate route from entrance to target
+        return fetch('/api/store/route', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                from: storeLayout.entrance,
+                to: toLocation
+            })
+        });
+    })
+    .then(res => res.json())
+    .then(routeData => {
+        drawRoute(routeData.waypoints);
+    })
+    .catch(error => console.error('Route calculation failed:', error));
+}
+
+function drawRoute(waypoints) {
+    if (!waypoints || waypoints.length < 2) return;
+    
+    clearRoute();
+    
+    const svg = document.getElementById('storeMap');
+    
+    // Create path string from waypoints
+    let pathData = `M ${waypoints[0].x} ${waypoints[0].y}`;
+    for (let i = 1; i < waypoints.length; i++) {
+        pathData += ` L ${waypoints[i].x} ${waypoints[i].y}`;
+    }
+    
+    // Draw the route line
+    const routeLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    routeLine.setAttribute("d", pathData);
+    routeLine.setAttribute("class", "route-line");
+    routeLine.setAttribute("marker-end", "url(#arrowhead)");
+    routeLine.id = "activeRoute";
+    
+    svg.appendChild(routeLine);
+    
+    // Add a pulsing marker at destination
+    const dest = waypoints[waypoints.length - 1];
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    marker.setAttribute("cx", dest.x);
+    marker.setAttribute("cy", dest.y);
+    marker.setAttribute("r", "8");
+    marker.setAttribute("class", "product-marker");
+    marker.id = "destinationMarker";
+    
+    svg.appendChild(marker);
+    
+    currentRoute = waypoints;
+    console.log('Route drawn with', waypoints.length, 'waypoints');
+}
+
+function clearRoute() {
+    const existingRoute = document.getElementById('activeRoute');
+    const existingMarker = document.getElementById('destinationMarker');
+    if (existingRoute) existingRoute.remove();
+    if (existingMarker) existingMarker.remove();
+    currentRoute = null;
+}
+
+function resetMap() {
+    clearHighlights();
+    clearRoute();
+    document.getElementById('currentLocation').textContent = '';
+}
+
+// ===== PRODUCT MANAGEMENT =====
 
 async function refreshProducts() {
-  try {
-    const subcat = document.getElementById('subcatSel').value || '';
-    const qs = subcat ? ('?subcat=' + encodeURIComponent(subcat)) : '';
-    console.log('Fetching products from:', '/api/products' + qs);
+    const subcat = document.getElementById('subcatSel').value;
+    const url = subcat ? `/api/products?subcat=${encodeURIComponent(subcat)}` : '/api/products';
     
-    const res = await fetch('/api/products' + qs);
-    if (!res.ok) {
-      console.error('API error:', res.status, res.statusText);
-      alert('Failed to load products. Error: ' + res.status);
-      return;
+    console.log('Fetching products from:', url);
+    
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        products = data.items;
+        
+        // Populate category filter if empty
+        if (document.getElementById('subcatSel').options.length === 1 && data.subcats) {
+            data.subcats.forEach(sc => {
+                const option = document.createElement('option');
+                option.value = sc;
+                option.textContent = sc;
+                document.getElementById('subcatSel').appendChild(option);
+            });
+        }
+        
+        renderProductBrowser();
+        console.log('Loaded', products.length, 'products');
+    } catch (error) {
+        console.error('Failed to load products:', error);
+    }
+}
+
+function renderProductBrowser() {
+    const container = document.getElementById('productBrowser');
+    container.innerHTML = '';
+    
+    if (products.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No products found</p>';
+        return;
     }
     
-    const data = await res.json();
-    console.log('Got products:', data);
-
-    // Fill subcat select once
-    const sel = document.getElementById('subcatSel');
-    if (sel.options.length <= 1) {
-      data.subcats.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s;
-        o.textContent = s;
-        sel.appendChild(o);
-      });
-    }
-
-    // Populate products table
-    const tb = document.querySelector('#prodTable tbody');
-    tb.innerHTML = '';
-    
-    data.items.forEach(p => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-gray-50 transition-colors';
-      
-      const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
-      const size = (p.size_value && p.size_unit) ? (p.size_value + p.size_unit) : '—';
-      
-      const titleCell = document.createElement('td');
-      titleCell.className = 'px-6 py-4 text-sm font-medium text-gray-900';
-      titleCell.textContent = p.title;
-      
-      const subcatCell = document.createElement('td');
-      subcatCell.className = 'px-6 py-4 text-sm text-gray-600';
-      subcatCell.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + p.subcat + '</span>';
-      
-      const priceCell = document.createElement('td');
-      priceCell.className = 'px-6 py-4 text-sm font-bold text-green-600';
-      priceCell.textContent = '$' + fmt(p.price || 0);
-      
-      const sizeCell = document.createElement('td');
-      sizeCell.className = 'px-6 py-4 text-sm text-gray-500';
-      sizeCell.textContent = size;
-      
-      const nutrCell = document.createElement('td');
-      nutrCell.className = 'px-6 py-4 text-xs text-gray-500';
-      nutrCell.textContent = nutr;
-      
-      const addCell = document.createElement('td');
-      addCell.className = 'px-6 py-4 text-right';
-      const addBtn = document.createElement('button');
-      addBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-      addBtn.textContent = 'Add';
-      addBtn.onclick = function() { addToCart(p); };
-      addCell.appendChild(addBtn);
-      
-      tr.appendChild(titleCell);
-      tr.appendChild(subcatCell);
-      tr.appendChild(priceCell);
-      tr.appendChild(sizeCell);
-      tr.appendChild(nutrCell);
-      tr.appendChild(addCell);
-      
-      tb.appendChild(tr);
+    products.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-50 hover:bg-indigo-50 p-3 rounded-lg border border-gray-200 hover:border-indigo-300 transition-all cursor-pointer';
+        card.onclick = () => addToCart(product);
+        
+        card.innerHTML = `
+            <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0 pr-2">
+                    <p class="text-sm font-semibold text-gray-900 truncate">${product.title}</p>
+                    <p class="text-xs text-indigo-600 font-medium">${product.subcat}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-bold text-green-700">$${product.price.toFixed(2)}</p>
+                    <button class="mt-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded font-medium">
+                        Add
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
     });
-  } catch (error) {
-    console.error('Error loading products:', error);
-    alert('Failed to load products: ' + error.message);
-  }
 }
 
-function addToCart(p) {
-  console.log('Adding to cart:', p.title);
-  const idx = CART.findIndex(x => x.title === p.title && x.subcat === p.subcat);
-  if (idx >= 0) {
-    CART[idx].qty += 1;
-  } else {
-    const item = Object.assign({}, p);
-    item.qty = 1;
-    CART.push(item);
-  }
-  updateBadge();
-  console.log('Cart now has', CART.length, 'items');
-}
+// ===== CART MANAGEMENT =====
 
-function updateBadge() {
-  const items = CART.reduce((s, x) => s + x.qty, 0);
-  document.getElementById('cartBadge').innerHTML = 'Cart: <span class="font-bold">' + items + '</span> items';
-}
-
-function viewCart() {
-  console.log('View Cart clicked. Cart has', CART.length, 'items:', CART);
-  const div = document.getElementById('cartItems');
-  if (!div) {
-    console.error('cartItems div not found!');
-    return;
-  }
-  
-  div.innerHTML = '';
-  const budget = parseFloat(document.getElementById('budget').value || '0');
-  
-  if (CART.length === 0) {
-    div.innerHTML = '<div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-12 text-center"><p class="text-gray-500 text-lg">Your cart is empty</p><p class="text-gray-400 text-sm mt-2">Add some products to get started!</p></div>';
-    document.getElementById('subtotal').textContent = 'Subtotal: $0.00';
-  } else {
-    let sum = 0;
-    CART.forEach(function(x, i) {
-      const line = x.price * x.qty;
-      sum += line;
-      const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
-      const row = document.createElement('div');
-      row.className = 'bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all';
-      
-      const badge = x.isSubstitute ? '<span class="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">Budget-Friendly</span>' : '';
-      
-      row.innerHTML = '<div class="font-semibold text-gray-900 mb-2">' + x.title + badge + '</div>' +
-        '<div class="text-sm text-gray-600 mb-2">' +
-          '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + x.subcat + '</span>' +
-          '<span class="ml-2 text-gray-500">Size: ' + size + '</span>' +
-        '</div>' +
-        '<div class="flex items-center justify-between">' +
-          '<div class="text-sm">' +
-            '<span class="font-bold text-green-600">$' + fmt(x.price) + '</span> ' +
-            '<span class="text-gray-500">× ' + x.qty + ' = </span>' +
-            '<span class="font-bold text-gray-900">$' + fmt(line) + '</span>' +
-          '</div>' +
-          '<div class="flex items-center space-x-2">' +
-            '<button onclick="decQty(' + i + ')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold w-8 h-8 rounded-lg transition-colors">-</button>' +
-            '<button onclick="incQty(' + i + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-8 h-8 rounded-lg transition-colors">+</button>' +
-            '<button onclick="removeItem(' + i + ')" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">Remove</button>' +
-          '</div>' +
-        '</div>';
-      
-      div.appendChild(row);
-    });
+function addToCart(product) {
+    console.log('Adding to cart:', product.title);
     
-    // Budget warning display
-    const warningThreshold75 = budget * 0.75;
-    let warningHtml = '';
-    
-    if (sum > budget) {
-      warningHtml = '<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg">' +
-        '<div class="flex items-center">' +
-          '<svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">' +
-            '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>' +
-          '</svg>' +
-          '<span class="font-bold text-red-700">Over Budget!</span>' +
-        '</div>' +
-        '<p class="text-red-600 text-sm mt-1">Your cart total ($' + fmt(sum) + ') exceeds your budget ($' + fmt(budget) + ') by $' + fmt(sum - budget) + '</p>' +
-      '</div>';
-    } else if (sum >= warningThreshold75) {
-      warningHtml = '<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded-lg">' +
-        '<div class="flex items-center">' +
-          '<svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">' +
-            '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>' +
-          '</svg>' +
-          '<span class="font-bold text-yellow-700">Budget Alert</span>' +
-        '</div>' +
-        '<p class="text-yellow-600 text-sm mt-1">You have used ' + Math.round((sum / budget) * 100) + '% of your budget ($' + fmt(sum) + ' of $' + fmt(budget) + ')</p>' +
-      '</div>';
-    }
-    
-    document.getElementById('subtotal').innerHTML = warningHtml + '<span class="text-2xl font-bold text-gray-900">Subtotal: <span class="text-indigo-600">$' + fmt(sum) + '</span></span>';
-  }
-  
-  const panel = document.getElementById('cartPanel');
-  if (!panel) {
-    console.error('cartPanel not found!');
-    return;
-  }
-  panel.style.display = 'block';
-  console.log('Cart panel should now be visible');
-  
-  // Auto-show all recommendation systems if over budget
-  const sum = CART.reduce((s, x) => s + (x.price * x.qty), 0);
-  if (sum > budget && budget > 0) {
-    console.log('Over budget! Triggering all recommendation systems...');
-    setTimeout(function() { 
-      getSuggestions();
-      getCFRecommendations();
-      getBlendedRecommendations();
-    }, 100);
-  } else {
-    document.getElementById('suggestions').style.display = 'none';
-    document.getElementById('cfRecommendations').style.display = 'none';
-    document.getElementById('blendedRecommendations').style.display = 'none';
-  }
-}
-
-function hideCart() {
-  document.getElementById('cartPanel').style.display = 'none';
-}
-
-function incQty(i) {
-  CART[i].qty += 1;
-  viewCart();
-  updateBadge();
-}
-
-function decQty(i) {
-  CART[i].qty = Math.max(1, CART[i].qty - 1);
-  viewCart();
-  updateBadge();
-}
-
-function removeItem(i) {
-  CART.splice(i, 1);
-  viewCart();
-  updateBadge();
-}
-
-function applyReplacement(originalTitle, replacementProduct) {
-  console.log('Applying replacement:', originalTitle, '->', replacementProduct.title);
-  
-  const idx = CART.findIndex(x => x.title === originalTitle);
-  if (idx === -1) {
-    alert('Original item not found in cart. It may have been removed.');
-    return;
-  }
-  
-  CART.splice(idx, 1);
-  replacementProduct.isSubstitute = true;
-  replacementProduct.replacedItem = originalTitle;
-  CART.push(replacementProduct);
-  
-  updateBadge();
-  viewCart();
-  
-  const msg = document.createElement('div');
-  msg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
-  msg.innerHTML = '<div class="flex items-center space-x-3">' +
-    '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-    '</svg>' +
-    '<div>' +
-      '<div class="font-bold">Replacement Applied!</div>' +
-      '<div class="text-sm text-green-100 mt-1">' + originalTitle.substring(0, 35) + '... → ' + replacementProduct.title.substring(0, 35) + '...</div>' +
-    '</div>' +
-  '</div>';
-  
-  document.body.appendChild(msg);
-  setTimeout(function() {
-    msg.style.opacity = '0';
-    msg.style.transform = 'translateY(-20px)';
-    setTimeout(function() { msg.remove(); }, 300);
-  }, 3000);
-}
-
-async function getSuggestions() {
-  const budget = parseFloat(document.getElementById('budget').value || '0');
-  if (!CART.length) {
-    alert('Cart is empty');
-    return;
-  }
-  
-  const res = await fetch('/api/budget/recommendations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cart: CART, budget: budget })
-  });
-  
-  const data = await res.json();
-  const sugsDiv = document.getElementById('sugs');
-  sugsDiv.innerHTML = '';
-  
-  if (!data.suggestions || !data.suggestions.length) {
-    sugsDiv.innerHTML = '<div class="bg-white border border-indigo-200 rounded-xl p-6 text-center text-gray-500">No suggestions available - you are within budget!</div>';
-  } else {
-    sugsDiv.innerHTML = '<div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-4 rounded-r-lg">' +
-      '<p class="text-indigo-800 font-medium">' + data.message + '</p>' +
-    '</div>';
-    
-    data.suggestions.forEach(function(s) {
-      const card = document.createElement('div');
-      card.className = 'bg-white border border-indigo-200 rounded-xl p-5 hover:shadow-lg transition-all';
-      
-      card.innerHTML = '<div class="mb-3">' +
-        '<div class="flex items-center space-x-2 mb-2">' +
-          '<svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
-          '</svg>' +
-          '<span class="text-gray-700">Replace:</span>' +
-        '</div>' +
-        '<div class="ml-7">' +
-          '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
-          '<div class="text-lg font-bold text-indigo-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg">' +
-        '<div class="flex items-center space-x-2">' +
-          '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-          '</svg>' +
-          '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
-        '</div>' +
-        '<span class="text-sm text-gray-600">Similarity: <span class="font-semibold">' + s.similarity + '</span></span>' +
-      '</div>' +
-      '<div class="text-sm text-gray-600 mb-4 italic">' +
-        '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
-      '</div>';
-      
-      const applyBtn = document.createElement('button');
-      applyBtn.className = 'w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-      applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
-        '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-        '</svg>' +
-        '<span>Apply This Replacement</span>' +
-      '</div>';
-      applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
-      
-      card.appendChild(applyBtn);
-      sugsDiv.appendChild(card);
-    });
-  }
-  
-  document.getElementById('suggestions').style.display = 'block';
-}
-
-async function checkout() {
-  if (CART.length === 0) {
-    alert('Your cart is empty!');
-    return;
-  }
-  
-  const checkoutBtn = document.getElementById('checkoutBtn');
-  checkoutBtn.disabled = true;
-  checkoutBtn.innerHTML = '<span>Processing...</span>';
-  
-  try {
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: CART })
-    });
-    
-    const data = await res.json();
-    
-    if (data.success) {
-      const successMsg = document.createElement('div');
-      successMsg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
-      successMsg.innerHTML = '<div class="flex items-center space-x-3">' +
-        '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-        '</svg>' +
-        '<div>' +
-          '<div class="font-bold">Order Completed!</div>' +
-          '<div class="text-sm text-green-100 mt-1">Order #' + data.order_id + ' - $' + fmt(data.total_amount) + ' (' + data.item_count + ' items)</div>' +
-        '</div>' +
-      '</div>';
-      
-      document.body.appendChild(successMsg);
-      setTimeout(function() {
-        successMsg.style.opacity = '0';
-        successMsg.style.transform = 'translateY(-20px)';
-        setTimeout(function() { successMsg.remove(); }, 300);
-      }, 4000);
-      
-      CART = [];
-      updateBadge();
-      hideCart();
-      document.getElementById('suggestions').style.display = 'none';
+    const existing = cart.find(item => item.id === product.id);
+    if (existing) {
+        existing.qty++;
     } else {
-      alert('Checkout failed: ' + (data.error || 'Unknown error'));
+        cart.push({...product, qty: 1});
     }
-  } catch (error) {
-    console.error('Checkout error:', error);
-    alert('Checkout failed: ' + error.message);
-  } finally {
-    checkoutBtn.disabled = false;
-    checkoutBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-    '</svg>' +
-    '<span>Complete Purchase</span>';
-  }
+    
+    updateCartDisplay();
+    updateCartBadge();
+    checkBudget();
+    showNotification(`Added ${product.title} to cart`);
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    updateCartDisplay();
+    updateCartBadge();
+    checkBudget();
+}
+
+function updateQuantity(productId, delta) {
+    const item = cart.find(i => i.id === productId);
+    if (item) {
+        item.qty = Math.max(1, item.qty + delta);
+        updateCartDisplay();
+        checkBudget();
+    }
+}
+
+function updateCartDisplay() {
+    const container = document.getElementById('cartItems');
+    const subtotalEl = document.getElementById('subtotal');
+    
+    if (cart.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Cart is empty</p>';
+        subtotalEl.textContent = '';
+        return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const budget = parseFloat(document.getElementById('budget').value) || 0;
+    
+    container.innerHTML = '';
+    cart.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-50 p-2 rounded-lg border border-gray-200';
+        div.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0 pr-2">
+                    <p class="text-xs font-semibold text-gray-900 truncate">${item.title}</p>
+                    <p class="text-xs text-gray-600">$${item.price.toFixed(2)} × ${item.qty}</p>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <button onclick="updateQuantity('${item.id}', -1)" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">−</button>
+                    <button onclick="updateQuantity('${item.id}', 1)" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">+</button>
+                    <button onclick="removeFromCart('${item.id}')" class="px-1.5 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold">×</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    
+    const isOverBudget = budget > 0 && total > budget;
+    subtotalEl.innerHTML = `
+        Total: <span class="${isOverBudget ? 'text-red-600' : 'text-green-700'} font-bold">
+            $${total.toFixed(2)}
+        </span>
+        ${budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
+    `;
+}
+
+function updateCartBadge() {
+    const count = cart.reduce((sum, item) => sum + item.qty, 0);
+    document.getElementById('cartBadge').textContent = `Cart: ${count} item${count !== 1 ? 's' : ''}`;
+}
+
+// ===== AI RECOMMENDATIONS =====
+
+async function checkBudget() {
+    const budget = parseFloat(document.getElementById('budget').value) || 0;
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    // Hide all recommendation panels by default
+    document.getElementById('budgetSuggestions').style.display = 'none';
+    document.getElementById('cfSuggestions').style.display = 'none';
+    document.getElementById('hybridSuggestions').style.display = 'none';
+    
+    if (budget <= 0 || total <= budget || cart.length === 0) {
+        return; // No recommendations needed
+    }
+    
+    console.log('Over budget! Fetching all recommendation systems...');
+    
+    // Fetch all three recommendation systems in parallel
+    Promise.all([
+        getBudgetRecommendations(),
+        getCFRecommendations(),
+        getBlendedRecommendations()
+    ]);
+}
+
+async function getBudgetRecommendations() {
+    const budget = parseFloat(document.getElementById('budget').value) || 0;
+    
+    try {
+        const response = await fetch('/api/budget/recommendations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cart, budget})
+        });
+        const data = await response.json();
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            document.getElementById('budgetSuggestions').style.display = 'block';
+            renderSuggestions('budgetList', data.suggestions, 'budget');
+        }
+    } catch (error) {
+        console.error('Failed to get budget recommendations:', error);
+    }
 }
 
 async function getCFRecommendations() {
-  console.log('getCFRecommendations() called');
-  const budget = parseFloat(document.getElementById('budget').value || '0');
-  
-  try {
-    const res = await fetch('/api/cf/recommendations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: CART, budget: budget })
-    });
-    const data = await res.json();
-    console.log('CF recommendations response:', data);
+    const budget = parseFloat(document.getElementById('budget').value) || 0;
     
-    const contentDiv = document.getElementById('cfRecsContent');
-    contentDiv.innerHTML = '';
-    
-    if (!data.model_available) {
-      contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center">' +
-        '<p class="text-gray-600 font-medium mb-2">CF recommendations not yet available</p>' +
-        '<p class="text-gray-500 text-sm">' + data.reason + '</p>' +
-      '</div>';
-      document.getElementById('cfRecommendations').style.display = 'block';
-      return;
+    try {
+        const response = await fetch('/api/cf/recommendations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cart, budget})
+        });
+        const data = await response.json();
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            document.getElementById('cfSuggestions').style.display = 'block';
+            renderSuggestions('cfList', data.suggestions, 'cf');
+        }
+    } catch (error) {
+        console.error('Failed to get CF recommendations:', error);
     }
-    
-    if (!data.suggestions || data.suggestions.length === 0) {
-      contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No CF replacements found') + '</div>';
-    } else {
-      contentDiv.innerHTML = '<div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4 rounded-r-lg">' +
-        '<p class="text-purple-800 font-medium">' + data.message + '</p>' +
-      '</div>';
-      
-      data.suggestions.forEach(function(s) {
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-purple-200 rounded-xl p-5 hover:shadow-lg transition-all';
-        
-        card.innerHTML = '<div class="mb-3">' +
-          '<div class="flex items-center space-x-2 mb-2">' +
-            '<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
-            '</svg>' +
-            '<span class="text-gray-700">Replace:</span>' +
-          '</div>' +
-          '<div class="ml-7">' +
-            '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
-            '<div class="text-lg font-bold text-purple-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg">' +
-          '<div class="flex items-center space-x-2">' +
-            '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-            '</svg>' +
-            '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
-          '</div>' +
-          '<span class="text-sm text-gray-600">Score: <span class="font-semibold">' + s.similarity + '</span></span>' +
-        '</div>' +
-        '<div class="text-sm text-gray-600 mb-4 italic">' +
-          '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
-        '</div>';
-        
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-        applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
-          '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-          '</svg>' +
-          '<span>Apply This Replacement</span>' +
-        '</div>';
-        applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
-        
-        card.appendChild(applyBtn);
-        contentDiv.appendChild(card);
-      });
-    }
-    
-    document.getElementById('cfRecommendations').style.display = 'block';
-  } catch (error) {
-    console.error('Error fetching CF recommendations:', error);
-    alert('Failed to load CF recommendations: ' + error.message);
-  }
 }
 
 async function getBlendedRecommendations() {
-  console.log('getBlendedRecommendations() called');
-  const budget = parseFloat(document.getElementById('budget').value || '0');
-  
-  try {
-    const res = await fetch('/api/blended/recommendations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: CART, budget: budget })
-    });
-    const data = await res.json();
-    console.log('Blended recommendations response:', data);
+    const budget = parseFloat(document.getElementById('budget').value) || 0;
     
-    const contentDiv = document.getElementById('blendedRecsContent');
-    contentDiv.innerHTML = '';
-    
-    if (!data.model_available) {
-      contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center">' +
-        '<p class="text-gray-600 font-medium mb-2">Hybrid recommendations not yet available</p>' +
-        '<p class="text-gray-500 text-sm">' + data.reason + '</p>' +
-      '</div>';
-      document.getElementById('blendedRecommendations').style.display = 'block';
-      return;
+    try {
+        const response = await fetch('/api/blended/recommendations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cart, budget})
+        });
+        const data = await response.json();
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            document.getElementById('hybridSuggestions').style.display = 'block';
+            renderSuggestions('hybridList', data.suggestions, 'hybrid');
+        }
+    } catch (error) {
+        console.error('Failed to get blended recommendations:', error);
     }
-    
-    if (!data.suggestions || data.suggestions.length === 0) {
-      contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No hybrid replacements found') + '</div>';
-    } else {
-      contentDiv.innerHTML = '<div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4 rounded-r-lg">' +
-        '<p class="text-emerald-800 font-medium">🤖 ' + data.message + '</p>' +
-        '<p class="text-emerald-600 text-sm mt-1">Combining 60% CF + 40% semantic similarity for best results</p>' +
-      '</div>';
-      
-      data.suggestions.forEach(function(s) {
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-emerald-200 rounded-xl p-5 hover:shadow-lg transition-all';
-        
-        card.innerHTML = '<div class="mb-3">' +
-          '<div class="flex items-center space-x-2 mb-2">' +
-            '<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
-            '</svg>' +
-            '<span class="text-gray-700">Replace:</span>' +
-          '</div>' +
-          '<div class="ml-7">' +
-            '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
-            '<div class="text-lg font-bold text-emerald-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex items-center justify-between mb-3 bg-green-50 p-3 rounded-lg">' +
-          '<div class="flex items-center space-x-2">' +
-            '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-            '</svg>' +
-            '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
-          '</div>' +
-          '<span class="text-sm text-gray-600">Score: <span class="font-semibold">' + s.similarity + '</span></span>' +
-        '</div>' +
-        '<div class="text-sm text-gray-600 mb-4 italic">' +
-          '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
-        '</div>';
-        
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-        applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
-          '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-          '</svg>' +
-          '<span>Apply This Replacement</span>' +
-        '</div>';
-        applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
-        
-        card.appendChild(applyBtn);
-        contentDiv.appendChild(card);
-      });
-    }
-    
-    document.getElementById('blendedRecommendations').style.display = 'block';
-  } catch (error) {
-    console.error('Error fetching blended recommendations:', error);
-    alert('Failed to load hybrid recommendations: ' + error.message);
-  }
 }
 
-// Auto-load products on page load
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Page loaded, auto-loading products...');
-  refreshProducts();
-});
+function renderSuggestions(containerId, suggestions, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    suggestions.forEach(sug => {
+        const div = document.createElement('div');
+        div.className = 'bg-white p-2 rounded-lg border-2 border-gray-300 hover:border-green-500 transition-all';
+        
+        const replacement = sug.replacement_product;
+        
+        div.innerHTML = `
+            <p class="text-xs font-semibold text-gray-900 mb-1">${replacement.title}</p>
+            <p class="text-xs text-gray-600 mb-2">${sug.reason}</p>
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-green-700">Save $${sug.expected_saving}</span>
+                <button onclick='applyRecommendation(${JSON.stringify(sug).replace(/'/g, "&#39;")})' 
+                        class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded font-bold">
+                    Replace
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(div);
+    });
+}
+
+function applyRecommendation(suggestion) {
+    const toRemove = suggestion.replace;
+    const toAdd = suggestion.replacement_product;
+    
+    console.log('Applying recommendation:', toRemove, '->', toAdd.title);
+    
+    // Remove the old item
+    const oldItem = cart.find(item => item.title === toRemove);
+    if (oldItem) {
+        removeFromCart(oldItem.id);
+    }
+    
+    // Add the new item
+    addToCart(toAdd);
+    
+    // Highlight the shelf where the new product is located
+    highlightProductLocation(toAdd.subcat);
+    
+    showNotification(`Replaced with ${toAdd.title}!`);
+}
+
+async function highlightProductLocation(subcat) {
+    try {
+        const response = await fetch('/api/store/location', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({subcat})
+        });
+        const location = await response.json();
+        
+        console.log('Product location:', location);
+        
+        // Highlight the shelf
+        highlightShelf(location.shelf_id);
+        
+        // Show route to the shelf
+        showRouteToShelf(location.shelf_id);
+        
+    } catch (error) {
+        console.error('Failed to get product location:', error);
+    }
+}
+
+// ===== CHECKOUT =====
+
+async function checkout() {
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    try {
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cart})
+        });
+        const result = await response.json();
+        
+        console.log('Checkout successful:', result);
+        
+        showNotification(`Purchase complete! Total: $${total.toFixed(2)}`);
+        
+        // Clear cart
+        cart = [];
+        updateCartDisplay();
+        updateCartBadge();
+        clearHighlights();
+        
+        // Hide recommendations
+        document.getElementById('budgetSuggestions').style.display = 'none';
+        document.getElementById('cfSuggestions').style.display = 'none';
+        document.getElementById('hybridSuggestions').style.display = 'none';
+        
+    } catch (error) {
+        console.error('Checkout failed:', error);
+        alert('Checkout failed. Please try again.');
+    }
+}
+
+// ===== UTILITIES =====
+
+function showNotification(message) {
+    const notif = document.getElementById('successNotif');
+    const msg = document.getElementById('notifMsg');
+    msg.textContent = message;
+    notif.style.display = 'block';
+    
+    setTimeout(() => {
+        notif.style.display = 'none';
+    }, 3000);
+}

@@ -3,168 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Grocery Shopping - Budget Smart Recommendations</title>
+  <title>AI Supermarket - Virtual Shopping Experience</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
+    .aisle-rect { 
+      fill: #e0e7ff; 
+      stroke: #6366f1; 
+      stroke-width: 2; 
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .aisle-rect:hover { fill: #c7d2fe; }
+    .aisle-rect.highlighted { 
+      fill: #fbbf24; 
+      stroke: #f59e0b; 
+      stroke-width: 3;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+    }
+    .shelf-rect { 
+      fill: #ddd6fe; 
+      stroke: #8b5cf6; 
+      stroke-width: 1.5;
+      cursor: pointer;
+    }
+    .shelf-rect:hover { fill: #c4b5fd; }
+    .shelf-rect.highlighted { 
+      fill: #34d399; 
+      stroke: #059669; 
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 6px rgba(5, 150, 105, 0.6));
+    }
+    .route-line {
+      stroke: #ef4444;
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 8, 4;
+      animation: dash 1s linear infinite;
+    }
+    @keyframes dash {
+      to { stroke-dashoffset: -12; }
+    }
+    .product-marker {
+      fill: #ef4444;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { r: 8; opacity: 1; }
+      50% { r: 12; opacity: 0.7; }
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
   
   <!-- Header -->
   <div class="bg-white shadow-lg border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center space-x-3">
           <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">AI Grocery Shopping</h1>
-            <p class="text-sm text-gray-600">Smart budget recommendations powered by AI</p>
+            <h1 class="text-2xl font-bold text-gray-900">AI Supermarket</h1>
+            <p class="text-sm text-gray-600">Virtual shopping with smart AI recommendations</p>
           </div>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
+            <label class="text-sm font-semibold text-gray-700">Budget:</label>
+            <div class="relative">
+              <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold text-sm">$</span>
+              <input id="budget" type="number" min="0" step="0.01" value="40" 
+                     class="w-24 pl-6 pr-2 py-1.5 border-2 border-gray-300 rounded-lg focus:border-indigo-500 font-semibold text-sm">
+            </div>
+          </div>
           <span id="cartBadge" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-semibold text-sm">
             Cart: 0 items
           </span>
-          <button onclick="viewCart()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105">
-            View Cart
-          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+  <!-- Main Container: Map (left) + Cart/Recommendations (right) -->
+  <div class="flex gap-4 px-4 py-4 max-w-full mx-auto">
     
-    <!-- Budget Controls -->
-    <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Your Budget</label>
-          <div class="relative">
-            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">$</span>
-            <input id="budget" type="number" min="0" step="0.01" value="40" 
-                   class="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-semibold text-lg">
-          </div>
+    <!-- LEFT: Store Map (60% width) -->
+    <div class="flex-[3] bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-900">Store Map</h2>
+        <div class="flex items-center space-x-2">
+          <button onclick="resetMap()" class="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">
+            Reset View
+          </button>
+          <div id="currentLocation" class="text-sm text-gray-600 font-medium"></div>
         </div>
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Category Filter</label>
+      </div>
+      
+      <!-- SVG Store Map -->
+      <div class="border-2 border-gray-300 rounded-xl overflow-auto bg-gray-50" style="height: calc(100vh - 200px);">
+        <svg id="storeMap" width="1100" height="750" viewBox="0 0 1100 750" class="mx-auto">
+          <!-- Store layout will be rendered here by JavaScript -->
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="#ef4444" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+      
+      <!-- Map Legend -->
+      <div class="mt-4 flex items-center justify-center space-x-6 text-sm">
+        <div class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-indigo-200 border-2 border-indigo-600 rounded"></div>
+          <span class="text-gray-700 font-medium">Aisle</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-purple-200 border-2 border-purple-600 rounded"></div>
+          <span class="text-gray-700 font-medium">Shelf</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-green-400 border-2 border-green-700 rounded"></div>
+          <span class="text-gray-700 font-medium">Highlighted Item</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-1 bg-red-500" style="border-top: 2px dashed;"></div>
+          <span class="text-gray-700 font-medium">Route</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Cart + Recommendations (40% width) -->
+    <div class="flex-[2] space-y-4">
+      
+      <!-- Product Browser -->
+      <div class="bg-white rounded-2xl shadow-xl p-4 border border-gray-200">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-bold text-gray-900">Browse Products</h3>
           <select id="subcatSel" onchange="refreshProducts()" 
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium">
-            <option value="">All Categories</option>
+                  class="text-sm px-3 py-1.5 border-2 border-gray-300 rounded-lg focus:border-indigo-500 font-medium">
+            <option value="">All Aisles</option>
           </select>
         </div>
-        <div class="flex items-end">
-          <button onclick="refreshProducts()" 
-                  class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105">
-            Refresh Products
-          </button>
+        <div id="productBrowser" class="space-y-2 overflow-y-auto" style="max-height: 250px;">
+          <!-- Product cards will appear here -->
         </div>
       </div>
-    </div>
 
-    <!-- Products Table -->
-    <div id="products" class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-      <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-bold text-gray-800">Available Products</h2>
-      </div>
-      <div class="overflow-x-auto">
-        <table id="prodTable" class="w-full">
-          <thead class="bg-gray-50 border-b-2 border-gray-200">
-            <tr>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Product</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Category</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Price</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Size</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nutrition</th>
-              <th class="px-6 py-4"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Cart Panel -->
-    <div id="cartPanel" class="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-200" style="display:none;">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">Shopping Cart</h2>
-        <div id="subtotal" class="text-lg font-semibold text-gray-700"></div>
-      </div>
-      <div id="cartItems" class="space-y-4"></div>
-      <div class="mt-6 flex justify-between items-center">
-        <button id="checkoutBtn" onclick="checkout()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <span>Complete Purchase</span>
-        </button>
-        <button onclick="hideCart()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200">
-          Close Cart
-        </button>
-      </div>
-    </div>
-
-    <!-- AI Budget Recommendations -->
-    <div id="suggestions" class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl p-6 border-2 border-indigo-300" style="display:none;">
-      <div class="flex items-center space-x-3 mb-4">
-        <div class="bg-indigo-600 p-2 rounded-lg">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-          </svg>
+      <!-- Shopping Cart -->
+      <div id="cartPanel" class="bg-white rounded-2xl shadow-xl p-4 border-2 border-indigo-200">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-bold text-gray-900">Shopping Cart</h3>
+          <div id="subtotal" class="text-sm font-semibold text-gray-700"></div>
         </div>
-        <h3 class="text-xl font-bold text-indigo-900">AI Budget-Saving Recommendations</h3>
-      </div>
-      <div id="sugs" class="space-y-4"></div>
-    </div>
-
-    <!-- Personalized Recommendations (CF Model) -->
-    <div id="cfRecommendations" class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl shadow-xl p-6 border-2 border-purple-300" style="display:none;">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center space-x-3">
-          <div class="bg-purple-600 p-2 rounded-lg">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-          </div>
-          <h3 class="text-xl font-bold text-purple-900">Personalized Recommendations</h3>
+        <div id="cartItems" class="space-y-2 overflow-y-auto" style="max-height: 200px;">
+          <p class="text-sm text-gray-500 text-center py-4">Cart is empty</p>
         </div>
-        <button onclick="getCFRecommendations()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">
-          Refresh
+        <button id="checkoutBtn" onclick="checkout()" 
+                class="w-full mt-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all text-sm">
+          Complete Purchase
         </button>
       </div>
-      <div id="cfRecsContent" class="space-y-4"></div>
-    </div>
 
-    <!-- Blended Recommendations (CF + Semantic) -->
-    <div id="blendedRecommendations" class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-xl p-6 border-2 border-emerald-300" style="display:none;">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center space-x-3">
-          <div class="bg-emerald-600 p-2 rounded-lg">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-          </div>
-          <h3 class="text-xl font-bold text-emerald-900">Hybrid AI Recommendations</h3>
-        </div>
-        <button onclick="getBlendedRecommendations()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all">
-          Refresh
-        </button>
+      <!-- AI Budget Recommendations -->
+      <div id="budgetSuggestions" class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl p-4 border-2 border-indigo-300" style="display:none;">
+        <h4 class="text-md font-bold text-indigo-900 mb-2">💡 Budget-Saving (Semantic)</h4>
+        <div id="budgetList" class="space-y-2"></div>
       </div>
-      <div id="blendedRecsContent" class="space-y-4"></div>
-    </div>
 
+      <div id="cfSuggestions" class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl shadow-xl p-4 border-2 border-purple-300" style="display:none;">
+        <h4 class="text-md font-bold text-purple-900 mb-2">🎯 Personalized (CF)</h4>
+        <div id="cfList" class="space-y-2"></div>
+      </div>
+
+      <div id="hybridSuggestions" class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-xl p-4 border-2 border-emerald-300" style="display:none;">
+        <h4 class="text-md font-bold text-emerald-900 mb-2">🤖 Hybrid AI</h4>
+        <div id="hybridList" class="space-y-2"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- JavaScript -->
+  <!-- Success Notification -->
+  <div id="successNotif" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl" style="display:none;">
+    <div class="flex items-center space-x-2">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <span id="notifMsg" class="font-semibold"></span>
+    </div>
+  </div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
