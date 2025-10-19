@@ -1,0 +1,41 @@
+{
+  "user_context": {
+    "user_type": "Budget-conscious family shopper",
+    "budget": 50.0,
+    "cart_total": 102.98,
+    "over_budget": 52.980000000000004,
+    "cart_items": [
+      {
+        "id": "7875624813017570385",
+        "title": "David's Cookies Mile High Peanut Butter Cake, 6.8 lbs (14 Servings)",
+        "subcat": "Dessert",
+        "price": 56.99,
+        "qty": 1
+      },
+      {
+        "id": "8602147923846103921",
+        "title": "Premium Organic Beef Ribeye Steak, 12 oz",
+        "subcat": "Meat & Seafood",
+        "price": 45.99,
+        "qty": 1
+      }
+    ]
+  },
+  "pairwise_comparisons": {},
+  "criteria_scores": {},
+  "summary": {
+    "evaluation_status": "incomplete",
+    "overall_winner": null,
+    "best_for_savings": null,
+    "best_for_relevance": null,
+    "best_for_ux": null,
+    "key_insights": [
+      "No evaluation data collected - check OpenAI API key and quota"
+    ],
+    "win_counts": {
+      "budget_saving": 0,
+      "personalized_cf": 0,
+      "hybrid_ai": 0
+    }
+  }
+}
