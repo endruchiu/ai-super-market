@@ -9,6 +9,7 @@ import uuid
 from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
 from blended_recommendations import get_blended_recommendations
+from store_layout import STORE_LAYOUT, get_product_location, calculate_simple_route
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -143,6 +144,38 @@ def api_products():
     # also include a small list of available subcats for UI filters
     subcats = sorted(PRODUCTS_DF["Sub Category"].dropna().unique().tolist())[:50]
     return jsonify({"items": data, "subcats": subcats})
+
+@app.route("/api/store/layout")
+def api_store_layout():
+    """
+    Get the complete store layout with aisles, shelves, and coordinates.
+    """
+    return jsonify(STORE_LAYOUT)
+
+@app.route("/api/store/location", methods=["POST"])
+def api_product_location():
+    """
+    Get the store location (aisle, shelf, coordinates) for a product.
+    Expects: {"subcat": "Bakery & Desserts"}
+    Returns: shelf location with coordinates
+    """
+    payload = request.get_json(force=True)
+    subcat = payload.get("subcat", "")
+    location = get_product_location(subcat)
+    return jsonify(location)
+
+@app.route("/api/store/route", methods=["POST"])
+def api_calculate_route():
+    """
+    Calculate a simple route between two locations in the store.
+    Expects: {"from": {"x": 50, "y": 680}, "to": {"x": 220, "y": 150}}
+    Returns: list of waypoints
+    """
+    payload = request.get_json(force=True)
+    from_coords = payload.get("from", STORE_LAYOUT["entrance"])
+    to_coords = payload.get("to", STORE_LAYOUT["entrance"])
+    waypoints = calculate_simple_route(from_coords, to_coords)
+    return jsonify({"waypoints": waypoints})
 
 @app.route("/api/budget/recommendations", methods=["POST"])
 def api_budget_recommendations():
