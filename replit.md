@@ -32,10 +32,21 @@ Preferred communication style: Simple, everyday language.
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
 - **Semantic Similarity**: Sentence-transformers (`all-MiniLM-L6-v2`) for budget-saving recommendations.
-- **Hybrid System**: Combines CF and semantic similarity with configurable weights.
+- **Hybrid System**: Combines CF and semantic similarity with configurable weights (60% CF + 40% Semantic).
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
+
+### LLM-as-a-Judge Evaluation System
+- **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
+- **LLM Model**: OpenAI GPT-5 for automated evaluation and scoring.
+- **Evaluation Types**:
+  - **Pairwise Comparisons**: Direct head-to-head comparisons between systems.
+  - **Criteria-Based Scoring**: Evaluates each system on 5 metrics (Relevance, Savings, Diversity, Explanation Quality, Feasibility).
+- **Test Scenarios**: Budget-conscious, health-focused, and new user (cold start) scenarios.
+- **Robustness**: Validates API keys upfront, detects incomplete evaluations, prevents fabricated winners when API calls fail.
+- **Output**: JSON reports with evaluation status, winners, scores, and combined summaries across scenarios.
+- **Files**: `llm_judge_evaluation.py`, `test_llm_evaluation.py`, `LLM_EVALUATION_README.md`.
 
 ## External Dependencies
 
@@ -48,6 +59,8 @@ Preferred communication style: Simple, everyday language.
 - **torch**: PyTorch backend for transformer models.
 - **tensorflow-cpu**: Deep learning framework for CF.
 - **scikit-learn**: Machine learning utilities.
+- **openai**: OpenAI API client for GPT-5 LLM evaluation.
+- **requests**: HTTP client for API calls.
 
 ### Database
 - **PostgreSQL**: Primary data storage, configured via `DATABASE_URL`.
