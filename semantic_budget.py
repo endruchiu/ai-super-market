@@ -270,9 +270,25 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
                                  item_nutr:Dict[str,float],
                                  topk:int=100, sim_threshold:float=0.50) -> List[Candidate]:
     q = _encode([item_text])[0]
+    
+    # FIXED: Try same subcategory first, then expand to related categories
+    # This prevents "0 recommendations" when no exact subcategory matches exist
     mask = (df["Sub Category"]==item_subcat).to_numpy()
     idxs = np.where(mask)[0]
-    if idxs.size == 0: return []
+    
+    # If no matches in same subcategory, try broader category (first word of subcategory)
+    # e.g., "Meat & Seafood" → look for any "Meat" items
+    if idxs.size == 0 and item_subcat:
+        # Extract main category (e.g., "Snacks" from "Snacks & Candy")
+        main_cat = item_subcat.split('&')[0].split(',')[0].strip()
+        mask = df["Sub Category"].str.contains(main_cat, case=False, na=False).to_numpy()
+        idxs = np.where(mask)[0]
+    
+    # If still no matches, allow cross-category (but lower priority via reduced similarity threshold)
+    if idxs.size == 0:
+        idxs = np.arange(len(df))
+        sim_threshold = max(0.65, sim_threshold)  # Require higher similarity for cross-category
+    
     sims = (emb[idxs] @ q).astype(np.float32)
     # preselect by sim
     ok = np.where(sims >= sim_threshold)[0]

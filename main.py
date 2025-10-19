@@ -268,8 +268,11 @@ def api_cf_recommendations():
                                 }
                             })
                 
-                # If no same-subcategory alternatives found, allow any cheaper alternative
-                if not cheaper_alts:
+                # IMPROVED: If no same-subcategory alternatives, try related categories first
+                if not cheaper_alts and item_subcat:
+                    # Try broader category match (e.g., "Meat" from "Meat & Seafood")
+                    main_cat = item_subcat.split('&')[0].split(',')[0].strip()
+                    
                     for rec in recs[:20]:  # Check top 20 recommendations
                         product_id = int(rec["product_id"])
                         if product_id in PRODUCTS_DF.index:
@@ -278,8 +281,9 @@ def api_cf_recommendations():
                             rec_subcat = str(row.get("Sub Category", ""))
                             rec_title = str(row["Title"])
                             
-                            # Just cheaper AND not the same product (relax subcategory requirement)
-                            if rec_price < item_price and rec_title != item_title:
+                            # Cheaper AND related category AND not the same product
+                            is_related = (main_cat.lower() in rec_subcat.lower()) if main_cat else False
+                            if rec_price < item_price and is_related and rec_title != item_title:
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
@@ -483,8 +487,11 @@ def api_blended_recommendations():
                                 }
                             })
                 
-                # If no same-subcategory alternatives found, allow any cheaper alternative
-                if not cheaper_alts:
+                # IMPROVED: If no same-subcategory alternatives, try related categories first
+                if not cheaper_alts and item_subcat:
+                    # Try broader category match (e.g., "Meat" from "Meat & Seafood")
+                    main_cat = item_subcat.split('&')[0].split(',')[0].strip()
+                    
                     for rec in recs[:20]:  # Check top 20 recommendations
                         product_id = int(rec["product_id"])
                         if product_id in PRODUCTS_DF.index:
@@ -493,8 +500,9 @@ def api_blended_recommendations():
                             rec_subcat = str(row.get("Sub Category", ""))
                             rec_title = str(row["Title"])
                             
-                            # Just cheaper AND not the same product (relax subcategory requirement)
-                            if rec_price < item_price and rec_title != item_title:
+                            # Cheaper AND related category AND not the same product
+                            is_related = (main_cat.lower() in rec_subcat.lower()) if main_cat else False
+                            if rec_price < item_price and is_related and rec_title != item_title:
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 

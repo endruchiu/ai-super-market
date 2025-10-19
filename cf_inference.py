@@ -104,9 +104,6 @@ def get_cf_recommendations(
     
     # Map session_id to database user.id
     db_user_id = get_user_db_id(user_id)
-    if db_user_id is None:
-        # Unknown user - return empty
-        return []
     
     # Map user DB ID to user_idx
     user_id_to_idx = artifacts['user_mapping']
@@ -118,7 +115,8 @@ def get_cf_recommendations(
     num_products = artifacts['num_products']
     
     # Handle cold start: create user profile from purchase history if user not in training data
-    if db_user_id not in user_id_to_idx:
+    # Also handle db_user_id == None (brand new users not in database yet)
+    if db_user_id is None or db_user_id not in user_id_to_idx:
         # Get user's purchase history
         purchased_ids = get_user_purchase_history(user_id)
         

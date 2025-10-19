@@ -1,0 +1,141 @@
+{
+  "user_context": {
+    "user_type": "Health-conscious organic shopper",
+    "budget": 80.0,
+    "cart_total": 110.94,
+    "over_budget": 30.939999999999998,
+    "cart_items": [
+      {
+        "id": "6988010420398241892",
+        "title": "Kirkland Signature, Organic Chicken Stock, 32 fl oz, 6-Count",
+        "subcat": "Organic",
+        "price": 11.99,
+        "qty": 2
+      },
+      {
+        "id": "3575723596463500350",
+        "title": "Kirkland Signature, Organic Almond Beverage, Vanilla, 32 fl oz, 6-Count",
+        "subcat": "Organic",
+        "price": 9.99,
+        "qty": 3
+      },
+      {
+        "id": "7875624813017570385",
+        "title": "David's Cookies Mile High Peanut Butter Cake, 6.8 lbs",
+        "subcat": "Dessert",
+        "price": 56.99,
+        "qty": 1
+      }
+    ]
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "System A at least proposes lower-priced alternatives for the expensive cake, yielding meaningful savings, while System B provides no recommendations at all. However, A includes several impractical, mismatched substitutions (stock -> seasoning/sauce/beverage) and largely ignores the user's health-conscious organic preference.",
+      "scores": {
+        "relevance": {
+          "A": 4,
+          "B": 0
+        },
+        "savings": {
+          "A": 6,
+          "B": 0
+        },
+        "practicality": {
+          "A": 4,
+          "B": 0
+        },
+        "ux": {
+          "A": 4,
+          "B": 0
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "System A offers several lower-priced dessert alternatives to the high-ticket cake that meaningfully reduce the over-budget amount, while System B provides no recommendations. However, A also includes irrelevant substitutions for pantry items (stock and almond beverage), which hurts relevance and UX for a health-conscious organic shopper.",
+      "scores": {
+        "relevance": {
+          "A": 4,
+          "B": 0
+        },
+        "savings": {
+          "A": 6,
+          "B": 0
+        },
+        "practicality": {
+          "A": 4,
+          "B": 0
+        },
+        "ux": {
+          "A": 3,
+          "B": 0
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, so neither addressed the user\u2019s needs or budget. With no suggestions, there\u2019s no path to savings, practicality, or engagement. This is effectively a tie; selecting A by default.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 3,
+      "savings": 5,
+      "diversity": 3,
+      "explanation_quality": 3,
+      "feasibility": 3,
+      "overall_score": 3,
+      "reasoning": "Only the dessert-to-dessert swaps are somewhat relevant and could deliver meaningful savings; the rest suggest unrelated items (seasoning, tomato sauce, duplicate almond beverage) to replace stock or milk, which misaligns with the cart and health-conscious organic style. Explanations are generic, size/price logic is shaky, and nutrition data appears templated, reducing trust. Overall feasibility is low because several substitutions are not realistic product equivalents."
+    },
+    "personalized_cf": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "The system returned no recommendations despite the user's budget overage and organic preferences, so it provides no relevance, savings, or variety and offers no rationale. With no suggested substitutions, feasibility cannot be evaluated and effectively fails. Overall performance is poor."
+    },
+    "hybrid_ai": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so there is no alignment with the user\u2019s organic preferences or current cart, no potential savings, and no feasible substitutions. The system also provides no explanations and no diversity of options. Overall, it fails to help the user get under budget or improve the cart."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": "budget_saving",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "budget_saving",
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 2,
+      "personalized_cf": 1,
+      "hybrid_ai": 0
+    }
+  }
+}
