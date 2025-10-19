@@ -57,8 +57,8 @@ def load_cf_model():
         return None, None
     
     try:
-        # Import keras only when needed
-        from tensorflow import keras
+        # Import keras only when needed - use tf_keras for compatibility
+        import tf_keras as keras
         
         print(f"Loading CF model from {model_path}...")
         _CF_MODEL = keras.models.load_model(str(model_path))

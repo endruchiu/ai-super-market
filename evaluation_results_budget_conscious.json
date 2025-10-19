@@ -21,21 +21,114 @@
       }
     ]
   },
-  "pairwise_comparisons": {},
-  "criteria_scores": {},
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "B",
+      "reasoning": "System B offers substantial, budget-relevant savings and at least one practical swap (cake to madeleines) that many family shoppers would accept. System A stays in-category but suggests an impractical bulk 10 lb fish case for a 12 oz steak and saves only about $1, offering little help toward the tight budget.",
+      "scores": {
+        "relevance": {
+          "A": 6,
+          "B": 3
+        },
+        "savings": {
+          "A": 2,
+          "B": 8
+        },
+        "practicality": {
+          "A": 3,
+          "B": 4
+        },
+        "ux": {
+          "A": 3,
+          "B": 6
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "B",
+      "reasoning": "System B offers substantial, realistic savings and at least one plausible swap (expensive cake to inexpensive cookies) that helps close the $52.98 budget gap. System A\u2019s lone suggestion is a bulk 10-lb tuna case with only $0.99 savings\u2014impractical for replacing a 12 oz steak and ineffective for the budget. While B\u2019s steak-to-candy swaps are irrelevant, its dessert alternative is practical and high-impact.",
+      "scores": {
+        "relevance": {
+          "A": 6,
+          "B": 4
+        },
+        "savings": {
+          "A": 1,
+          "B": 9
+        },
+        "practicality": {
+          "A": 3,
+          "B": 6
+        },
+        "ux": {
+          "A": 2,
+          "B": 7
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Both systems propose the same substitutions and savings, but System A\u2019s social-proof framing (\u201cCustomers like you also bought\u201d) marginally improves click likelihood. That said, replacing a steak with cookies or lollipops is not practical, which hurts relevance and acceptance.",
+      "scores": {
+        "relevance": {
+          "A": 3,
+          "B": 3
+        },
+        "savings": {
+          "A": 6,
+          "B": 6
+        },
+        "practicality": {
+          "A": 3,
+          "B": 3
+        },
+        "ux": {
+          "A": 4,
+          "B": 3
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 3,
+      "savings": 1,
+      "diversity": 1,
+      "explanation_quality": 2,
+      "feasibility": 1,
+      "overall_score": 2,
+      "reasoning": "The single recommendation targets a cart item but proposes swapping a 12 oz steak for a 10 lb case of tuna, which is an unrealistic match for a budget-conscious family. Claimed savings are negligible and likely incorrect, and the explanation ignores the massive size/price mismatch while adding irrelevant handling details. With only one, poorly justified option, the system offers little practical budget relief or acceptable substitution."
+    },
+    "personalized_cf": {
+      "relevance": 2,
+      "savings": 6,
+      "diversity": 2,
+      "explanation_quality": 4,
+      "feasibility": 1,
+      "overall_score": 3,
+      "reasoning": "The system proposes much cheaper items, but they are largely category-mismatched (replacing a steak with candy/cookies) and not aligned with a budget-conscious family\u2019s meal needs. Explanations are clear about savings but generic and unconvincing for these swaps. Low diversity and poor substitution feasibility significantly limit practical value despite potential savings."
+    },
+    "hybrid_ai": {
+      "relevance": 3,
+      "savings": 6,
+      "diversity": 2,
+      "explanation_quality": 4,
+      "feasibility": 2,
+      "overall_score": 3,
+      "reasoning": "Recommendations replace both a cake and a ribeye with cookies or candy, which poorly matches the cart and a budget-conscious family\u2019s needs, especially for a main protein. While the savings are clear and substantial, the options are repetitive and the substitutions are largely unrealistic, limiting real-world adoption."
+    }
+  },
   "summary": {
-    "evaluation_status": "incomplete",
-    "overall_winner": null,
-    "best_for_savings": null,
-    "best_for_relevance": null,
-    "best_for_ux": null,
-    "key_insights": [
-      "No evaluation data collected - check OpenAI API key and quota"
-    ],
+    "evaluation_status": "complete",
+    "overall_winner": "personalized_cf",
+    "best_for_savings": "personalized_cf",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "hybrid_ai",
+    "key_insights": [],
     "win_counts": {
       "budget_saving": 0,
-      "personalized_cf": 0,
-      "hybrid_ai": 0
+      "personalized_cf": 2,
+      "hybrid_ai": 1
     }
   }
 }

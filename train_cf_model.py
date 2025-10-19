@@ -14,11 +14,11 @@ from datetime import datetime
 # TensorFlow/Keras imports
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers, Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+import tf_keras as keras
+from tf_keras import layers, Model
+from tf_keras.optimizers import Adam
+from tf_keras.regularizers import l2
+from tf_keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 # Local imports
 from recommendation_engine import load_datasets
