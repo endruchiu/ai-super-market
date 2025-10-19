@@ -169,31 +169,6 @@ function clearHighlights() {
     clearRoute();
 }
 
-function showRouteToShelf(targetShelfId) {
-    // Get coordinates for the target shelf
-    fetch('/api/store/location', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({subcat: targetShelfId})
-    })
-    .then(res => res.json())
-    .then(toLocation => {
-        // Calculate route from entrance to target
-        return fetch('/api/store/route', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                from: storeLayout.entrance,
-                to: toLocation
-            })
-        });
-    })
-    .then(res => res.json())
-    .then(routeData => {
-        drawRoute(routeData.waypoints);
-    })
-    .catch(error => console.error('Route calculation failed:', error));
-}
 
 function drawRoute(waypoints) {
     if (!waypoints || waypoints.length < 2) return;
@@ -536,8 +511,17 @@ async function highlightProductLocation(subcat) {
         // Highlight the shelf
         highlightShelf(location.shelf_id);
         
-        // Show route to the shelf
-        showRouteToShelf(location.shelf_id);
+        // Calculate and draw route from entrance to this location
+        const routeResponse = await fetch('/api/store/route', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                from: storeLayout.entrance,
+                to: {x: location.x, y: location.y}
+            })
+        });
+        const routeData = await routeResponse.json();
+        drawRoute(routeData.waypoints);
         
     } catch (error) {
         console.error('Failed to get product location:', error);
