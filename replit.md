@@ -21,6 +21,15 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 - **Design System**: Modern UI using Tailwind CSS CDN, Inter Font, and a blue/indigo gradient color scheme.
+- **Supermarket Interface**: Split-screen layout with interactive store map (60% left) and shopping cart/recommendations (40% right).
+- **Interactive Store Map**: SVG-based visualization showing 6 aisles (A-F) with labeled shelves:
+    - Aisle A: Fresh Produce & Bakery
+    - Aisle B: Meat, Seafood & Deli
+    - Aisle C: Dairy & Frozen
+    - Aisle D: Pantry & Snacks
+    - Aisle E: Beverages & Drinks
+    - Aisle F: Household & Paper
+- **Visual Navigation**: When recommendations are applied, the system highlights the target shelf and displays an animated route from entrance to product location.
 - **Components**: Responsive header, clean product cards, budget controls, shopping cart display with quantity controls, and animated success notifications.
 - **Responsiveness**: Mobile-friendly layout with a flexible grid system.
 - **AI Recommendation UI**:
@@ -69,6 +78,15 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Sources
 - **CSV files**: Product catalog from `attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv`.
+
+### Store Layout System
+- **Module**: `store_layout.py` - Manages virtual store layout and product locations.
+- **API Endpoints**:
+  - `/api/store/layout`: Returns complete store structure with aisles and shelves.
+  - `/api/store/location`: Maps product subcategories to shelf coordinates.
+  - `/api/store/route`: Calculates Manhattan-style routes between store locations.
+- **Shelf Mapping**: Products are mapped to shelves based on subcategory (e.g., "Bakery & Desserts" → Aisle A, Shelf 4).
+- **Route Visualization**: L-shaped pathfinding from entrance to target shelf with animated SVG paths and pulsing destination markers.
 
 ### Infrastructure
 - **Environment Variables**: For database connection and Flask secret key.
