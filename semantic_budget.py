@@ -368,9 +368,15 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
 
     target_savings = total - budget + buffer
     
-    # For each cart item, collect candidates
+    # Focus on the LAST cart item (most recently added) when already over budget
+    # This provides dynamic recommendations as user adds items to an over-budget cart
     all_cands: List[Candidate] = []
-    for i, item in enumerate(cart):
+    
+    # Only process the last item in the cart (most recent addition)
+    if cart:
+        i = len(cart) - 1  # Last item index
+        item = cart[-1]  # Most recently added item
+        
         title = str(item.get("title",""))
         subcat = str(item.get("subcat",""))
         price = float(item.get("price",0.0))
