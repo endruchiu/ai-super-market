@@ -47,12 +47,31 @@ Preferred communication style: Simple, everyday language.
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
 - **Semantic Similarity**: Sentence-transformers (`all-MiniLM-L6-v2`) for budget-saving recommendations.
-- **Hybrid System**: Combines CF and semantic similarity with configurable weights (60% CF + 40% Semantic).
+- **Hybrid System**: Combines CF and semantic similarity with Elastic Net-optimized weights (default 60% CF + 40% Semantic, data-driven when trained).
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
 - **Dynamic Focus**: All three recommendation systems (Budget-Saving, CF, Hybrid) focus on the most recently added cart item when over budget, providing dynamic recommendations that adjust automatically as users add items.
 - **3-Tier Fallback**: CF and Hybrid systems use a robust fallback strategy: exact subcategory match → related category match → any cheaper alternative.
+
+### Elastic Net Enhancements
+- **Budget-Saving System**: Uses ElasticNet (L1+L2 regularization) to learn optimal feature weights for savings, semantic similarity, health improvement, and size matching from user purchase behavior.
+  - Features: savings_score, similarity_score, health_score, size_ratio
+  - Replaces fixed lambda=0.6 with data-driven weights
+  - Module: `elastic_budget_optimizer.py`
+  - Integration: `semantic_budget.py` calls `_get_elastic_optimizer()` for learned weights with graceful fallback to defaults
+- **CF Personalized System**: Enhanced neural network with Elastic Net regularization (L1+L2) on embedding layers.
+  - L1 penalty: Feature selection and sparsity
+  - L2 penalty: Weight decay to prevent overfitting
+  - Modified: `train_cf_model.py` now uses `l1_l2()` regularizer instead of just `l2()`
+  - Both user and product embeddings benefit from Elastic Net regularization
+- **Hybrid System**: Uses ElasticNet to learn optimal blending weights for CF vs Semantic scores from user behavior.
+  - Features: cf_score, semantic_score, interaction term
+  - Replaces fixed 60/40 split with data-driven weights
+  - Module: `elastic_hybrid_optimizer.py`
+  - Integration: `blended_recommendations.py` calls `_get_hybrid_elastic_optimizer()` with logging and fallback
+- **Training Pipeline**: `train_all_elasticnet.py` orchestrates training of all three optimizers with error handling and graceful degradation.
+- **Production Ready**: All systems fall back to sensible defaults when no trained Elastic Net models are available, ensuring zero-downtime deployment.
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
