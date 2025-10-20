@@ -155,7 +155,12 @@ Preferred communication style: Simple, everyday language.
   - `/api/store/layout`: Returns complete store structure with aisles and shelves.
   - `/api/store/location`: Maps product subcategories to shelf coordinates.
   - `/api/store/route`: Calculates Manhattan-style routes between store locations.
-- **Shelf Mapping**: Products are mapped to shelves based on subcategory (e.g., "Bakery & Desserts" → Aisle A, Shelf 4).
+- **Shelf Mapping**: Products are mapped to shelves based on actual CSV subcategories:
+  - Aisle F1: Cleaning Supplies
+  - Aisle F2: Paper & Plastic Products
+  - Aisle F3: Laundry Detergent & Supplies
+  - Aisle F4-F6: Household (Items, Storage, Misc)
+- **Category Accuracy**: Shelf names now match actual product subcategories in the CSV data to prevent recommendation confusion.
 - **Route Visualization**: L-shaped pathfinding from entrance to target shelf with animated SVG paths and pulsing destination markers.
 
 ### Infrastructure
