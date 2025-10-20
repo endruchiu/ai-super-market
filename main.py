@@ -365,60 +365,16 @@ def api_cf_recommendations():
                                 "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
                             }
                         })
-                
-            # IMPROVED: If no same-subcategory alternatives, try related categories first
-            if not cheaper_alts and item_subcat:
-                # Try broader category match (e.g., "Meat" from "Meat & Seafood")
-                main_cat = item_subcat.split('&')[0].split(',')[0].strip()
-                
-                for rec in recs[:20]:  # Check top 20 recommendations
-                    product_id = int(rec["product_id"])
-                    if product_id in PRODUCTS_DF.index:
-                        row = PRODUCTS_DF.loc[product_id]
-                        rec_price = float(row.get("_price_final", 0))
-                        rec_subcat = str(row.get("Sub Category", ""))
-                        rec_title = str(row["Title"])
-                        
-                        # Cheaper AND related category AND not the same product
-                        is_related = (main_cat.lower() in rec_subcat.lower()) if main_cat else False
-                        if rec_price < item_price and is_related and rec_title != item_title:
-                            saving = (item_price - rec_price) * item_qty
-                            discount_pct = int((1 - rec_price / item_price) * 100)
-                            
-                            # Convert score to user-friendly confidence phrase
-                            score = float(rec.get('score', 0))
-                            if score >= 0.7:
-                                confidence = "Strongly recommended"
-                            elif score >= 0.4:
-                                confidence = "Recommended based on your history"
-                            else:
-                                confidence = "Customers like you also bought"
-                            
-                            # Create compelling reason for cross-category recommendation
-                            reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
-                            
-                            cheaper_alts.append({
-                                "replace": item_title,
-                                "with": rec_title,
-                                "expected_saving": f"{saving:.2f}",
-                                "similarity": confidence,
-                                "reason": reason,
-                                "replacement_product": {
-                                    "id": str(product_id),
-                                    "title": rec_title,
-                                    "subcat": rec_subcat,
-                                    "price": rec_price,
-                                    "qty": 1,
-                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                }
-                            })
-                            if len(cheaper_alts) >= 2:
-                                break
-                
-            # FINAL FALLBACK: If still no alternatives, show any cheaper CF recommendation (ignore category)
-            if not cheaper_alts:
-                for rec in recs[:10]:  # Check top 10 CF recommendations
+            
+            # Add top 3 SAME-CATEGORY alternatives for replacements
+            cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
+            suggestions.extend(cheaper_alts[:3])
+            
+            # SEPARATE SECTION: Complementary recommendations (cross-category suggestions)
+            # These are NOT replacements, but "You might also like" suggestions
+            complementary = []
+            if cart:  # Only if we have cart context
+                for rec in recs[:10]:  # Top 10 personalized recommendations
                     product_id = int(rec["product_id"])
                     if product_id in PRODUCTS_DF.index:
                         row = PRODUCTS_DF.loc[product_id]
@@ -426,49 +382,35 @@ def api_cf_recommendations():
                         rec_title = str(row["Title"])
                         rec_subcat = str(row.get("Sub Category", ""))
                         
-                        # Just needs to be cheaper and different
-                        if rec_price < item_price and rec_title != item_title:
-                            saving = (item_price - rec_price) * item_qty
-                            discount_pct = int((1 - rec_price / item_price) * 100)
-                            
+                        # Different category but cheaper (for discovery)
+                        if rec_price < item_price and rec_subcat != item_subcat and rec_title != item_title:
                             score = float(rec.get('score', 0))
                             if score >= 0.7:
                                 confidence = "Highly recommended for you"
                             elif score >= 0.4:
-                                confidence = "Based on your shopping patterns"
-                            else:
                                 confidence = "Customers like you also bought"
+                            else:
+                                confidence = "You might also like"
                             
-                            reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
-                            
-                            cheaper_alts.append({
-                                "replace": item_title,
-                                "with": rec_title,
-                                "expected_saving": f"{saving:.2f}",
-                                "similarity": confidence,
-                                "reason": reason,
-                                "replacement_product": {
-                                    "id": str(product_id),
-                                    "title": rec_title,
-                                    "subcat": rec_subcat,
-                                    "price": rec_price,
-                                    "qty": 1,
-                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                }
+                            complementary.append({
+                                "title": rec_title,
+                                "subcat": rec_subcat,
+                                "price": rec_price,
+                                "id": str(product_id),
+                                "reason": f"{confidence}",
+                                "score": score,
+                                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
                             })
-                            if len(cheaper_alts) >= 1:
+                            if len(complementary) >= 3:
                                 break
-            
-            # Add top 2 alternatives for this item
-            cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
-            suggestions.extend(cheaper_alts[:2])
         
         return jsonify({
             "suggestions": suggestions,
+            "complementary_recommendations": complementary if 'complementary' in locals() else [],
             "total": total,
             "budget": budget,
-            "message": f"Found {len(suggestions)} CF-based cheaper alternatives" if suggestions else "No CF alternatives found",
+            "message": f"Found {len(suggestions)} same-category alternatives" if suggestions else "No same-category alternatives found",
             "user_id": user_id,
             "model_available": True
         })
@@ -631,113 +573,51 @@ def api_blended_recommendations():
                             }
                         })
             
-            # IMPROVED: If no same-subcategory alternatives, try related categories first
-            if not cheaper_alts and item_subcat:
-                # Try broader category match (e.g., "Meat" from "Meat & Seafood")
-                main_cat = item_subcat.split('&')[0].split(',')[0].strip()
-                
-                for rec in recs[:20]:  # Check top 20 recommendations
-                    product_id = int(rec["product_id"])
-                    if product_id in PRODUCTS_DF.index:
-                        row = PRODUCTS_DF.loc[product_id]
-                        rec_price = float(row.get("_price_final", 0))
-                        rec_subcat = str(row.get("Sub Category", ""))
-                        rec_title = str(row["Title"])
-                        
-                        # Cheaper AND related category AND not the same product
-                        is_related = (main_cat.lower() in rec_subcat.lower()) if main_cat else False
-                        if rec_price < item_price and is_related and rec_title != item_title:
-                            saving = (item_price - rec_price) * item_qty
-                            discount_pct = int((1 - rec_price / item_price) * 100)
-                            
-                            # Convert blended score to user-friendly confidence phrase
-                            score = float(rec.get('blended_score', 0))
-                            if score >= 0.7:
-                                confidence = "AI highly recommends"
-                            elif score >= 0.5:
-                                confidence = "AI suggests"
-                            elif score >= 0.3:
-                                confidence = "Worth considering"
-                            else:
-                                confidence = "Alternative option"
-                            
-                            # Create compelling cross-category hybrid reason
-                            reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
-                            
-                            cheaper_alts.append({
-                                "replace": item_title,
-                                "with": rec_title,
-                                "expected_saving": f"{saving:.2f}",
-                                "similarity": confidence,
-                                "reason": reason,
-                                "replacement_product": {
-                                    "id": str(product_id),
-                                    "title": rec_title,
-                                    "subcat": rec_subcat,
-                                    "price": rec_price,
-                                    "qty": 1,
-                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                }
-                            })
-                            if len(cheaper_alts) >= 2:
-                                break
-            
-            # FINAL FALLBACK: If still no alternatives, show any cheaper hybrid recommendation (ignore category)
-            if not cheaper_alts:
-                for rec in recs[:10]:  # Check top 10 hybrid recommendations
-                    product_id = int(rec["product_id"])
-                    if product_id in PRODUCTS_DF.index:
-                        row = PRODUCTS_DF.loc[product_id]
-                        rec_price = float(row.get("_price_final", 0))
-                        rec_title = str(row["Title"])
-                        rec_subcat = str(row.get("Sub Category", ""))
-                        
-                        # Just needs to be cheaper and different
-                        if rec_price < item_price and rec_title != item_title:
-                            saving = (item_price - rec_price) * item_qty
-                            discount_pct = int((1 - rec_price / item_price) * 100)
-                            
-                            score = float(rec.get('blended_score', 0))
-                            if score >= 0.7:
-                                confidence = "AI highly recommends"
-                            elif score >= 0.5:
-                                confidence = "AI suggests"
-                            elif score >= 0.3:
-                                confidence = "Worth considering"
-                            else:
-                                confidence = "Alternative option"
-                            
-                            reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
-                            
-                            cheaper_alts.append({
-                                "replace": item_title,
-                                "with": rec_title,
-                                "expected_saving": f"{saving:.2f}",
-                                "similarity": confidence,
-                                "reason": reason,
-                                "replacement_product": {
-                                    "id": str(product_id),
-                                    "title": rec_title,
-                                    "subcat": rec_subcat,
-                                    "price": rec_price,
-                                    "qty": 1,
-                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                }
-                            })
-                            if len(cheaper_alts) >= 1:
-                                break
-            
-            # Add top 2 alternatives for this item
+            # Add top 3 SAME-CATEGORY alternatives for replacements
             cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
-            suggestions.extend(cheaper_alts[:2])
+            suggestions.extend(cheaper_alts[:3])
+            
+            # SEPARATE SECTION: Complementary recommendations (cross-category suggestions)
+            # These are NOT replacements, but "You might also like" suggestions  
+            complementary = []
+            if cart:  # Only if we have cart context
+                for rec in recs[:10]:  # Top 10 blended recommendations
+                    product_id = int(rec["product_id"])
+                    if product_id in PRODUCTS_DF.index:
+                        row = PRODUCTS_DF.loc[product_id]
+                        rec_price = float(row.get("_price_final", 0))
+                        rec_title = str(row["Title"])
+                        rec_subcat = str(row.get("Sub Category", ""))
+                        
+                        # Different category but cheaper (for discovery)
+                        if rec_price < item_price and rec_subcat != item_subcat and rec_title != item_title:
+                            score = float(rec.get('blended_score', 0))
+                            if score >= 0.7:
+                                confidence = "AI highly recommends"
+                            elif score >= 0.5:
+                                confidence = "You might also like"
+                            else:
+                                confidence = "Worth exploring"
+                            
+                            complementary.append({
+                                "title": rec_title,
+                                "subcat": rec_subcat,
+                                "price": rec_price,
+                                "id": str(product_id),
+                                "reason": f"{confidence}",
+                                "score": score,
+                                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                            })
+                            if len(complementary) >= 3:
+                                break
         
         return jsonify({
             "suggestions": suggestions,
+            "complementary_recommendations": complementary if 'complementary' in locals() else [],
             "total": total,
             "budget": budget,
-            "message": f"Found {len(suggestions)} hybrid AI cheaper alternatives" if suggestions else "No hybrid alternatives found",
+            "message": f"Found {len(suggestions)} same-category alternatives" if suggestions else "No same-category alternatives found",
             "user_id": user_id,
             "model_available": True,
             "weights": {"cf": 0.6, "semantic": 0.4}
