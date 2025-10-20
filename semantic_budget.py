@@ -108,7 +108,11 @@ def _build_text(row:pd.Series) -> str:
 
 def _load_sentence_model():
     from sentence_transformers import SentenceTransformer
-    return SentenceTransformer(MODEL_NAME)
+    import torch
+    # Fix for torch meta tensor issue - force CPU and set device map
+    device = 'cpu'
+    model = SentenceTransformer(MODEL_NAME, device=device)
+    return model
 
 def _compute_embeddings(texts:List[str], model=None, batch_size:int=64) -> np.ndarray:
     if model is None:
