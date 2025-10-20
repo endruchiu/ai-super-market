@@ -314,6 +314,8 @@ def api_cf_recommendations():
         suggestions = []
         recs = get_cf_recommendations(user_id, top_k=100, exclude_products=[])
         
+        print(f"[CF DEBUG] User: {user_id}, Got {len(recs)} CF recommendations, Cart size: {len(cart)}")
+        
         # Only generate suggestions if user has purchase history
         if len(recs) > 0 and cart:
             # Focus on the last item (most recent addition)

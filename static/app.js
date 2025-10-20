@@ -414,7 +414,8 @@ function addShelfProductToCart(product) {
     if (existing) {
         existing.qty++;
     } else {
-        cart.push({...product, qty: 1, subcat: product.shelf});
+        // Use the actual product subcategory, not the shelf ID
+        cart.push({...product, qty: 1, subcat: product.subcat || product.shelf});
     }
     
     updateCartDisplay();
