@@ -1,0 +1,431 @@
+{
+  "methodology": "EvidentlyAI LLM-as-a-Judge",
+  "model": "GPT-5",
+  "status": "Baseline (no Elastic Net, no BPR, no Bandits)",
+  "average_scores": {
+    "budget_saving": 0.0,
+    "personalized_cf": 0.0,
+    "hybrid_ai": 0.0
+  },
+  "individual_scores": {
+    "budget_saving": [
+      0,
+      0,
+      0
+    ],
+    "personalized_cf": [
+      0,
+      0,
+      0
+    ],
+    "hybrid_ai": [
+      0,
+      0,
+      0
+    ]
+  },
+  "detailed_results": {
+    "budget_conscious_demo": {
+      "user_context": {
+        "user_type": "Budget-conscious shopper with expensive items",
+        "budget": 2599.99,
+        "cart_total": 3999.98,
+        "over_budget": 1399.9900000000002,
+        "cart_items": [
+          {
+            "id": "723",
+            "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+            "subcat": "Gift Baskets",
+            "price": 1999.99,
+            "qty": 1
+          },
+          {
+            "id": "553",
+            "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+            "subcat": "Deli",
+            "price": 1999.99,
+            "qty": 1
+          }
+        ]
+      },
+      "pairwise_comparisons": {
+        "budget_vs_cf": {
+          "winner": "B",
+          "reasoning": "System A provides no recommendations, offering no way to reduce the over-budget cart. System B\u2019s suggestions are not relevant to caviar, but they offer substantial, realistic savings that could bring the cart under budget if accepted.",
+          "scores": {
+            "relevance": {
+              "A": 0,
+              "B": 2
+            },
+            "savings": {
+              "A": 0,
+              "B": 10
+            },
+            "practicality": {
+              "A": 0,
+              "B": 2
+            },
+            "ux": {
+              "A": 0,
+              "B": 2
+            }
+          }
+        },
+        "budget_vs_hybrid": {
+          "winner": "B",
+          "reasoning": "System A provides no recommendations, yielding no savings or actions. System B offers substantial potential savings and at least one somewhat-related seafood alternative (sea cucumber), though other picks (jerky, candy) are poor matches for caviar. Despite relevance issues, B is more useful and actionable.",
+          "scores": {
+            "relevance": {
+              "A": 1,
+              "B": 3
+            },
+            "savings": {
+              "A": 0,
+              "B": 9
+            },
+            "practicality": {
+              "A": 1,
+              "B": 3
+            },
+            "ux": {
+              "A": 1,
+              "B": 3
+            }
+          }
+        },
+        "cf_vs_hybrid": {
+          "winner": "B",
+          "reasoning": "System B offers at least one category-relevant substitute (sea cucumber) that aligns better with a shopper seeking to economize on a luxury seafood item, while still delivering large savings. System A\u2019s suggestions (jerky, plastic cups) are largely unrelated to caviar, making them less practical and less likely to be accepted. Both systems achieve substantial savings, but B provides higher relevance and better click likelihood.",
+          "scores": {
+            "relevance": {
+              "A": 2,
+              "B": 4
+            },
+            "savings": {
+              "A": 9,
+              "B": 9
+            },
+            "practicality": {
+              "A": 1,
+              "B": 3
+            },
+            "ux": {
+              "A": 2,
+              "B": 4
+            }
+          }
+        }
+      },
+      "criteria_scores": {
+        "budget_saving": {
+          "relevance": 0,
+          "savings": 0,
+          "diversity": 0,
+          "explanation_quality": 0,
+          "feasibility": 0,
+          "overall_score": 0,
+          "reasoning": "No recommendations were provided despite the user being well over budget and using a budget-saving system. As a result, there are no savings, no variety, no explanations, and no feasible swaps to consider. The system fails to address the user's need for lower-cost alternatives (e.g., smaller sizes or lower-tier caviar)."
+        },
+        "personalized_cf": {
+          "relevance": 2,
+          "savings": 10,
+          "diversity": 5,
+          "explanation_quality": 4,
+          "feasibility": 1,
+          "overall_score": 3,
+          "reasoning": "The recommendations achieve large, correctly calculated savings but are not relevant substitutes for caviar and thus unlikely to satisfy the user\u2019s intent. Explanations are clear about savings and personalization yet fail to justify product fit. Diversity is moderate across categories, but the core substitution mismatch severely limits usefulness."
+        },
+        "hybrid_ai": {
+          "relevance": 3,
+          "savings": 9,
+          "diversity": 6,
+          "explanation_quality": 4,
+          "feasibility": 2,
+          "overall_score": 4,
+          "reasoning": "The system offers large, clearly quantified savings but recommends items that are mostly unrelated to caviar; only the sea cucumber is even loosely in the same culinary space. Candy and beef jerky are unrealistic substitutes for a luxury seafood item, and explanations focus on price rather than use-case fit or quality. Greater emphasis on relevant budget alternatives (e.g., smaller tins of caviar, trout/whitefish roe, smoked salmon) would improve feasibility and relevance."
+        }
+      },
+      "summary": {
+        "evaluation_status": "complete",
+        "overall_winner": "hybrid_ai",
+        "best_for_savings": "personalized_cf",
+        "best_for_relevance": "hybrid_ai",
+        "best_for_ux": "hybrid_ai",
+        "key_insights": [],
+        "win_counts": {
+          "budget_saving": 0,
+          "personalized_cf": 1,
+          "hybrid_ai": 2
+        }
+      }
+    },
+    "single_expensive_item": {
+      "user_context": {
+        "user_type": "Shopper with one expensive item",
+        "budget": 1000.0,
+        "cart_total": 1999.99,
+        "over_budget": 999.99,
+        "cart_items": [
+          {
+            "id": "723",
+            "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+            "subcat": "Gift Baskets",
+            "price": 1999.99,
+            "qty": 1
+          }
+        ]
+      },
+      "pairwise_comparisons": {
+        "budget_vs_cf": {
+          "winner": "A",
+          "reasoning": "System A offers a directly relevant smaller caviar alternative that preserves the shopper\u2019s intent while cutting the cost below budget, plus additional ultra-cheap options. System B\u2019s single chocolate-pecan substitute is less relevant to a caviar purchase and yields slightly lower savings, reducing practicality and click-through likelihood.",
+          "scores": {
+            "relevance": {
+              "A": 8,
+              "B": 5
+            },
+            "savings": {
+              "A": 10,
+              "B": 9
+            },
+            "practicality": {
+              "A": 8,
+              "B": 5
+            },
+            "ux": {
+              "A": 8,
+              "B": 6
+            }
+          }
+        },
+        "budget_vs_hybrid": {
+          "winner": "A",
+          "reasoning": "System A includes a true caviar substitute (same brand, smaller pack) alongside low-cost options, making it more relevant to the original high-end item while still achieving the needed savings. System B only suggests non-caviar gift items; while persuasive, they are less aligned with the shopper\u2019s likely intent.",
+          "scores": {
+            "relevance": {
+              "A": 6,
+              "B": 4
+            },
+            "savings": {
+              "A": 10,
+              "B": 9
+            },
+            "practicality": {
+              "A": 6,
+              "B": 5
+            },
+            "ux": {
+              "A": 6,
+              "B": 5
+            }
+          }
+        },
+        "cf_vs_hybrid": {
+          "winner": "B",
+          "reasoning": "System B offers multiple premium-gourmet alternatives, including a charcuterie gift box that is closer to the caviar use-case than chocolate, improving relevance and acceptance. Both systems deliver the same maximum savings to bring the cart under budget, but B\u2019s variety enhances practicality and likelihood of a successful replacement.",
+          "scores": {
+            "relevance": {
+              "A": 2,
+              "B": 5
+            },
+            "savings": {
+              "A": 10,
+              "B": 10
+            },
+            "practicality": {
+              "A": 2,
+              "B": 6
+            },
+            "ux": {
+              "A": 3,
+              "B": 7
+            }
+          }
+        }
+      },
+      "criteria_scores": {
+        "budget_saving": {
+          "relevance": 4,
+          "savings": 9,
+          "diversity": 5,
+          "explanation_quality": 2,
+          "feasibility": 3,
+          "overall_score": 4,
+          "reasoning": "It achieves large dollar savings, but two suggestions are chocolates that are poor substitutes for caviar, hurting relevance and acceptability. The smaller caviar pack is a plausible downgrade, yet the rationale ignores quantity and per\u2011unit comparisons and relies on a generic, possibly miscategorized \u201cGift Baskets\u201d label. Explanations are minimal and not persuasive."
+        },
+        "personalized_cf": {
+          "relevance": 3,
+          "savings": 9,
+          "diversity": 1,
+          "explanation_quality": 4,
+          "feasibility": 2,
+          "overall_score": 4,
+          "reasoning": "The recommendation offers a massive, accurate cost reduction but is not a plausible substitute for caviar, as chocolate pecans serve a very different use case. The explanation is clear on savings but unconvincing on similarity, and only one option hurts diversity. Overall, high savings are offset by low relevance and feasibility."
+        },
+        "hybrid_ai": {
+          "relevance": 4,
+          "savings": 10,
+          "diversity": 3,
+          "explanation_quality": 4,
+          "feasibility": 3,
+          "overall_score": 5,
+          "reasoning": "The recommendations deliver substantial and accurate savings but are poor matches for caviar, skewing toward gift baskets and chocolates rather than true caviar alternatives. Explanations are generic and overstate similarity, and the set lacks diversity in type and use-case. Swapping caviar for chocolates is unlikely to satisfy a user seeking caviar, though the charcuterie box is somewhat closer."
+        }
+      },
+      "summary": {
+        "evaluation_status": "complete",
+        "overall_winner": "budget_saving",
+        "best_for_savings": "hybrid_ai",
+        "best_for_relevance": "budget_saving",
+        "best_for_ux": "hybrid_ai",
+        "key_insights": [],
+        "win_counts": {
+          "budget_saving": 2,
+          "personalized_cf": 0,
+          "hybrid_ai": 1
+        }
+      }
+    },
+    "multi_category_shopper": {
+      "user_context": {
+        "user_type": "Shopper with items from multiple categories",
+        "budget": 3569.98,
+        "cart_total": 5099.97,
+        "over_budget": 1529.9900000000002,
+        "cart_items": [
+          {
+            "id": "723",
+            "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+            "subcat": "Gift Baskets",
+            "price": 1999.99,
+            "qty": 1
+          },
+          {
+            "id": "553",
+            "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+            "subcat": "Deli",
+            "price": 1999.99,
+            "qty": 1
+          },
+          {
+            "id": "1055",
+            "title": "Japanese Wagyu Boneless Ribeye Roast, A5 Grade, 12 lbs",
+            "subcat": "Meat & Seafood",
+            "price": 1099.99,
+            "qty": 1
+          }
+        ]
+      },
+      "pairwise_comparisons": {
+        "budget_vs_cf": {
+          "winner": "B",
+          "reasoning": "System A provides no recommendations, yielding no savings or guidance. System B offers substantial, actionable savings by replacing the Wagyu roast with cheaper Meat & Seafood options, though the substitutes are not like-for-like and don\u2019t fully bring the cart under budget. Despite imperfect fit, B is clearly more helpful.",
+          "scores": {
+            "relevance": {
+              "A": 0,
+              "B": 6
+            },
+            "savings": {
+              "A": 0,
+              "B": 7
+            },
+            "practicality": {
+              "A": 0,
+              "B": 3
+            },
+            "ux": {
+              "A": 0,
+              "B": 4
+            }
+          }
+        },
+        "budget_vs_hybrid": {
+          "winner": "B",
+          "reasoning": "System B offers concrete, much cheaper alternatives within the meat/seafood category, yielding meaningful savings that partially close the budget gap. However, the substitutes are not close analogs to an A5 Wagyu roast and it ignores the two caviar items, so relevance and practicality are limited. System A provides no recommendations at all.",
+          "scores": {
+            "relevance": {
+              "A": 0,
+              "B": 3
+            },
+            "savings": {
+              "A": 0,
+              "B": 8
+            },
+            "practicality": {
+              "A": 0,
+              "B": 3
+            },
+            "ux": {
+              "A": 0,
+              "B": 4
+            }
+          }
+        },
+        "cf_vs_hybrid": {
+          "winner": "A",
+          "reasoning": "System A suggests substitutes that are closer in use and quantity to a 12 lb Wagyu roast (e.g., a 12 lb poultry pack and 3.5 lb seafood), making them more relevant and practical. Both systems deliver about $1k savings on the Wagyu, with B slightly higher, but A\u2019s options are more likely to be acceptable replacements users would actually choose.",
+          "scores": {
+            "relevance": {
+              "A": 6,
+              "B": 4
+            },
+            "savings": {
+              "A": 7,
+              "B": 8
+            },
+            "practicality": {
+              "A": 7,
+              "B": 5
+            },
+            "ux": {
+              "A": 6,
+              "B": 5
+            }
+          }
+        }
+      },
+      "criteria_scores": {
+        "budget_saving": {
+          "relevance": 0,
+          "savings": 0,
+          "diversity": 0,
+          "explanation_quality": 0,
+          "feasibility": 0,
+          "overall_score": 0,
+          "reasoning": "The system returned no recommendations, providing no relevant alternatives to the user's luxury cart items and offering no budget relief despite a large overage. With no items suggested, there is no diversity, explanation, or feasible substitutions to consider. Overall, it fails the budget-saving objective."
+        },
+        "personalized_cf": {
+          "relevance": 3,
+          "savings": 7,
+          "diversity": 5,
+          "explanation_quality": 4,
+          "feasibility": 2,
+          "overall_score": 4,
+          "reasoning": "Recommendations only target the Wagyu and ignore the two costly caviar items; while each swap yields large savings (~$950\u2013$1,010), the cart remains over budget. The suggested items differ greatly in quality, format, and quantity from an A5 Wagyu roast, making acceptance unlikely, and the \u201csimilar taste\u201d claim is unconvincing. Diversity is moderate within Meat & Seafood but limited to a single-item substitution strategy."
+        },
+        "hybrid_ai": {
+          "relevance": 3,
+          "savings": 7,
+          "diversity": 4,
+          "explanation_quality": 3,
+          "feasibility": 2,
+          "overall_score": 4,
+          "reasoning": "All recommendations target replacing the Wagyu with much cheaper prepared meats, yielding about $1,000 savings but still leaving the cart over budget and ignoring the duplicate high-cost caviar. The suggested items are not realistic substitutes for a 12-lb A5 roast (tiny charcuterie, tamales, dumplings), making acceptance unlikely despite solid savings math. Explanations are generic and overstate similarity."
+        }
+      },
+      "summary": {
+        "evaluation_status": "complete",
+        "overall_winner": "personalized_cf",
+        "best_for_savings": "personalized_cf",
+        "best_for_relevance": "personalized_cf",
+        "best_for_ux": "personalized_cf",
+        "key_insights": [],
+        "win_counts": {
+          "budget_saving": 0,
+          "personalized_cf": 2,
+          "hybrid_ai": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "user_context": {
+    "user_type": "Budget-conscious shopper with expensive items",
+    "budget": 2599.99,
+    "cart_total": 3999.98,
+    "over_budget": 1399.9900000000002,
+    "cart_items": [
+      {
+        "id": "723",
+        "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+        "subcat": "Gift Baskets",
+        "price": 1999.99,
+        "qty": 1
+      },
+      {
+        "id": "553",
+        "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+        "subcat": "Deli",
+        "price": 1999.99,
+        "qty": 1
+      }
+    ],
+    "is_warm_start": true,
+    "session_id": "demo_user_001"
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "B",
+      "reasoning": "System A provides no recommendations, yielding no help toward the budget goal. System B\u2019s suggestions are poorly matched to caviar and likely unacceptable, but they do offer clear, large savings and actionable options.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 2
+        },
+        "savings": {
+          "A": 0,
+          "B": 9
+        },
+        "practicality": {
+          "A": 0,
+          "B": 1
+        },
+        "ux": {
+          "A": 0,
+          "B": 2
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "B",
+      "reasoning": "System A provides no recommendations, offering no path to get under budget. System B suggests large cost-saving replacements that could bring the cart within budget, though most substitutes are poorly matched to caviar and only marginally relevant. Despite relevance issues, B is clearly more helpful for meeting the budget goal.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 3
+        },
+        "savings": {
+          "A": 0,
+          "B": 10
+        },
+        "practicality": {
+          "A": 0,
+          "B": 2
+        },
+        "ux": {
+          "A": 0,
+          "B": 3
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "B",
+      "reasoning": "System B includes a category-relevant seafood alternative (sea cucumber) that preserves the luxury intent while delivering large savings, alongside other low-cost options. System A offers bigger average savings but suggests largely irrelevant items (snacks and plastic cups), reducing acceptance likelihood. Overall, B balances savings with better relevance and click-through potential.",
+      "scores": {
+        "relevance": {
+          "A": 3,
+          "B": 6
+        },
+        "savings": {
+          "A": 10,
+          "B": 9
+        },
+        "practicality": {
+          "A": 3,
+          "B": 6
+        },
+        "ux": {
+          "A": 4,
+          "B": 7
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so there is nothing to evaluate for relevance, diversity, or feasibility. The system delivers zero savings and offers no explanations. It fails to address the $1,399.99 budget overage or propose any substitutes."
+    },
+    "personalized_cf": {
+      "relevance": 1,
+      "savings": 9,
+      "diversity": 5,
+      "explanation_quality": 3,
+      "feasibility": 1,
+      "overall_score": 3,
+      "reasoning": "While the suggested items would save roughly $2,000 each if accepted, they are not remotely similar to caviar and are unlikely to be acceptable substitutions. Explanations are generic and focus only on price, not user intent or product equivalence. Some category variety exists, but it doesn\u2019t translate into meaningful alternatives."
+    },
+    "hybrid_ai": {
+      "relevance": 2,
+      "savings": 9,
+      "diversity": 6,
+      "explanation_quality": 3,
+      "feasibility": 2,
+      "overall_score": 3,
+      "reasoning": "The picks emphasize cost-cutting but are mostly unrelated to caviar or a shopper seeking high-end items; only the sea cucumber is loosely in-category. Savings math appears accurate, yet explanations are generic and the candy/jerky swaps are not realistic substitutions for caviar."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "hybrid_ai",
+    "best_for_savings": "personalized_cf",
+    "best_for_relevance": "hybrid_ai",
+    "best_for_ux": "hybrid_ai",
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 0,
+      "personalized_cf": 1,
+      "hybrid_ai": 2
+    }
+  }
+}

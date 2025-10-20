@@ -1,0 +1,127 @@
+{
+  "user_context": {
+    "user_type": "Shopper with one expensive item",
+    "budget": 1000.0,
+    "cart_total": 1999.99,
+    "over_budget": 999.99,
+    "cart_items": [
+      {
+        "id": "723",
+        "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+        "subcat": "Gift Baskets",
+        "price": 1999.99,
+        "qty": 1
+      }
+    ]
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "System A offers a directly comparable, smaller caviar option from the same brand, making it far more relevant and practical for a shopper who likely intended to buy caviar. It also provides multiple lower-cost alternatives that all bring the cart under budget, with slightly higher potential savings.",
+      "scores": {
+        "relevance": {
+          "A": 8,
+          "B": 5
+        },
+        "savings": {
+          "A": 10,
+          "B": 9
+        },
+        "practicality": {
+          "A": 8,
+          "B": 4
+        },
+        "ux": {
+          "A": 8,
+          "B": 5
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "System A includes a smaller caviar alternative from the same brand/category, making it far more relevant and acceptable to a shopper originally choosing caviar. It also delivers slightly higher savings while providing clear, practical replacements users are likely to accept.",
+      "scores": {
+        "relevance": {
+          "A": 8,
+          "B": 5
+        },
+        "savings": {
+          "A": 10,
+          "B": 9
+        },
+        "practicality": {
+          "A": 8,
+          "B": 6
+        },
+        "ux": {
+          "A": 8,
+          "B": 6
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "B",
+      "reasoning": "System B offers multiple luxury gourmet alternatives (chocolates and a charcuterie box) that better match the \"single indulgent item\" use case while bringing the cart well under budget. It provides the same best savings as A plus more options, improving likelihood of acceptance and clicks.",
+      "scores": {
+        "relevance": {
+          "A": 4,
+          "B": 6
+        },
+        "savings": {
+          "A": 10,
+          "B": 10
+        },
+        "practicality": {
+          "A": 3,
+          "B": 6
+        },
+        "ux": {
+          "A": 5,
+          "B": 8
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 4,
+      "savings": 9,
+      "diversity": 5,
+      "explanation_quality": 3,
+      "feasibility": 4,
+      "overall_score": 5,
+      "reasoning": "Large, accurate savings are offered and one smaller caviar option is a sensible downgrade, but two recommendations are chocolates, which are poor substitutes for caviar despite being in a similar \u2018gift\u2019 category. Explanations are generic, rely on a questionable category match, and ignore size/usage context, reducing persuasiveness. Overall, strong cost-cutting but weak relevance and acceptability."
+    },
+    "personalized_cf": {
+      "relevance": 2,
+      "savings": 10,
+      "diversity": 1,
+      "explanation_quality": 3,
+      "feasibility": 1,
+      "overall_score": 3,
+      "reasoning": "It offers a massive cost reduction and would bring the cart under budget, but the suggested swap is from luxury caviar to a chocolate pecan gift tin\u2014an unrelated category\u2014so relevance and acceptance likelihood are very low. The explanation leans on vague 'similar taste' claims that don't make sense, and there is only one option provided, limiting diversity."
+    },
+    "hybrid_ai": {
+      "relevance": 2,
+      "savings": 10,
+      "diversity": 3,
+      "explanation_quality": 3,
+      "feasibility": 2,
+      "overall_score": 4,
+      "reasoning": "The system offers massive, correctly calculated savings that would bring the user under budget, but the recommended items (chocolates/gift baskets) are poor substitutes for caviar and don\u2019t match the user\u2019s likely intent. Explanations are generic and inaccurately claim similarity. Limited variety within the same gift-basket niche further reduces usefulness."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": "personalized_cf",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "budget_saving",
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 2,
+      "personalized_cf": 0,
+      "hybrid_ai": 1
+    }
+  }
+}

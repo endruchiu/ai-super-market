@@ -1,0 +1,76 @@
+{
+  "scenarios": [
+    {
+      "name": "budget_conscious_demo",
+      "user_type": "Budget-conscious shopper with expensive items",
+      "session_id": "demo_user_001",
+      "budget": 2599.99,
+      "cart": [
+        {
+          "id": "723",
+          "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+          "subcat": "Gift Baskets",
+          "price": 1999.99,
+          "qty": 1
+        },
+        {
+          "id": "553",
+          "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+          "subcat": "Deli",
+          "price": 1999.99,
+          "qty": 1
+        }
+      ],
+      "cart_total": 3999.98,
+      "over_budget": 1399.9900000000002
+    },
+    {
+      "name": "single_expensive_item",
+      "user_type": "Shopper with one expensive item",
+      "session_id": "demo_user_003",
+      "budget": 1000.0,
+      "cart": [
+        {
+          "id": "723",
+          "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+          "subcat": "Gift Baskets",
+          "price": 1999.99,
+          "qty": 1
+        }
+      ],
+      "cart_total": 1999.99,
+      "over_budget": 999.99
+    },
+    {
+      "name": "multi_category_shopper",
+      "user_type": "Shopper with items from multiple categories",
+      "session_id": "demo_user_009",
+      "budget": 3569.98,
+      "cart": [
+        {
+          "id": "723",
+          "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+          "subcat": "Gift Baskets",
+          "price": 1999.99,
+          "qty": 1
+        },
+        {
+          "id": "553",
+          "title": "Plaza Golden Osetra Caviar Kilo Pack, 35.2 oz",
+          "subcat": "Deli",
+          "price": 1999.99,
+          "qty": 1
+        },
+        {
+          "id": "1055",
+          "title": "Japanese Wagyu Boneless Ribeye Roast, A5 Grade, 12 lbs",
+          "subcat": "Meat & Seafood",
+          "price": 1099.99,
+          "qty": 1
+        }
+      ],
+      "cart_total": 5099.97,
+      "over_budget": 1529.9900000000002
+    }
+  ]
+}
