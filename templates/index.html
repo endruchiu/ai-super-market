@@ -184,8 +184,78 @@
     </div>
 
     <!-- RIGHT: Cart + Recommendations (60% width) -->
-    <div class="flex-[3] space-y-2 right-panel">
+    <div class="flex-[3] space-y-4 right-panel">
       
+      <!-- Shopping Cart -->
+      <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200 panel-compact">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            <h3 class="text-xl font-bold text-gray-900">Shopping Cart</h3>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-medium text-gray-600">Budget</span>
+            <input id="budget" type="number" min="0" step="0.01" value="50" 
+                   class="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-semibold text-right">
+          </div>
+        </div>
+        
+        <div id="cartItems" class="space-y-2 mb-4" style="min-height: 60px;">
+          <p class="text-gray-500">Your cart is empty.</p>
+        </div>
+        
+        <div class="flex items-center justify-between pt-3 border-t border-gray-200">
+          <span class="text-sm font-medium text-gray-600"></span>
+          <div id="subtotal" class="text-2xl font-bold text-gray-900">Total: $0.00</div>
+        </div>
+        
+        <button id="checkoutBtn" onclick="checkout()" 
+                class="w-full mt-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all btn-compact">
+          Complete Purchase
+        </button>
+      </div>
+
+      <!-- AI Budget-Saving Recommendations -->
+      <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200 panel-compact">
+        <div class="flex items-center space-x-2 mb-3">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          <h3 class="text-lg font-bold text-gray-900">AI Budget-Saving Recommendations</h3>
+        </div>
+        <div id="budgetList">
+          <p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>
+        </div>
+      </div>
+
+      <!-- Personalized Recommendations -->
+      <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200 panel-compact">
+        <div class="flex items-center space-x-2 mb-3">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          <h3 class="text-lg font-bold text-gray-900">Personalized Recommendations</h3>
+        </div>
+        <div id="cfList">
+          <p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>
+        </div>
+      </div>
+
+      <!-- Hybrid AI Recommendations -->
+      <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200 panel-compact">
+        <div class="flex items-center space-x-2 mb-3">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          <h3 class="text-lg font-bold text-gray-900">Hybrid AI Recommendations</h3>
+        </div>
+        <div id="hybridList">
+          <p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>
+        </div>
+      </div>
+
       <!-- Shelf Products Panel (shown when shelf is clicked) -->
       <div id="shelfProductsPanel" class="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-2xl shadow-xl p-4 border-2 border-purple-300 panel-compact" style="display:none;">
         <div class="flex items-center justify-between mb-2">
@@ -199,50 +269,21 @@
         </div>
       </div>
       
-      <!-- Product Browser -->
-      <div class="bg-white rounded-2xl shadow-xl p-4 border border-gray-200 panel-compact">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-lg font-bold text-gray-900 subheading-compact">Browse Products</h3>
+      <!-- Product Browser (collapsed by default) -->
+      <details class="bg-white rounded-2xl shadow-md border border-gray-200 panel-compact">
+        <summary class="p-4 cursor-pointer font-bold text-gray-900 hover:bg-gray-50 rounded-t-2xl">
+          📦 Browse All Products
+        </summary>
+        <div class="p-4 pt-0">
           <select id="subcatSel" onchange="refreshProducts()" 
-                  class="text-sm px-2 py-1.5 border-2 border-gray-300 rounded-lg focus:border-indigo-500 font-medium btn-compact">
+                  class="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 font-medium btn-compact">
             <option value="">All Aisles</option>
           </select>
+          <div id="productBrowser" class="space-y-2 overflow-y-auto scroll-compact" style="max-height: 250px;">
+            <!-- Product cards will appear here -->
+          </div>
         </div>
-        <div id="productBrowser" class="space-y-2 overflow-y-auto scroll-compact" style="max-height: 250px;">
-          <!-- Product cards will appear here -->
-        </div>
-      </div>
-
-      <!-- Shopping Cart -->
-      <div id="cartPanel" class="bg-white rounded-2xl shadow-xl p-4 border-2 border-indigo-200 panel-compact">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-lg font-bold text-gray-900 subheading-compact">Shopping Cart</h3>
-          <div id="subtotal" class="text-sm font-semibold text-gray-700"></div>
-        </div>
-        <div id="cartItems" class="space-y-2 overflow-y-auto scroll-compact" style="max-height: 200px;">
-          <p class="text-sm text-gray-500 text-center py-2">Cart is empty</p>
-        </div>
-        <button id="checkoutBtn" onclick="checkout()" 
-                class="w-full mt-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all text-sm btn-compact">
-          Complete Purchase
-        </button>
-      </div>
-
-      <!-- AI Budget Recommendations -->
-      <div id="budgetSuggestions" class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl p-4 border-2 border-indigo-300 panel-compact" style="display:none;">
-        <h4 class="text-md font-bold text-indigo-900 mb-2 subheading-compact">💡 Budget-Saving (Semantic)</h4>
-        <div id="budgetList" class="space-y-2"></div>
-      </div>
-
-      <div id="cfSuggestions" class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl shadow-xl p-4 border-2 border-purple-300 panel-compact" style="display:none;">
-        <h4 class="text-md font-bold text-purple-900 mb-2 subheading-compact">🎯 Personalized (CF)</h4>
-        <div id="cfList" class="space-y-2"></div>
-      </div>
-
-      <div id="hybridSuggestions" class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-xl p-4 border-2 border-emerald-300 panel-compact" style="display:none;">
-        <h4 class="text-md font-bold text-emerald-900 mb-2 subheading-compact">🤖 Hybrid AI</h4>
-        <div id="hybridList" class="space-y-2"></div>
-      </div>
+      </details>
     </div>
   </div>
 

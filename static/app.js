@@ -516,8 +516,9 @@ function updateCartDisplay() {
     const subtotalEl = document.getElementById('subtotal');
     
     if (cart.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Cart is empty</p>';
-        subtotalEl.textContent = '';
+        container.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
+        subtotalEl.innerHTML = 'Total: $0.00';
+        checkBudget();
         return;
     }
     
@@ -527,17 +528,17 @@ function updateCartDisplay() {
     container.innerHTML = '';
     cart.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-gray-50 p-2 rounded-lg border border-gray-200';
+        div.className = 'bg-gray-50 p-3 rounded-lg border border-gray-200';
         div.innerHTML = `
             <div class="flex items-center justify-between">
                 <div class="flex-1 min-w-0 pr-2">
-                    <p class="text-xs font-semibold text-gray-900 truncate">${item.title}</p>
-                    <p class="text-xs text-gray-600">$${item.price.toFixed(2)} × ${item.qty}</p>
+                    <p class="text-sm font-semibold text-gray-900 truncate">${item.title}</p>
+                    <p class="text-sm text-gray-600">$${item.price.toFixed(2)} × ${item.qty}</p>
                 </div>
                 <div class="flex items-center space-x-1">
-                    <button onclick="updateQuantity('${item.id}', -1)" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">−</button>
-                    <button onclick="updateQuantity('${item.id}', 1)" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">+</button>
-                    <button onclick="removeFromCart('${item.id}')" class="px-1.5 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold">×</button>
+                    <button onclick="updateQuantity('${item.id}', -1)" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold">−</button>
+                    <button onclick="updateQuantity('${item.id}', 1)" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold">+</button>
+                    <button onclick="removeFromCart('${item.id}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-bold">×</button>
                 </div>
             </div>
         `;
@@ -545,12 +546,8 @@ function updateCartDisplay() {
     });
     
     const isOverBudget = budget > 0 && total > budget;
-    subtotalEl.innerHTML = `
-        Total: <span class="${isOverBudget ? 'text-red-600' : 'text-green-700'} font-bold">
-            $${total.toFixed(2)}
-        </span>
-        ${budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
-    `;
+    subtotalEl.innerHTML = `Total: <span class="${isOverBudget ? 'text-red-600' : 'text-gray-900'}">$${total.toFixed(2)}</span>`;
+    checkBudget();
 }
 
 function updateCartBadge() {
@@ -564,12 +561,11 @@ async function checkBudget() {
     const budget = parseFloat(document.getElementById('budget').value) || 0;
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
     
-    // Hide all recommendation panels by default
-    document.getElementById('budgetSuggestions').style.display = 'none';
-    document.getElementById('cfSuggestions').style.display = 'none';
-    document.getElementById('hybridSuggestions').style.display = 'none';
-    
+    // Reset to empty state if not over budget or cart is empty
     if (budget <= 0 || total <= budget || cart.length === 0) {
+        document.getElementById('budgetList').innerHTML = '<p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>';
+        document.getElementById('cfList').innerHTML = '<p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>';
+        document.getElementById('hybridList').innerHTML = '<p class="text-gray-500 text-sm">No recommendations yet. Add items or exceed budget to trigger substitutions.</p>';
         return; // No recommendations needed
     }
     
@@ -595,11 +591,13 @@ async function getBudgetRecommendations() {
         const data = await response.json();
         
         if (data.suggestions && data.suggestions.length > 0) {
-            document.getElementById('budgetSuggestions').style.display = 'block';
             renderSuggestions('budgetList', data.suggestions, 'budget');
+        } else {
+            document.getElementById('budgetList').innerHTML = '<p class="text-gray-500 text-sm">No budget-saving alternatives found for this item.</p>';
         }
     } catch (error) {
         console.error('Failed to get budget recommendations:', error);
+        document.getElementById('budgetList').innerHTML = '<p class="text-red-500 text-sm">Error loading recommendations.</p>';
     }
 }
 
@@ -615,11 +613,13 @@ async function getCFRecommendations() {
         const data = await response.json();
         
         if (data.suggestions && data.suggestions.length > 0) {
-            document.getElementById('cfSuggestions').style.display = 'block';
             renderSuggestions('cfList', data.suggestions, 'cf');
+        } else {
+            document.getElementById('cfList').innerHTML = '<p class="text-gray-500 text-sm">No personalized alternatives found for this item.</p>';
         }
     } catch (error) {
         console.error('Failed to get CF recommendations:', error);
+        document.getElementById('cfList').innerHTML = '<p class="text-red-500 text-sm">Error loading recommendations.</p>';
     }
 }
 
@@ -635,11 +635,13 @@ async function getBlendedRecommendations() {
         const data = await response.json();
         
         if (data.suggestions && data.suggestions.length > 0) {
-            document.getElementById('hybridSuggestions').style.display = 'block';
             renderSuggestions('hybridList', data.suggestions, 'hybrid');
+        } else {
+            document.getElementById('hybridList').innerHTML = '<p class="text-gray-500 text-sm">No hybrid alternatives found for this item.</p>';
         }
     } catch (error) {
         console.error('Failed to get blended recommendations:', error);
+        document.getElementById('hybridList').innerHTML = '<p class="text-red-500 text-sm">Error loading recommendations.</p>';
     }
 }
 
@@ -748,11 +750,6 @@ async function checkout() {
         updateCartDisplay();
         updateCartBadge();
         clearHighlights();
-        
-        // Hide recommendations
-        document.getElementById('budgetSuggestions').style.display = 'none';
-        document.getElementById('cfSuggestions').style.display = 'none';
-        document.getElementById('hybridSuggestions').style.display = 'none';
         
     } catch (error) {
         console.error('Checkout failed:', error);
