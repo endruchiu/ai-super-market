@@ -52,7 +52,11 @@ Preferred communication style: Simple, everyday language.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
 - **Dynamic Focus**: All three recommendation systems (Budget-Saving, CF, Hybrid) focus on the most recently added cart item when over budget, providing dynamic recommendations that adjust automatically as users add items.
-- **3-Tier Fallback**: CF and Hybrid systems use a robust fallback strategy: exact subcategory match → related category match → any cheaper alternative.
+- **Strict Category Matching**: CF and Hybrid systems enforce exact same-subcategory matching for budget replacements (e.g., protein bars → only other protein bars, NOT beef jerky).
+- **Dual Recommendation Structure**:
+  - **"suggestions"**: Same-category replacements only (up to 3 items) for budget-conscious shoppers
+  - **"complementary_recommendations"**: Cross-category suggestions (up to 3 items) for discovery and exploration, labeled as "You might also like"
+- **No Cross-Category Fallback**: Removed "related category" fallback logic to prevent confusing cross-category contamination in replacement suggestions.
 
 ### Elastic Net Enhancements
 - **Budget-Saving System**: Uses ElasticNet (L1+L2 regularization) to learn optimal feature weights for savings, semantic similarity, health improvement, and size matching from user purchase behavior.
