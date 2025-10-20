@@ -245,7 +245,11 @@ def api_budget_recommendations():
     
     # Focus on the last item (most recent addition) and pass it as a single-item cart
     last_item = [cart[-1]]  # Pass as list with one item for compatibility with recommend_substitutions
+    last_product_name = last_item[0].get("name", "Unknown")
+    last_product_subcat = last_item[0].get("subcat", "Unknown")
+    print(f"[BUDGET DEBUG] Requesting recommendations for: '{last_product_name}' (subcategory: '{last_product_subcat}')")
     res = recommend_substitutions(last_item, budget)
+    print(f"[BUDGET DEBUG] Returned {len(res.get('suggestions', []))} suggestions for '{last_product_subcat}'")
     return jsonify(res)
 
 @app.route("/api/cf/recommendations", methods=["GET", "POST"])
