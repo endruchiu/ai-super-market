@@ -54,7 +54,7 @@ Preferred communication style: Simple, everyday language.
 - **Test Scenarios**: Budget-conscious, health-focused, and new user (cold start) scenarios.
 - **Robustness**: Validates API keys upfront, detects incomplete evaluations, prevents fabricated winners when API calls fail.
 - **Output**: JSON reports with evaluation status, winners, scores, and combined summaries across scenarios.
-- **Files**: `llm_judge_evaluation.py`, `test_llm_evaluation.py`, `LLM_EVALUATION_README.md`.
+- **Files**: `llm_judge_evaluation.py` (core engine), `test_llm_evaluation.py` (test runner with 3 scenarios), `demo_llm_evaluation.py` (system demonstration), `LLM_EVALUATION_README.md` (documentation).
 
 ## External Dependencies
 
