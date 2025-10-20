@@ -167,15 +167,10 @@ CATEGORY_TO_SHELF = {
     "Beer": "E5",
     
     # Household (Aisle F)
-    "Household": "F1",
-    "Cleaning": "F1",
     "Cleaning Supplies": "F1",
-    "Laundry Detergent & Supplies": "F1",
     "Paper & Plastic Products": "F2",
-    "Paper Products": "F2",
-    "Plastic": "F3",
-    "Storage": "F4",
-    "Kitchen": "F5",
+    "Laundry Detergent & Supplies": "F3",
+    "Household": "F4",
     "Floral": "A1",
     "Gift Baskets": "A6",
 }
