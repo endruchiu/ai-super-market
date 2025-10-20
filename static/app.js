@@ -6,6 +6,22 @@ function fmt(n) {
   return (Math.round(n * 100) / 100).toFixed(2); 
 }
 
+// Helper function: Update Recommendations Module visibility
+function updateRecommendationsModule() {
+  const budgetSaving = document.getElementById('suggestions');
+  const personalized = document.getElementById('cfRecommendations');
+  const hybrid = document.getElementById('blendedRecommendations');
+  const module = document.getElementById('recommendationsModule');
+  
+  // Show module if any recommendation section is visible
+  const anyVisible = 
+    budgetSaving.style.display === 'block' || 
+    personalized.style.display === 'block' || 
+    hybrid.style.display === 'block';
+  
+  module.style.display = anyVisible ? 'block' : 'none';
+}
+
 // New function: Filter by category (for store map)
 async function filterByCategory(category) {
   CURRENT_CATEGORY = category;
@@ -207,6 +223,7 @@ function updateCartDisplay() {
     document.getElementById('suggestions').style.display = 'none';
     document.getElementById('cfRecommendations').style.display = 'none';
     document.getElementById('blendedRecommendations').style.display = 'none';
+    updateRecommendationsModule();
   }
 }
 
@@ -342,6 +359,7 @@ async function getSuggestions() {
   }
   
   document.getElementById('suggestions').style.display = 'block';
+  updateRecommendationsModule();
 }
 
 async function checkout() {
@@ -389,6 +407,7 @@ async function checkout() {
       document.getElementById('suggestions').style.display = 'none';
       document.getElementById('cfRecommendations').style.display = 'none';
       document.getElementById('blendedRecommendations').style.display = 'none';
+      updateRecommendationsModule();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
@@ -426,6 +445,7 @@ async function getCFRecommendations() {
         '<p class="text-gray-500 text-sm">' + data.reason + '</p>' +
       '</div>';
       document.getElementById('cfRecommendations').style.display = 'block';
+      updateRecommendationsModule();
       return;
     }
     
@@ -481,6 +501,7 @@ async function getCFRecommendations() {
     }
     
     document.getElementById('cfRecommendations').style.display = 'block';
+    updateRecommendationsModule();
   } catch (error) {
     console.error('Error fetching CF recommendations:', error);
     alert('Failed to load CF recommendations: ' + error.message);
@@ -509,6 +530,7 @@ async function getBlendedRecommendations() {
         '<p class="text-gray-500 text-sm">' + data.reason + '</p>' +
       '</div>';
       document.getElementById('blendedRecommendations').style.display = 'block';
+      updateRecommendationsModule();
       return;
     }
     
@@ -565,6 +587,7 @@ async function getBlendedRecommendations() {
     }
     
     document.getElementById('blendedRecommendations').style.display = 'block';
+    updateRecommendationsModule();
   } catch (error) {
     console.error('Error fetching blended recommendations:', error);
     alert('Failed to load hybrid recommendations: ' + error.message);
