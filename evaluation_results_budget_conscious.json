@@ -21,113 +21,20 @@
       }
     ]
   },
-  "pairwise_comparisons": {
-    "budget_vs_cf": {
-      "winner": "A",
-      "reasoning": "Both systems returned no recommendations, providing no help in lowering the cart total or offering practical substitutes. With no items to consider, relevance, savings, practicality, and UX are all effectively zero. This is a tie; selecting A by default.",
-      "scores": {
-        "relevance": {
-          "A": 0,
-          "B": 0
-        },
-        "savings": {
-          "A": 0,
-          "B": 0
-        },
-        "practicality": {
-          "A": 0,
-          "B": 0
-        },
-        "ux": {
-          "A": 0,
-          "B": 0
-        }
-      }
-    },
-    "budget_vs_hybrid": {
-      "winner": "A",
-      "reasoning": "Both systems returned no recommendations, providing no relevant substitutes or savings for a user $52.98 over budget. With nothing to replace or click, practicality and UX are nonexistent. This is effectively a tie; defaulting to A.",
-      "scores": {
-        "relevance": {
-          "A": 0,
-          "B": 0
-        },
-        "savings": {
-          "A": 0,
-          "B": 0
-        },
-        "practicality": {
-          "A": 0,
-          "B": 0
-        },
-        "ux": {
-          "A": 0,
-          "B": 0
-        }
-      }
-    },
-    "cf_vs_hybrid": {
-      "winner": "A",
-      "reasoning": "Both systems returned no recommendations. With nothing to consider, there\u2019s no relevance, savings, practicality, or clickable value for a budget-conscious shopper. This is effectively a tie; selecting A by default.",
-      "scores": {
-        "relevance": {
-          "A": 0,
-          "B": 0
-        },
-        "savings": {
-          "A": 0,
-          "B": 0
-        },
-        "practicality": {
-          "A": 0,
-          "B": 0
-        },
-        "ux": {
-          "A": 0,
-          "B": 0
-        }
-      }
-    }
-  },
-  "criteria_scores": {
-    "budget_saving": {
-      "relevance": 1,
-      "savings": 1,
-      "diversity": 1,
-      "explanation_quality": 1,
-      "feasibility": 1,
-      "overall_score": 1,
-      "reasoning": "No recommendations were provided, so nothing addressed the user's budget gap or matched the cart/context. With no items suggested, there are no savings, variety, explanations, or realistic swaps for a budget-conscious family shopper."
-    },
-    "personalized_cf": {
-      "relevance": 0,
-      "savings": 0,
-      "diversity": 0,
-      "explanation_quality": 0,
-      "feasibility": 0,
-      "overall_score": 0,
-      "reasoning": "The system returned no recommendations, providing no match to the user's budget-conscious needs or current cart. With no options, there is no savings, diversity, explanation, or feasible substitution offered. Overall, it delivers no actionable value for the shopper."
-    },
-    "hybrid_ai": {
-      "relevance": 0,
-      "savings": 0,
-      "diversity": 0,
-      "explanation_quality": 0,
-      "feasibility": 0,
-      "overall_score": 0,
-      "reasoning": "No recommendations were provided despite the user being over budget, yielding no relevance, savings, diversity, or explanations to assess. Without suggested swaps (e.g., smaller cake, cheaper cuts, or alternative desserts), there is nothing feasible to accept. Overall, the system fails to address the user's budget-conscious needs."
-    }
-  },
+  "pairwise_comparisons": {},
+  "criteria_scores": {},
   "summary": {
-    "evaluation_status": "complete",
-    "overall_winner": "budget_saving",
-    "best_for_savings": "budget_saving",
-    "best_for_relevance": "budget_saving",
-    "best_for_ux": "budget_saving",
-    "key_insights": [],
+    "evaluation_status": "incomplete",
+    "overall_winner": null,
+    "best_for_savings": null,
+    "best_for_relevance": null,
+    "best_for_ux": null,
+    "key_insights": [
+      "No evaluation data collected - check OpenAI API key and quota"
+    ],
     "win_counts": {
-      "budget_saving": 2,
-      "personalized_cf": 1,
+      "budget_saving": 0,
+      "personalized_cf": 0,
       "hybrid_ai": 0
     }
   }

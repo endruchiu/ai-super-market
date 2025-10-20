@@ -1,4 +1,0 @@
-LLM-as-a-Judge Evaluation System
-Following EvidentlyAI methodology
-
-Note: Run test_llm_evaluation.py for full evaluation

@@ -8,42 +8,21 @@ from typing import List, Dict, Optional
 from cf_inference import get_cf_recommendations, get_user_purchase_history, load_cf_model
 from semantic_budget import _GLOBAL, ensure_index, _encode
 
-# Global cache for Elastic Net optimizer
-_HYBRID_ELASTIC_OPT = None
-
-def _get_hybrid_elastic_optimizer():
-    """Load Hybrid Elastic Net optimizer for blending weights, or use defaults."""
-    global _HYBRID_ELASTIC_OPT
-    
-    if _HYBRID_ELASTIC_OPT is not None:
-        return _HYBRID_ELASTIC_OPT
-    
-    try:
-        from elastic_hybrid_optimizer import HybridElasticNetOptimizer
-        optimizer = HybridElasticNetOptimizer.load('ml_data/hybrid_elasticnet.pkl')
-        _HYBRID_ELASTIC_OPT = optimizer
-        return optimizer
-    except Exception:
-        # Fall back to None (use default 60/40 weights)
-        _HYBRID_ELASTIC_OPT = None
-        return None
-
 
 def get_blended_recommendations(
     user_id: str,
     top_k: int = 10,
-    cf_weight: float = None,
-    semantic_weight: float = None
+    cf_weight: float = 0.6,
+    semantic_weight: float = 0.4
 ) -> List[Dict]:
     """
     Get blended recommendations combining CF and semantic similarity.
-    Enhanced with Elastic Net learned blending weights.
     
     Args:
         user_id: User ID (session_id)
         top_k: Number of recommendations to return
-        cf_weight: Weight for CF scores (default None = use Elastic Net learned weights)
-        semantic_weight: Weight for semantic scores (default None = use Elastic Net learned weights)
+        cf_weight: Weight for CF scores (default 0.6)
+        semantic_weight: Weight for semantic scores (default 0.4)
     
     Returns:
         List of recommendations with blended scores:
@@ -65,17 +44,6 @@ def get_blended_recommendations(
     
     df = _GLOBAL["df"]
     emb = _GLOBAL["emb"]
-    
-    # Get Elastic Net learned weights (or use defaults)
-    elastic_opt = _get_hybrid_elastic_optimizer()
-    if elastic_opt and elastic_opt.is_trained and cf_weight is None:
-        cf_weight, semantic_weight = elastic_opt.get_weights()
-        print(f"[HYBRID] Using Elastic Net weights: CF={cf_weight:.2%}, Semantic={semantic_weight:.2%}")
-    elif cf_weight is None:
-        # Fall back to defaults
-        cf_weight = 0.6
-        semantic_weight = 0.4
-        print(f"[HYBRID] Using default weights: CF={cf_weight:.2%}, Semantic={semantic_weight:.2%}")
     
     # Check CF model availability
     model, artifacts = load_cf_model()

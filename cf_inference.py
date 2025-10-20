@@ -57,8 +57,8 @@ def load_cf_model():
         return None, None
     
     try:
-        # Import keras only when needed - use tf_keras for compatibility
-        import tf_keras as keras
+        # Import keras only when needed
+        from tensorflow import keras
         
         print(f"Loading CF model from {model_path}...")
         _CF_MODEL = keras.models.load_model(str(model_path))
@@ -104,6 +104,9 @@ def get_cf_recommendations(
     
     # Map session_id to database user.id
     db_user_id = get_user_db_id(user_id)
+    if db_user_id is None:
+        # Unknown user - return empty
+        return []
     
     # Map user DB ID to user_idx
     user_id_to_idx = artifacts['user_mapping']
@@ -115,8 +118,7 @@ def get_cf_recommendations(
     num_products = artifacts['num_products']
     
     # Handle cold start: create user profile from purchase history if user not in training data
-    # Also handle db_user_id == None (brand new users not in database yet)
-    if db_user_id is None or db_user_id not in user_id_to_idx:
+    if db_user_id not in user_id_to_idx:
         # Get user's purchase history
         purchased_ids = get_user_purchase_history(user_id)
         

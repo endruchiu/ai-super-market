@@ -22,7 +22,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-DEFAULT_DATA_CSV = os.environ.get("GROCERY_CSV", "attached_assets/GroceryDataset_Recategorized.csv")
+DEFAULT_DATA_CSV = os.environ.get("GROCERY_CSV", "attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv")
 CACHE_DIR = os.environ.get("GROCERY_CACHE_DIR", "/tmp/grocery_cache")
 EMB_PATH = os.path.join(CACHE_DIR, "embeddings.npy")
 IDX_PATH = os.path.join(CACHE_DIR, "products_index.parquet")
@@ -108,18 +108,7 @@ def _build_text(row:pd.Series) -> str:
 
 def _load_sentence_model():
     from sentence_transformers import SentenceTransformer
-    import torch
-    # Fix for torch meta tensor issue - load model first, then move to device
-    # Don't specify device in constructor to avoid meta tensor issues
-    try:
-        model = SentenceTransformer(MODEL_NAME)
-        # Move to CPU after loading to avoid meta tensor issues
-        model = model.to('cpu')
-    except Exception as e:
-        print(f"Warning: Error loading sentence transformer: {e}")
-        # Fallback: try with explicit device parameter
-        model = SentenceTransformer(MODEL_NAME, device='cpu', trust_remote_code=True)
-    return model
+    return SentenceTransformer(MODEL_NAME)
 
 def _compute_embeddings(texts:List[str], model=None, batch_size:int=64) -> np.ndarray:
     if model is None:
@@ -204,7 +193,7 @@ def ensure_index(csv_path: Optional[str]=None, cache_dir: Optional[str]=None) ->
 
     return {"df": df, "emb": emb, "threshold": thr}
 
-_GLOBAL = {"df": None, "emb": None, "threshold": 0.6, "model": None, "explainer": None, "elastic_optimizer": None}
+_GLOBAL = {"df": None, "emb": None, "threshold": 0.6, "model": None, "explainer": None}
 
 def _get_model():
     if _GLOBAL["model"] is None:
@@ -230,21 +219,6 @@ def _maybe_explainer():
     except Exception:
         _GLOBAL["explainer"] = None
     return _GLOBAL["explainer"]
-
-def _get_elastic_optimizer():
-    """Load Elastic Net optimizer for feature weighting, or use defaults."""
-    if _GLOBAL["elastic_optimizer"] is not None:
-        return _GLOBAL["elastic_optimizer"]
-    
-    try:
-        from elastic_budget_optimizer import BudgetElasticNetOptimizer
-        optimizer = BudgetElasticNetOptimizer.load('ml_data/budget_elasticnet.pkl')
-        _GLOBAL["elastic_optimizer"] = optimizer
-        return optimizer
-    except Exception:
-        # Fall back to None (use default weights)
-        _GLOBAL["elastic_optimizer"] = None
-        return None
 
 def _template_explain(slots:Dict[str,Any]) -> str:
     tags = set([t.lower() for t in slots.get("tags",[])])
@@ -296,32 +270,12 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
                                  item_nutr:Dict[str,float],
                                  topk:int=100, sim_threshold:float=0.50) -> List[Candidate]:
     q = _encode([item_text])[0]
-    
-    # FIXED: Try same subcategory first, then expand to related categories
-    # This prevents "0 recommendations" when no exact subcategory matches exist
     mask = (df["Sub Category"]==item_subcat).to_numpy()
     idxs = np.where(mask)[0]
-    print(f"[BUDGET DEBUG]   Items in same category '{item_subcat}': {idxs.size}")
-    
-    # If no matches in same subcategory, try broader category (first word of subcategory)
-    # e.g., "Meat & Seafood" → look for any "Meat" items
-    if idxs.size == 0 and item_subcat:
-        # Extract main category (e.g., "Snacks" from "Snacks & Candy")
-        main_cat = item_subcat.split('&')[0].split(',')[0].strip()
-        mask = df["Sub Category"].str.contains(main_cat, case=False, na=False).to_numpy()
-        idxs = np.where(mask)[0]
-        print(f"[BUDGET DEBUG]   Items in broader category '{main_cat}': {idxs.size}")
-    
-    # If still no matches, allow cross-category (but lower priority via reduced similarity threshold)
-    if idxs.size == 0:
-        idxs = np.arange(len(df))
-        sim_threshold = max(0.65, sim_threshold)  # Require higher similarity for cross-category
-        print(f"[BUDGET DEBUG]   No category match, searching all {idxs.size} products with threshold {sim_threshold:.2f}")
-    
+    if idxs.size == 0: return []
     sims = (emb[idxs] @ q).astype(np.float32)
     # preselect by sim
     ok = np.where(sims >= sim_threshold)[0]
-    print(f"[BUDGET DEBUG]   Items with similarity >= {sim_threshold:.2f}: {ok.size}")
     if ok.size == 0:
         return []
     if ok.size > topk:
@@ -331,12 +285,10 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
         sims_sel = sims[ok]; idxs_sel = idxs[ok]
 
     cands: List[Candidate] = []
-    cheaper_count = 0
     for sim, j in zip(sims_sel.tolist(), idxs_sel.tolist()):
         price_j = float(df["_price_final"].iloc[j])
         if price_j >= item_price:
             continue
-        cheaper_count += 1
         sj = (df["_size_value"].iloc[j], df["_size_unit"].iloc[j])
         sr = _size_ratio(item_size, sj)
         tags = ["same_subcat"]
@@ -367,7 +319,6 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
 
         saving = (item_price - price_j)
         cands.append(Candidate(src_idx=-1, cand_idx=j, saving=saving, similarity=float(sim), size_ratio=sr, health_gain=hg, score=0.0, reason_tags=tags))
-    print(f"[BUDGET DEBUG]   Cheaper items found: {cheaper_count} (price < ${item_price:.2f})")
     return cands
 
 def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
@@ -396,23 +347,14 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
     total = sum(float(item.get("price",0.0)) * int(item.get("qty",1)) for item in cart)
     buffer = max(buffer_min, buffer_ratio * budget)
     
-    print(f"[BUDGET DEBUG] Total: ${total:.2f}, Budget: ${budget:.2f}, Buffer: ${buffer:.2f}")
-    
     if total <= budget + buffer:
         return {"total": total, "budget": budget, "suggestions": [], "message": f"Current total ${total:.2f} is within budget"}
 
     target_savings = total - budget + buffer
-    print(f"[BUDGET DEBUG] Need to save: ${target_savings:.2f}")
     
-    # Focus on the LAST cart item (most recently added) when already over budget
-    # This provides dynamic recommendations as user adds items to an over-budget cart
+    # For each cart item, collect candidates
     all_cands: List[Candidate] = []
-    
-    # Only process the last item in the cart (most recent addition)
-    if cart:
-        i = len(cart) - 1  # Last item index
-        item = cart[-1]  # Most recently added item
-        
+    for i, item in enumerate(cart):
         title = str(item.get("title",""))
         subcat = str(item.get("subcat",""))
         price = float(item.get("price",0.0))
@@ -421,38 +363,24 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         size = (float(sv) if sv is not None else None, str(su) if su is not None else None)
         nutr = item.get("nutrition") or {}
         
-        print(f"[BUDGET DEBUG] Processing last cart item: '{title}' (${price:.2f}) in '{subcat}'")
-        
         text = _build_text(pd.Series({"Title":title, "Sub Category":subcat, "Feature":"", "Product Description":"", "_size_value":size[0], "_size_unit":size[1], **nutr}))
         
         cands = _collect_candidates_for_item(df, emb, text, price, subcat, size, nutr, topk, thr)
-        print(f"[BUDGET DEBUG] Found {len(cands)} cheaper alternatives")
-        
         for c in cands:
             c.src_idx = i
             c.saving *= qty  # scale by quantity
         all_cands.extend(cands)
     
     if not all_cands:
-        print(f"[BUDGET DEBUG] No suitable substitutes found for any items")
         return {"total": total, "budget": budget, "suggestions": [], "message": f"No suitable substitutes found, current total ${total:.2f}"}
     
-    # Score candidates using Elastic Net optimizer if available
-    elastic_opt = _get_elastic_optimizer()
+    # Score candidates
     max_save = max(c.saving for c in all_cands) if all_cands else 1.0
-    
     for c in all_cands:
         save_score = _norm01(c.saving, max_save)
         sim_score = c.similarity
         health_score = c.health_gain
-        size_score = 1.0 if (c.size_ratio and 0.8 <= c.size_ratio <= 1.2) else 0.5
-        
-        # Use Elastic Net learned weights if available, otherwise use lambda
-        if elastic_opt and elastic_opt.is_trained:
-            c.score = elastic_opt.compute_score(save_score, sim_score, health_score, size_score)
-        else:
-            # Fallback to original lambda-based scoring
-            c.score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
+        c.score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
     
     # Sort and pick top candidates
     all_cands.sort(key=lambda x: x.score, reverse=True)
