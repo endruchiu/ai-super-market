@@ -119,6 +119,57 @@ def create_test_scenario(scenario_type="budget_conscious"):
                     "qty": 1
                 }
             ]
+        },
+        
+        "frequent_shopper": {
+            "user_type": "Frequent shopper with purchase history (10+ orders)",
+            "budget": 60.0,
+            "cart": [
+                {
+                    "id": "1234567890",
+                    "title": "Kirkland Signature Protein Bars Chocolate Chip Cookie Dough 20-count",
+                    "subcat": "Snacks",
+                    "price": 24.99,
+                    "qty": 2
+                },
+                {
+                    "id": "9876543210",
+                    "title": "Organic Whole Milk, 1 Gallon",
+                    "subcat": "Dairy",
+                    "price": 8.99,
+                    "qty": 3
+                }
+            ],
+            "note": "Tests CF with purchase history - should show personalized recommendations"
+        },
+        
+        "loyal_customer": {
+            "user_type": "Loyal customer with extensive history (50+ orders)",
+            "budget": 100.0,
+            "cart": [
+                {
+                    "id": "5555555555",
+                    "title": "Premium Organic Chicken Breast, 5 lbs",
+                    "subcat": "Meat & Poultry",
+                    "price": 42.99,
+                    "qty": 2
+                },
+                {
+                    "id": "6666666666",
+                    "title": "Kirkland Signature Organic Quinoa, 4 lbs",
+                    "subcat": "Grains & Rice",
+                    "price": 19.99,
+                    "qty": 1
+                },
+                {
+                    "id": "7777777777",
+                    "title": "Organic Mixed Berries, 3 lbs",
+                    "subcat": "Frozen Fruit",
+                    "price": 15.99,
+                    "qty": 2
+                }
+            ],
+            "note": "Tests CF peak performance - should show highly accurate personalization"
         }
     }
     
@@ -183,10 +234,17 @@ def run_evaluation(scenario_name="budget_conscious"):
 
 def run_all_scenarios():
     """
-    Run evaluation for all test scenarios.
+    Run evaluation for all test scenarios (cold-start + warm-start).
     """
     
-    scenarios = ["budget_conscious", "health_focused", "new_user"]
+    # Include both cold-start and warm-start scenarios
+    scenarios = [
+        "budget_conscious",      # Cold-start
+        "health_focused",        # Cold-start  
+        "new_user",             # Cold-start
+        "frequent_shopper",     # Warm-start
+        "loyal_customer"        # Warm-start
+    ]
     all_results = {}
     
     for scenario in scenarios:
@@ -250,7 +308,9 @@ if __name__ == "__main__":
         # Run all scenarios
         print("Running evaluation for all scenarios...")
         print("(Use: python test_llm_evaluation.py <scenario_name> for single scenario)")
-        print("Available scenarios: budget_conscious, health_focused, new_user\n")
+        print("Available scenarios:")
+        print("  Cold-Start: budget_conscious, health_focused, new_user")
+        print("  Warm-Start: frequent_shopper, loyal_customer\n")
         
         response = input("Run all scenarios? (y/n): ")
         if response.lower() == 'y':
