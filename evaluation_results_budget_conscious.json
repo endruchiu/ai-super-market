@@ -24,106 +24,106 @@
   "pairwise_comparisons": {
     "budget_vs_cf": {
       "winner": "A",
-      "reasoning": "System A offers multiple lower-priced dessert substitutes that closely match the cake and deliver materially higher savings, aligning with a budget-conscious goal. While A\u2019s tuna swap for ribeye is impractical, its dessert options are realistic and compelling, whereas System B provides only a single, modest-savings alternative. Overall, A provides better savings and more actionable choices.",
+      "reasoning": "Both systems returned no recommendations, providing no help in lowering the cart total or offering practical substitutes. With no items to consider, relevance, savings, practicality, and UX are all effectively zero. This is a tie; selecting A by default.",
       "scores": {
         "relevance": {
-          "A": 7,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 8,
-          "B": 4
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 6,
-          "B": 7
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 7,
-          "B": 5
+          "A": 0,
+          "B": 0
         }
       }
     },
     "budget_vs_hybrid": {
       "winner": "A",
-      "reasoning": "System A offers multiple same-category dessert swaps with substantially higher savings, better addressing the user's over-budget situation. While its tuna-for-ribeye suggestion is impractical, the dessert alternatives are relevant and likely acceptable. System B provides only a single, modest-saving alternative, limiting impact.",
+      "reasoning": "Both systems returned no recommendations, providing no relevant substitutes or savings for a user $52.98 over budget. With nothing to replace or click, practicality and UX are nonexistent. This is effectively a tie; defaulting to A.",
       "scores": {
         "relevance": {
-          "A": 7,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 8,
-          "B": 4
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 6,
-          "B": 7
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 6,
-          "B": 5
+          "A": 0,
+          "B": 0
         }
       }
     },
     "cf_vs_hybrid": {
       "winner": "A",
-      "reasoning": "Both systems propose the same lower-cost dessert replacement that saves $12 and is category-relevant. System A adds collaborative-filtering social proof (\u201cCustomers like you also bought\u201d), which typically boosts trust and click-through for budget-conscious shoppers. Savings and practicality are identical and modest, so A wins narrowly on UX.",
+      "reasoning": "Both systems returned no recommendations. With nothing to consider, there\u2019s no relevance, savings, practicality, or clickable value for a budget-conscious shopper. This is effectively a tie; selecting A by default.",
       "scores": {
         "relevance": {
-          "A": 7,
-          "B": 7
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 3,
-          "B": 3
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 6,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 7,
-          "B": 6
+          "A": 0,
+          "B": 0
         }
       }
     }
   },
   "criteria_scores": {
     "budget_saving": {
-      "relevance": 6,
-      "savings": 3,
-      "diversity": 4,
-      "explanation_quality": 3,
-      "feasibility": 4,
-      "overall_score": 4,
-      "reasoning": "Dessert swaps are category-appropriate and offer moderate savings, but the protein swap to tuna is questionable and saves only ~$1. Explanations are boilerplate, ignore size/serving comparisons despite available data, and don\u2019t address the large budget gap. Limited variety (three dessert options and one dubious seafood option) and feasibility concerns reduce overall effectiveness."
+      "relevance": 1,
+      "savings": 1,
+      "diversity": 1,
+      "explanation_quality": 1,
+      "feasibility": 1,
+      "overall_score": 1,
+      "reasoning": "No recommendations were provided, so nothing addressed the user's budget gap or matched the cart/context. With no items suggested, there are no savings, variety, explanations, or realistic swaps for a budget-conscious family shopper."
     },
     "personalized_cf": {
-      "relevance": 6,
-      "savings": 4,
-      "diversity": 1,
-      "explanation_quality": 7,
-      "feasibility": 6,
-      "overall_score": 5,
-      "reasoning": "The swap stays within the dessert category and could suit a family, but it only saves $12 and leaves the cart far over the $50 budget. The rationale is clear and quantifies savings, yet there\u2019s only one suggestion and it doesn\u2019t tackle the pricier steak or propose lower-cost alternatives. Feasibility is moderate, but impact and variety are limited."
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "The system returned no recommendations, providing no match to the user's budget-conscious needs or current cart. With no options, there is no savings, diversity, explanation, or feasible substitution offered. Overall, it delivers no actionable value for the shopper."
     },
     "hybrid_ai": {
-      "relevance": 4,
-      "savings": 3,
-      "diversity": 1,
-      "explanation_quality": 5,
-      "feasibility": 4,
-      "overall_score": 3,
-      "reasoning": "The single recommendation is loosely relevant (dessert-to-dessert) and clearly states a 21%/$12 savings, but it doesn\u2019t address the main budget gap or the high-cost steak. The absolute savings are too small relative to being $52.98 over budget, and swapping a large celebration cake for 100 madeleines may not meet the same use case. Limited to one option, it lacks diversity and broader cost-cutting strategies."
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided despite the user being over budget, yielding no relevance, savings, diversity, or explanations to assess. Without suggested swaps (e.g., smaller cake, cheaper cuts, or alternative desserts), there is nothing feasible to accept. Overall, the system fails to address the user's budget-conscious needs."
     }
   },
   "summary": {
     "evaluation_status": "complete",
     "overall_winner": "budget_saving",
-    "best_for_savings": "personalized_cf",
+    "best_for_savings": "budget_saving",
     "best_for_relevance": "budget_saving",
-    "best_for_ux": "personalized_cf",
+    "best_for_ux": "budget_saving",
     "key_insights": [],
     "win_counts": {
       "budget_saving": 2,

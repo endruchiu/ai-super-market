@@ -30,112 +30,112 @@
   },
   "pairwise_comparisons": {
     "budget_vs_cf": {
-      "winner": "B",
-      "reasoning": "System B offers a clear, category-appropriate swap for the expensive cake that a user is likely to accept, with a straightforward rationale. System A promises higher savings but suggests several impractical or irrelevant substitutions (e.g., replacing chicken stock with seasoning or tomato sauce), hurting relevance and trust despite a few sensible dessert alternatives.",
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, yielding no relevance, savings, or practical value. With nothing to click or replace, the user experience is effectively zero. A is chosen only as a tie-breaker since a budget-saving approach would better fit the user's over-budget situation if results were provided.",
       "scores": {
         "relevance": {
-          "A": 5,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 7,
-          "B": 4
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 3,
-          "B": 7
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 3,
-          "B": 6
+          "A": 0,
+          "B": 0
         }
       }
     },
     "budget_vs_hybrid": {
-      "winner": "B",
-      "reasoning": "System A offers larger potential savings on the dessert but includes several irrelevant or incorrect substitutions (e.g., replacing chicken stock with seasoning/tomato sauce or duplicating almond beverage), which undermines practicality for a health-conscious organic shopper. System B provides a single, coherent swap in the same category with clear savings that users are more likely to accept, despite the smaller savings.",
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, so they do not address the user's budget overage or organic preferences. With no actionable substitutes, savings, or clicks likely, their performance is equal; A is selected only as a tie-break.",
       "scores": {
         "relevance": {
-          "A": 4,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 7,
-          "B": 3
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 3,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 4,
-          "B": 7
+          "A": 0,
+          "B": 0
         }
       }
     },
     "cf_vs_hybrid": {
       "winner": "A",
-      "reasoning": "Both systems recommend the same cheaper bakery substitute with identical savings, but neither aligns well with the user's health-conscious organic preference. System A's social proof ('Customers like you also bought') offers a slightly stronger UX nudge to click Replace. Savings are meaningful but still leave the user over budget.",
+      "reasoning": "Both systems returned no recommendations, offering no relevance, savings, practicality, or user experience benefits. Since performance is identical, the tie is broken arbitrarily in favor of A.",
       "scores": {
         "relevance": {
-          "A": 4,
-          "B": 4
+          "A": 0,
+          "B": 0
         },
         "savings": {
-          "A": 6,
-          "B": 6
+          "A": 0,
+          "B": 0
         },
         "practicality": {
-          "A": 5,
-          "B": 5
+          "A": 0,
+          "B": 0
         },
         "ux": {
-          "A": 4,
-          "B": 3
+          "A": 0,
+          "B": 0
         }
       }
     }
   },
   "criteria_scores": {
     "budget_saving": {
-      "relevance": 3,
-      "savings": 5,
-      "diversity": 4,
-      "explanation_quality": 3,
-      "feasibility": 3,
-      "overall_score": 3,
-      "reasoning": "Dessert swaps for the cake are somewhat relevant and could deliver meaningful savings, but several recommendations attempt to replace chicken stock or almond milk with unrelated items (seasoning, tomato sauce, or the same almond beverage), hurting relevance and feasibility. Explanations are generic (\u201csame category,\u201d no size comparison) and not tailored to a health\u2011conscious organic shopper. Overall, only a subset of the suggestions are realistic substitutions."
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matched the user's health-conscious organic preferences or current cart. With no suggestions, there are no savings, no diversity, and no explanations, and no feasible substitutions to address the $30.94 budget overage. The system failed to deliver on its budget-saving objective."
     },
     "personalized_cf": {
-      "relevance": 4,
-      "savings": 6,
-      "diversity": 1,
-      "explanation_quality": 5,
-      "feasibility": 3,
-      "overall_score": 4,
-      "reasoning": "The swap stays within desserts and claims a clear $12 (21%) saving, but it overlooks the user\u2019s health-conscious organic preference and doesn\u2019t close the $30.94 budget gap. Only one recommendation limits diversity, and the CF-based rationale is generic though understandable. Replacing a celebration cake with packaged madeleines may not serve the same use case, so acceptance is doubtful."
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matches the user\u2019s organic, health-conscious preferences or current cart. With no suggestions, there are no savings, no variety, no explanations, and no viable substitutions to bring the cart under budget."
     },
     "hybrid_ai": {
-      "relevance": 3,
-      "savings": 5,
-      "diversity": 1,
-      "explanation_quality": 4,
-      "feasibility": 3,
-      "overall_score": 3,
-      "reasoning": "Only one swap is offered, and it replaces a rich cake with non-organic madeleines, which doesn\u2019t align well with a health-conscious organic preference. The $12 saving is clear and plausible but doesn\u2019t close the $30.94 budget gap. The rationale is clear on price but ignores dietary/organic fit and the different use case of a celebration cake versus snack cakes."
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matches the user's organic, health-conscious profile or current cart. With no suggested swaps or rationale, there are no savings, diversity, or feasible substitutions to evaluate."
     }
   },
   "summary": {
     "evaluation_status": "complete",
-    "overall_winner": "personalized_cf",
-    "best_for_savings": "personalized_cf",
-    "best_for_relevance": "personalized_cf",
-    "best_for_ux": "personalized_cf",
+    "overall_winner": "budget_saving",
+    "best_for_savings": null,
+    "best_for_relevance": null,
+    "best_for_ux": null,
     "key_insights": [],
     "win_counts": {
-      "budget_saving": 0,
-      "personalized_cf": 2,
-      "hybrid_ai": 1
+      "budget_saving": 2,
+      "personalized_cf": 1,
+      "hybrid_ai": 0
     }
   }
 }

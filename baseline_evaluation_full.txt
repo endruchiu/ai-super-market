@@ -1,0 +1,13 @@
+
+🎯 LLM-as-a-Judge Evaluation System
+Following EvidentlyAI Methodology
+
+Running evaluation for all scenarios...
+(Use: python test_llm_evaluation.py <scenario_name> for single scenario)
+Available scenarios: budget_conscious, health_focused, new_user
+
+Run all scenarios? (y/n): Traceback (most recent call last):
+  File "/home/runner/workspace/test_llm_evaluation.py", line 255, in <module>
+    response = input("Run all scenarios? (y/n): ")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
