@@ -372,6 +372,42 @@ def api_cf_recommendations():
             cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
             suggestions.extend(cheaper_alts[:3])
             
+            # FALLBACK: If no same-category suggestions, show general cheaper CF recommendations
+            if not suggestions and len(recs) > 0:
+                print(f"[CF FALLBACK] No same-category matches, providing general CF recommendations")
+                for rec in recs[:5]:  # Top 5 CF recommendations
+                    product_id = int(rec["product_id"])
+                    if product_id in PRODUCTS_DF.index:
+                        row = PRODUCTS_DF.loc[product_id]
+                        rec_price = float(row.get("_price_final", 0))
+                        rec_title = str(row["Title"])
+                        rec_subcat = str(row.get("Sub Category", ""))
+                        
+                        # Just needs to be cheaper and different (no category restriction)
+                        if rec_price < item_price and rec_title != item_title:
+                            saving = (item_price - rec_price) * item_qty
+                            discount_pct = int((1 - rec_price / item_price) * 100)
+                            score = float(rec.get('score', 0))
+                            
+                            suggestions.append({
+                                "replace": item_title,
+                                "with": rec_title,
+                                "expected_saving": f"{saving:.2f}",
+                                "similarity": "Based on your shopping history",
+                                "reason": f"Personalized pick: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})",
+                                "replacement_product": {
+                                    "id": str(product_id),
+                                    "title": rec_title,
+                                    "subcat": rec_subcat,
+                                    "price": rec_price,
+                                    "qty": 1,
+                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                                }
+                            })
+                            if len(suggestions) >= 3:
+                                break
+            
             # SEPARATE SECTION: Complementary recommendations (cross-category suggestions)
             # These are NOT replacements, but "You might also like" suggestions
             complementary = []
@@ -578,6 +614,42 @@ def api_blended_recommendations():
             # Add top 3 SAME-CATEGORY alternatives for replacements
             cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
             suggestions.extend(cheaper_alts[:3])
+            
+            # FALLBACK: If no same-category suggestions, show general cheaper Hybrid recommendations
+            if not suggestions and len(recs) > 0:
+                print(f"[HYBRID FALLBACK] No same-category matches, providing general Hybrid AI recommendations")
+                for rec in recs[:5]:  # Top 5 Hybrid recommendations
+                    product_id = int(rec["product_id"])
+                    if product_id in PRODUCTS_DF.index:
+                        row = PRODUCTS_DF.loc[product_id]
+                        rec_price = float(row.get("_price_final", 0))
+                        rec_title = str(row["Title"])
+                        rec_subcat = str(row.get("Sub Category", ""))
+                        
+                        # Just needs to be cheaper and different (no category restriction)
+                        if rec_price < item_price and rec_title != item_title:
+                            saving = (item_price - rec_price) * item_qty
+                            discount_pct = int((1 - rec_price / item_price) * 100)
+                            score = float(rec.get('blended_score', 0))
+                            
+                            suggestions.append({
+                                "replace": item_title,
+                                "with": rec_title,
+                                "expected_saving": f"{saving:.2f}",
+                                "similarity": "AI-powered recommendation",
+                                "reason": f"Hybrid AI pick: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})",
+                                "replacement_product": {
+                                    "id": str(product_id),
+                                    "title": rec_title,
+                                    "subcat": rec_subcat,
+                                    "price": rec_price,
+                                    "qty": 1,
+                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                                }
+                            })
+                            if len(suggestions) >= 3:
+                                break
             
             # SEPARATE SECTION: Complementary recommendations (cross-category suggestions)
             # These are NOT replacements, but "You might also like" suggestions  
