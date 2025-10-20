@@ -59,26 +59,23 @@ def build_bpr_model(num_users, num_products, embedding_dim=32, l1_reg=1e-6, l2_r
     )(user_input)
     user_vec = layers.Reshape((embedding_dim,))(user_embedding)
     
-    # Positive item input
-    pos_item_input = layers.Input(shape=(1,), name='pos_item_input')
-    pos_item_embedding = layers.Embedding(
+    # Create shared product embedding layer (used for both positive and negative items)
+    product_embedding_layer = layers.Embedding(
         input_dim=num_products,
         output_dim=embedding_dim,
         embeddings_initializer='he_normal',
         embeddings_regularizer=elasticnet_reg,
-        name='product_embedding'  # Share with negative
-    )(pos_item_input)
+        name='product_embedding'
+    )
+    
+    # Positive item input - uses shared embedding
+    pos_item_input = layers.Input(shape=(1,), name='pos_item_input')
+    pos_item_embedding = product_embedding_layer(pos_item_input)
     pos_item_vec = layers.Reshape((embedding_dim,))(pos_item_embedding)
     
-    # Negative item input (shares embedding layer with positive)
+    # Negative item input - uses same shared embedding (weights are shared!)
     neg_item_input = layers.Input(shape=(1,), name='neg_item_input')
-    neg_item_embedding = layers.Embedding(
-        input_dim=num_products,
-        output_dim=embedding_dim,
-        embeddings_initializer='he_normal',
-        embeddings_regularizer=elasticnet_reg,
-        name='product_embedding'  # Shared
-    )(neg_item_input)
+    neg_item_embedding = product_embedding_layer(neg_item_input)
     neg_item_vec = layers.Reshape((embedding_dim,))(neg_item_embedding)
     
     # Compute scores: user · positive_item and user · negative_item
