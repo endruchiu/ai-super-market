@@ -1,13 +1,64 @@
 // Shopping Cart Application
 let CART = [];
+let CURRENT_CATEGORY = '';
 
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
 }
 
-async function refreshProducts() {
+// New function: Filter by category (for store map)
+async function filterByCategory(category) {
+  CURRENT_CATEGORY = category;
+  
+  // Highlight selected shelf
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  shelves.forEach(shelf => {
+    shelf.classList.remove('selected');
+    if (shelf.textContent.includes(category)) {
+      shelf.classList.add('selected');
+    }
+  });
+  
+  // Load products for this category
+  await loadProducts(category);
+  
+  // Show products browser
+  const browser = document.getElementById('productsBrowser');
+  if (browser) {
+    browser.style.display = 'block';
+    document.getElementById('browserToggleIcon').style.transform = 'rotate(180deg)';
+  }
+}
+
+// New function: Reset view
+function resetView() {
+  CURRENT_CATEGORY = '';
+  
+  // Remove all selected highlights
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  shelves.forEach(shelf => shelf.classList.remove('selected'));
+  
+  // Load all products
+  loadProducts('');
+}
+
+// New function: Toggle products browser
+function toggleProductsBrowser() {
+  const browser = document.getElementById('productsBrowser');
+  const icon = document.getElementById('browserToggleIcon');
+  
+  if (browser.style.display === 'none' || !browser.style.display) {
+    browser.style.display = 'block';
+    icon.style.transform = 'rotate(180deg)';
+    loadProducts(CURRENT_CATEGORY);
+  } else {
+    browser.style.display = 'none';
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+async function loadProducts(subcat = '') {
   try {
-    const subcat = document.getElementById('subcatSel').value || '';
     const qs = subcat ? ('?subcat=' + encodeURIComponent(subcat)) : '';
     console.log('Fetching products from:', '/api/products' + qs);
     
@@ -21,19 +72,12 @@ async function refreshProducts() {
     const data = await res.json();
     console.log('Got products:', data);
 
-    // Fill subcat select once
-    const sel = document.getElementById('subcatSel');
-    if (sel.options.length <= 1) {
-      data.subcats.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s;
-        o.textContent = s;
-        sel.appendChild(o);
-      });
-    }
-
     // Populate products table
-    const tb = document.querySelector('#prodTable tbody');
+    const tb = document.getElementById('prodTableBody');
+    if (!tb) {
+      console.error('prodTableBody not found');
+      return;
+    }
     tb.innerHTML = '';
     
     data.items.forEach(p => {
@@ -41,30 +85,25 @@ async function refreshProducts() {
       tr.className = 'hover:bg-gray-50 transition-colors';
       
       const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
-      const size = (p.size_value && p.size_unit) ? (p.size_value + p.size_unit) : '—';
       
       const titleCell = document.createElement('td');
-      titleCell.className = 'px-6 py-4 text-sm font-medium text-gray-900';
+      titleCell.className = 'px-4 py-3 text-sm font-medium text-gray-900';
       titleCell.textContent = p.title;
       
       const subcatCell = document.createElement('td');
-      subcatCell.className = 'px-6 py-4 text-sm text-gray-600';
-      subcatCell.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + p.subcat + '</span>';
+      subcatCell.className = 'px-4 py-3 text-sm text-gray-600';
+      subcatCell.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">' + p.subcat + '</span>';
       
       const priceCell = document.createElement('td');
-      priceCell.className = 'px-6 py-4 text-sm font-bold text-green-600';
+      priceCell.className = 'px-4 py-3 text-sm font-bold text-green-600';
       priceCell.textContent = '$' + fmt(p.price || 0);
       
-      const sizeCell = document.createElement('td');
-      sizeCell.className = 'px-6 py-4 text-sm text-gray-500';
-      sizeCell.textContent = size;
-      
       const nutrCell = document.createElement('td');
-      nutrCell.className = 'px-6 py-4 text-xs text-gray-500';
+      nutrCell.className = 'px-4 py-3 text-xs text-gray-500';
       nutrCell.textContent = nutr;
       
       const addCell = document.createElement('td');
-      addCell.className = 'px-6 py-4 text-right';
+      addCell.className = 'px-4 py-3 text-right';
       const addBtn = document.createElement('button');
       addBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
       addBtn.textContent = 'Add';
@@ -74,7 +113,6 @@ async function refreshProducts() {
       tr.appendChild(titleCell);
       tr.appendChild(subcatCell);
       tr.appendChild(priceCell);
-      tr.appendChild(sizeCell);
       tr.appendChild(nutrCell);
       tr.appendChild(addCell);
       
@@ -84,6 +122,10 @@ async function refreshProducts() {
     console.error('Error loading products:', error);
     alert('Failed to load products: ' + error.message);
   }
+}
+
+async function refreshProducts() {
+  await loadProducts(CURRENT_CATEGORY);
 }
 
 function addToCart(p) {
@@ -97,6 +139,7 @@ function addToCart(p) {
     CART.push(item);
   }
   updateBadge();
+  updateCartDisplay();
   console.log('Cart now has', CART.length, 'items');
 }
 
@@ -105,88 +148,51 @@ function updateBadge() {
   document.getElementById('cartBadge').innerHTML = 'Cart: <span class="font-bold">' + items + '</span> items';
 }
 
-function viewCart() {
-  console.log('View Cart clicked. Cart has', CART.length, 'items:', CART);
+function updateCartDisplay() {
   const div = document.getElementById('cartItems');
-  if (!div) {
-    console.error('cartItems div not found!');
+  const totalSpan = document.getElementById('totalAmount');
+  
+  if (!div || !totalSpan) {
+    console.error('Cart elements not found!');
     return;
   }
   
-  div.innerHTML = '';
   const budget = parseFloat(document.getElementById('budget').value || '0');
+  div.innerHTML = '';
   
   if (CART.length === 0) {
-    div.innerHTML = '<div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-12 text-center"><p class="text-gray-500 text-lg">Your cart is empty</p><p class="text-gray-400 text-sm mt-2">Add some products to get started!</p></div>';
-    document.getElementById('subtotal').textContent = 'Subtotal: $0.00';
+    div.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Your cart is empty.</p>';
+    totalSpan.textContent = '$0.00';
   } else {
     let sum = 0;
     CART.forEach(function(x, i) {
       const line = x.price * x.qty;
       sum += line;
-      const size = (x.size_value && x.size_unit) ? (x.size_value + x.size_unit) : '—';
+      
       const row = document.createElement('div');
-      row.className = 'bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all';
+      row.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2';
       
-      const badge = x.isSubstitute ? '<span class="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">Budget-Friendly</span>' : '';
+      const badge = x.isSubstitute ? '<span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-500 text-white">✓</span>' : '';
       
-      row.innerHTML = '<div class="font-semibold text-gray-900 mb-2">' + x.title + badge + '</div>' +
-        '<div class="text-sm text-gray-600 mb-2">' +
-          '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + x.subcat + '</span>' +
-          '<span class="ml-2 text-gray-500">Size: ' + size + '</span>' +
+      row.innerHTML = '<div class="text-sm font-semibold text-gray-900 mb-1">' + x.title.substring(0, 50) + (x.title.length > 50 ? '...' : '') + badge + '</div>' +
+        '<div class="flex items-center justify-between text-xs mb-2">' +
+          '<span class="text-gray-600">' + x.subcat + '</span>' +
+          '<span class="font-bold text-green-600">$' + fmt(x.price) + '</span>' +
         '</div>' +
         '<div class="flex items-center justify-between">' +
-          '<div class="text-sm">' +
-            '<span class="font-bold text-green-600">$' + fmt(x.price) + '</span> ' +
-            '<span class="text-gray-500">× ' + x.qty + ' = </span>' +
-            '<span class="font-bold text-gray-900">$' + fmt(line) + '</span>' +
+          '<div class="flex items-center space-x-1">' +
+            '<button onclick="decQty(' + i + ')" class="bg-gray-400 hover:bg-gray-500 text-white font-bold w-6 h-6 rounded transition-colors text-xs">-</button>' +
+            '<span class="px-2 text-sm font-semibold">' + x.qty + '</span>' +
+            '<button onclick="incQty(' + i + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-6 h-6 rounded transition-colors text-xs">+</button>' +
           '</div>' +
-          '<div class="flex items-center space-x-2">' +
-            '<button onclick="decQty(' + i + ')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold w-8 h-8 rounded-lg transition-colors">-</button>' +
-            '<button onclick="incQty(' + i + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-8 h-8 rounded-lg transition-colors">+</button>' +
-            '<button onclick="removeItem(' + i + ')" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">Remove</button>' +
-          '</div>' +
+          '<button onclick="removeItem(' + i + ')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Remove</button>' +
         '</div>';
       
       div.appendChild(row);
     });
     
-    // Budget warning display
-    const warningThreshold75 = budget * 0.75;
-    let warningHtml = '';
-    
-    if (sum > budget) {
-      warningHtml = '<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg">' +
-        '<div class="flex items-center">' +
-          '<svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">' +
-            '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>' +
-          '</svg>' +
-          '<span class="font-bold text-red-700">Over Budget!</span>' +
-        '</div>' +
-        '<p class="text-red-600 text-sm mt-1">Your cart total ($' + fmt(sum) + ') exceeds your budget ($' + fmt(budget) + ') by $' + fmt(sum - budget) + '</p>' +
-      '</div>';
-    } else if (sum >= warningThreshold75) {
-      warningHtml = '<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded-lg">' +
-        '<div class="flex items-center">' +
-          '<svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">' +
-            '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>' +
-          '</svg>' +
-          '<span class="font-bold text-yellow-700">Budget Alert</span>' +
-        '</div>' +
-        '<p class="text-yellow-600 text-sm mt-1">You have used ' + Math.round((sum / budget) * 100) + '% of your budget ($' + fmt(sum) + ' of $' + fmt(budget) + ')</p>' +
-      '</div>';
-    }
-    
-    document.getElementById('subtotal').innerHTML = warningHtml + '<span class="text-2xl font-bold text-gray-900">Subtotal: <span class="text-indigo-600">$' + fmt(sum) + '</span></span>';
+    totalSpan.textContent = '$' + fmt(sum);
   }
-  
-  const panel = document.getElementById('cartPanel');
-  if (!panel) {
-    console.error('cartPanel not found!');
-    return;
-  }
-  panel.style.display = 'block';
-  console.log('Cart panel should now be visible');
   
   // Auto-show all recommendation systems if over budget
   const sum = CART.reduce((s, x) => s + (x.price * x.qty), 0);
@@ -204,25 +210,29 @@ function viewCart() {
   }
 }
 
+function viewCart() {
+  updateCartDisplay();
+}
+
 function hideCart() {
-  document.getElementById('cartPanel').style.display = 'none';
+  // Not needed in new layout - cart is always visible
 }
 
 function incQty(i) {
   CART[i].qty += 1;
-  viewCart();
+  updateCartDisplay();
   updateBadge();
 }
 
 function decQty(i) {
   CART[i].qty = Math.max(1, CART[i].qty - 1);
-  viewCart();
+  updateCartDisplay();
   updateBadge();
 }
 
 function removeItem(i) {
   CART.splice(i, 1);
-  viewCart();
+  updateCartDisplay();
   updateBadge();
 }
 
@@ -241,7 +251,7 @@ function applyReplacement(originalTitle, replacementProduct) {
   CART.push(replacementProduct);
   
   updateBadge();
-  viewCart();
+  updateCartDisplay();
   
   const msg = document.createElement('div');
   msg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
@@ -375,8 +385,10 @@ async function checkout() {
       
       CART = [];
       updateBadge();
-      hideCart();
+      updateCartDisplay();
       document.getElementById('suggestions').style.display = 'none';
+      document.getElementById('cfRecommendations').style.display = 'none';
+      document.getElementById('blendedRecommendations').style.display = 'none';
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
