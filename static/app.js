@@ -654,30 +654,75 @@ async function getBlendedRecommendations() {
     }
 }
 
-function renderSuggestions(containerId, suggestions, type) {
+async function renderSuggestions(containerId, suggestions, type) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
     
-    suggestions.forEach(sug => {
+    for (const sug of suggestions) {
         const div = document.createElement('div');
         div.className = 'bg-white p-2 rounded-lg border-2 border-gray-300 hover:border-green-500 transition-all';
         
         const replacement = sug.replacement_product;
         
+        // Get shelf location for this product
+        let shelfInfo = '';
+        let shelfId = '';
+        try {
+            const response = await fetch('/api/store/location', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subcat: replacement.subcat})
+            });
+            const location = await response.json();
+            shelfId = location.shelf_id;
+            shelfInfo = `<div class="flex items-center gap-1 mb-1">
+                <svg class="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-xs text-purple-600 font-medium">${shelfId} — ${location.shelf_name}</span>
+            </div>`;
+        } catch (error) {
+            console.error('Failed to get location for recommendation:', error);
+        }
+        
         div.innerHTML = `
+            ${shelfInfo}
             <p class="text-xs font-semibold text-gray-900 mb-1">${replacement.title}</p>
             <p class="text-xs text-gray-600 mb-2">${sug.reason}</p>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-1">
                 <span class="text-xs font-bold text-green-700">Save $${sug.expected_saving}</span>
-                <button onclick='applyRecommendation(${JSON.stringify(sug).replace(/'/g, "&#39;")})' 
-                        class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded font-bold">
-                    Replace
-                </button>
+                <div class="flex gap-1">
+                    ${shelfId ? `<button onclick='highlightRecommendationShelf("${shelfId}")' 
+                            class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded font-bold">
+                        Highlight
+                    </button>` : ''}
+                    <button onclick='applyRecommendation(${JSON.stringify(sug).replace(/'/g, "&#39;")})' 
+                            class="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded font-bold">
+                        Replace
+                    </button>
+                </div>
             </div>
         `;
         
         container.appendChild(div);
-    });
+    }
+}
+
+function highlightRecommendationShelf(shelfId) {
+    // Clear any existing highlights
+    clearHighlights();
+    clearRoute();
+    
+    // Highlight the recommended shelf
+    highlightShelf(shelfId);
+    
+    // Scroll the store map into view if needed
+    const storeMap = document.getElementById('storeMap');
+    if (storeMap) {
+        storeMap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    console.log('Highlighted recommendation shelf:', shelfId);
 }
 
 function applyRecommendation(suggestion) {
