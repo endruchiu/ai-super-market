@@ -21,13 +21,21 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 - **Design System**: Modern UI using Tailwind CSS CDN, Inter Font, and a blue/indigo gradient color scheme.
-- **Components**: Responsive header, clean product cards, budget controls, shopping cart display with quantity controls, and animated success notifications.
+- **Layout**: Two-column design with store map on left (60%) and shopping cart panel on right (40%).
+- **Store Map**: Visual aisle layout organizing 19 product categories into 6 aisles (A-F):
+  - Aisle A: Meat & Seafood, Seafood, Poultry, Deli, Breakfast, Floral
+  - Aisle B: Snacks (repeated for visual prominence)
+  - Aisle C: Candy, Gift Baskets, Organic, Kirkland Signature Grocery
+  - Aisle D: Pantry & Dry Goods, Coffee
+  - Aisle E: Beverages & Water, Paper & Plastic Products, Household
+  - Aisle F: Bakery & Desserts, Cleaning Supplies, Laundry Detergent & Supplies, Household
+- **Components**: Responsive header, interactive aisle cards with click-to-filter, clean product cards, budget controls, shopping cart display with quantity controls, collapsible product browser, and animated success notifications.
 - **Responsiveness**: Mobile-friendly layout with a flexible grid system.
 - **AI Recommendation UI**:
     - **Budget-Saving**: Semantic similarity-based (Blue/Indigo theme).
     - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).
     - **Hybrid AI**: 60% CF + 40% semantic similarity blend (Emerald/Teal theme).
-    - Recommendations automatically trigger when the cart total exceeds the budget.
+    - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
 
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
