@@ -1,0 +1,143 @@
+{
+  "user_context": {
+    "user_type": "Warm-Start: repeat_purchase (8 orders)",
+    "budget": 38.13,
+    "cart_total": 54.47,
+    "over_budget": 16.339999999999996,
+    "cart_items": [
+      {
+        "product_id": 6606377763658749694,
+        "title": "Snak Club Toasted Corn, Tajin Chile & Lime, 2.5 oz, 24-count",
+        "subcategory": "Snacks",
+        "price": 25.99,
+        "quantity": 1
+      },
+      {
+        "product_id": 7602523610866733428,
+        "title": "Kellogg\u2019s Pop-Tarts, Frosted Strawberry, 48-count",
+        "subcategory": "Snacks",
+        "price": 12.49,
+        "quantity": 1
+      },
+      {
+        "product_id": 1729611070889266504,
+        "title": "Grandma's Sandwich Creme Cookies, Vanilla, 3.245 oz, 24-Count",
+        "subcategory": "Snacks",
+        "price": 15.99,
+        "quantity": 1
+      }
+    ],
+    "is_warm_start": true,
+    "session_id": "demo_user_003"
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, providing no relevance, savings, or actionable substitutions. With nothing to click or replace, the user experience is equally poor. Choosing A by default in a tie.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, offering no relevance, savings, or practical substitutes to help the user reduce their $16.34 overage. As they are functionally identical in output, this is a tie; selecting A by default.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Both systems returned no recommendations, offering no help to reduce the $16.34 overage or provide relevant substitutes. With identical, empty outputs, they tie on all criteria; defaulting to A as the winner.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided despite the user being over budget, so nothing matches the cart or preferences. With no suggested swaps, there are no savings, no variety, and no explanations to assess, making feasibility impossible to judge."
+    },
+    "personalized_cf": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matches the user's cart or repeat purchase history and no budget-saving substitutions are suggested. With an empty list, there is no diversity, explanation, or feasible swaps. Overall, the system fails to assist a user who is over budget."
+    },
+    "hybrid_ai": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matches the user's preferences or addresses the $16.34 budget overage. There are no explanations, no diversity, and no feasible substitutions, resulting in zero savings and utility."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": null,
+    "best_for_relevance": null,
+    "best_for_ux": null,
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 2,
+      "personalized_cf": 1,
+      "hybrid_ai": 0
+    }
+  }
+}
