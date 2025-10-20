@@ -22,13 +22,13 @@ Preferred communication style: Simple, everyday language.
 ### Frontend
 - **Design System**: Modern UI using Tailwind CSS CDN, Inter Font, and a blue/indigo gradient color scheme.
 - **Supermarket Interface**: Split-screen layout with interactive store map (60% left) and shopping cart/recommendations (40% right).
-- **Interactive Store Map**: SVG-based visualization showing 6 aisles (A-F) with labeled shelves:
-    - Aisle A: Fresh Produce & Bakery
-    - Aisle B: Meat, Seafood & Deli
-    - Aisle C: Dairy & Frozen
-    - Aisle D: Pantry & Snacks
-    - Aisle E: Beverages & Drinks
-    - Aisle F: Household & Paper
+- **Interactive Store Map**: SVG-based visualization showing 6 aisles (A-F) with 36 labeled shelves optimized for the recategorized product database:
+    - Aisle A: Fresh & Prepared Foods (Meat & Seafood, Deli, Floral, Gift Baskets)
+    - Aisle B: Breakfast & Snacks (Breakfast, Bakery & Desserts, Snacks)
+    - Aisle C: Candy & Treats (Snacks cont., Candy, Chocolate, Organic & Specialty)
+    - Aisle D: Pantry & Coffee (Pantry & Dry Goods, Kirkland Signature, Coffee)
+    - Aisle E: Beverages (Beverages & Water, Soft Drinks, Juices, Coffee Drinks)
+    - Aisle F: Household & Cleaning (Cleaning Supplies, Paper & Plastic, Laundry, Household)
 - **Interactive Shelf Browsing**: Users can click on any shelf to explore products in that category:
     - Displays 3-4 mock products per shelf with name, price, and "Add to Cart" button
     - Purple/indigo themed panel appears on the right side
@@ -147,7 +147,10 @@ Preferred communication style: Simple, everyday language.
 - **PostgreSQL**: Primary data storage, configured via `DATABASE_URL`.
 
 ### Data Sources
-- **CSV files**: Product catalog from `attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv`.
+- **CSV files**: Product catalog from `attached_assets/GroceryDataset_Recategorized.csv` (recategorized from original dataset).
+- **Data Quality**: Deduplicated dataset with 1,484 unique products (removed 273 duplicates from original 1,757 products).
+- **Recategorization**: Smart keyword-based category assignment eliminates cross-category contamination (e.g., products no longer appear in both "Kirkland Signature Grocery" and their actual category).
+- **Category Count**: 17 clean subcategories optimized for recommendation accuracy.
 
 ### Store Layout System
 - **Module**: `store_layout.py` - Manages virtual store layout and product locations.
@@ -155,12 +158,16 @@ Preferred communication style: Simple, everyday language.
   - `/api/store/layout`: Returns complete store structure with aisles and shelves.
   - `/api/store/location`: Maps product subcategories to shelf coordinates.
   - `/api/store/route`: Calculates Manhattan-style routes between store locations.
-- **Shelf Mapping**: Products are mapped to shelves based on actual CSV subcategories:
-  - Aisle F1: Cleaning Supplies
-  - Aisle F2: Paper & Plastic Products
-  - Aisle F3: Laundry Detergent & Supplies
-  - Aisle F4-F6: Household (Items, Storage, Misc)
-- **Category Accuracy**: Shelf names now match actual product subcategories in the CSV data to prevent recommendation confusion.
+- **Shelf Mapping**: All 17 recategorized subcategories mapped across 36 shelves:
+  - **Snacks**: 5 shelves (B3-B6, C1) - largest category with 289 products
+  - **Pantry & Dry Goods**: 3 shelves (D1-D3) - 167 products
+  - **Candy**: 3 shelves (C2-C4) - 154 products
+  - **Meat & Seafood**: 3 shelves (A1-A3) - 150 products
+  - **Beverages & Water**: 6 shelves (E1-E6) - 147 products
+  - **Coffee**: 2 shelves (D5-D6) - 95 products
+  - Other categories: 1-2 shelves each
+- **Category Accuracy**: EXACT subcategory matching between CSV data and shelf labels to ensure recommendation systems work correctly.
+- **No Duplicates**: Recategorization eliminates products appearing in multiple categories, preventing recommendation confusion.
 - **Route Visualization**: L-shaped pathfinding from entrance to target shelf with animated SVG paths and pulsing destination markers.
 
 ### Infrastructure
