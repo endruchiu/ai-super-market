@@ -275,6 +275,7 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
     # This prevents "0 recommendations" when no exact subcategory matches exist
     mask = (df["Sub Category"]==item_subcat).to_numpy()
     idxs = np.where(mask)[0]
+    print(f"[BUDGET DEBUG]   Items in same category '{item_subcat}': {idxs.size}")
     
     # If no matches in same subcategory, try broader category (first word of subcategory)
     # e.g., "Meat & Seafood" → look for any "Meat" items
@@ -283,15 +284,18 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
         main_cat = item_subcat.split('&')[0].split(',')[0].strip()
         mask = df["Sub Category"].str.contains(main_cat, case=False, na=False).to_numpy()
         idxs = np.where(mask)[0]
+        print(f"[BUDGET DEBUG]   Items in broader category '{main_cat}': {idxs.size}")
     
     # If still no matches, allow cross-category (but lower priority via reduced similarity threshold)
     if idxs.size == 0:
         idxs = np.arange(len(df))
         sim_threshold = max(0.65, sim_threshold)  # Require higher similarity for cross-category
+        print(f"[BUDGET DEBUG]   No category match, searching all {idxs.size} products with threshold {sim_threshold:.2f}")
     
     sims = (emb[idxs] @ q).astype(np.float32)
     # preselect by sim
     ok = np.where(sims >= sim_threshold)[0]
+    print(f"[BUDGET DEBUG]   Items with similarity >= {sim_threshold:.2f}: {ok.size}")
     if ok.size == 0:
         return []
     if ok.size > topk:
@@ -301,10 +305,12 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
         sims_sel = sims[ok]; idxs_sel = idxs[ok]
 
     cands: List[Candidate] = []
+    cheaper_count = 0
     for sim, j in zip(sims_sel.tolist(), idxs_sel.tolist()):
         price_j = float(df["_price_final"].iloc[j])
         if price_j >= item_price:
             continue
+        cheaper_count += 1
         sj = (df["_size_value"].iloc[j], df["_size_unit"].iloc[j])
         sr = _size_ratio(item_size, sj)
         tags = ["same_subcat"]
@@ -335,6 +341,7 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
 
         saving = (item_price - price_j)
         cands.append(Candidate(src_idx=-1, cand_idx=j, saving=saving, similarity=float(sim), size_ratio=sr, health_gain=hg, score=0.0, reason_tags=tags))
+    print(f"[BUDGET DEBUG]   Cheaper items found: {cheaper_count} (price < ${item_price:.2f})")
     return cands
 
 def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
@@ -363,10 +370,13 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
     total = sum(float(item.get("price",0.0)) * int(item.get("qty",1)) for item in cart)
     buffer = max(buffer_min, buffer_ratio * budget)
     
+    print(f"[BUDGET DEBUG] Total: ${total:.2f}, Budget: ${budget:.2f}, Buffer: ${buffer:.2f}")
+    
     if total <= budget + buffer:
         return {"total": total, "budget": budget, "suggestions": [], "message": f"Current total ${total:.2f} is within budget"}
 
     target_savings = total - budget + buffer
+    print(f"[BUDGET DEBUG] Need to save: ${target_savings:.2f}")
     
     # Focus on the LAST cart item (most recently added) when already over budget
     # This provides dynamic recommendations as user adds items to an over-budget cart
@@ -385,15 +395,20 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         size = (float(sv) if sv is not None else None, str(su) if su is not None else None)
         nutr = item.get("nutrition") or {}
         
+        print(f"[BUDGET DEBUG] Processing last cart item: '{title}' (${price:.2f}) in '{subcat}'")
+        
         text = _build_text(pd.Series({"Title":title, "Sub Category":subcat, "Feature":"", "Product Description":"", "_size_value":size[0], "_size_unit":size[1], **nutr}))
         
         cands = _collect_candidates_for_item(df, emb, text, price, subcat, size, nutr, topk, thr)
+        print(f"[BUDGET DEBUG] Found {len(cands)} cheaper alternatives")
+        
         for c in cands:
             c.src_idx = i
             c.saving *= qty  # scale by quantity
         all_cands.extend(cands)
     
     if not all_cands:
+        print(f"[BUDGET DEBUG] No suitable substitutes found for any items")
         return {"total": total, "budget": budget, "suggestions": [], "message": f"No suitable substitutes found, current total ${total:.2f}"}
     
     # Score candidates
