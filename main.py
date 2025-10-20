@@ -152,6 +152,47 @@ def api_store_layout():
     """
     return jsonify(STORE_LAYOUT)
 
+@app.route("/api/store/shelf/<shelf_id>/products")
+def api_shelf_products(shelf_id):
+    """
+    Get products for a specific shelf based on shelf ID.
+    Uses SHELF_TO_CATEGORIES mapping to find relevant products.
+    """
+    from store_layout import SHELF_TO_CATEGORIES
+    
+    # Get categories for this shelf
+    categories = SHELF_TO_CATEGORIES.get(shelf_id, [])
+    
+    if not categories:
+        return jsonify({"items": [], "shelf_id": shelf_id, "message": "No categories mapped to this shelf"})
+    
+    # Filter products that match any of the categories
+    matching_products = []
+    for _, row in PRODUCTS_DF.iterrows():
+        subcat = str(row.get("Sub Category", ""))
+        if any(cat in subcat or subcat in cat for cat in categories):
+            product = {
+                "id": f"product-{row.name}",
+                "title": str(row["Title"]),
+                "price": float(row["_price_final"]) if pd.notna(row["_price_final"]) else 0.0,
+                "subcat": subcat,
+                "shelf": shelf_id,
+                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None,
+            }
+            matching_products.append(product)
+            
+            # Limit to 8 products per shelf for performance
+            if len(matching_products) >= 8:
+                break
+    
+    return jsonify({
+        "items": matching_products,
+        "shelf_id": shelf_id,
+        "categories": categories,
+        "count": len(matching_products)
+    })
+
 @app.route("/api/store/location", methods=["POST"])
 def api_product_location():
     """

@@ -141,6 +141,7 @@ CATEGORY_TO_SHELF = {
     
     # Pantry & Snacks (Aisle D)
     "Snacks": "D3",
+    "Candy": "D3",
     "Candy & Chocolate": "D3",
     "Cookies": "D4",
     "Crackers": "D4",
@@ -149,10 +150,13 @@ CATEGORY_TO_SHELF = {
     "Pasta": "D2",
     "Rice": "D2",
     "Canned Goods": "D1",
+    "Pantry & Dry Goods": "D1",
+    "Kirkland Signature Grocery": "D2",
     "Baking": "D6",
     
     # Beverages (Aisle E)
     "Beverages": "E1",
+    "Beverages & Water": "E1",
     "Water": "E1",
     "Juice": "E1",
     "Soft Drinks": "E2",
@@ -165,11 +169,55 @@ CATEGORY_TO_SHELF = {
     # Household (Aisle F)
     "Household": "F1",
     "Cleaning": "F1",
+    "Cleaning Supplies": "F1",
+    "Laundry Detergent & Supplies": "F1",
     "Paper & Plastic Products": "F2",
     "Paper Products": "F2",
     "Plastic": "F3",
     "Storage": "F4",
     "Kitchen": "F5",
+    "Floral": "A1",
+    "Gift Baskets": "A6",
+}
+
+# Reverse mapping: shelf to categories (for looking up products)
+SHELF_TO_CATEGORIES = {
+    "A1": ["Organic", "Floral"],
+    "A2": ["Fresh Produce", "Fruits"],
+    "A3": ["Vegetables"],
+    "A4": ["Bakery & Desserts", "Bakery"],
+    "A5": ["Bread"],
+    "A6": ["Desserts", "Gift Baskets"],
+    "B1": ["Meat & Seafood", "Meat"],
+    "B2": ["Poultry"],
+    "B3": ["Seafood"],
+    "B4": ["Deli"],
+    "B5": ["Deli", "Meat & Seafood"],
+    "B6": ["Deli", "Meat & Seafood"],
+    "C1": ["Dairy", "Milk"],
+    "C2": ["Cheese"],
+    "C3": ["Yogurt", "Eggs"],
+    "C4": ["Frozen", "Frozen Food"],
+    "C5": ["Ice Cream"],
+    "C6": ["Frozen", "Frozen Food"],
+    "D1": ["Canned Goods", "Pantry & Dry Goods"],
+    "D2": ["Pasta", "Rice", "Kirkland Signature Grocery", "Pantry & Dry Goods"],
+    "D3": ["Snacks", "Candy"],
+    "D4": ["Cookies", "Crackers", "Snacks"],
+    "D5": ["Cereals", "Breakfast"],
+    "D6": ["Baking", "Pantry & Dry Goods"],
+    "E1": ["Beverages & Water", "Beverages", "Water", "Juice"],
+    "E2": ["Soft Drinks", "Soda", "Beverages & Water"],
+    "E3": ["Coffee", "Tea"],
+    "E4": ["Beverages & Water", "Soft Drinks"],
+    "E5": ["Wine", "Beer", "Beverages & Water"],
+    "E6": ["Beverages & Water", "Coffee"],
+    "F1": ["Household", "Cleaning Supplies", "Laundry Detergent & Supplies"],
+    "F2": ["Paper & Plastic Products"],
+    "F3": ["Paper & Plastic Products", "Plastic"],
+    "F4": ["Household", "Storage"],
+    "F5": ["Household", "Kitchen"],
+    "F6": ["Household"],
 }
 
 def get_shelf_for_category(category: str) -> str:

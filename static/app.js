@@ -347,14 +347,7 @@ function resetMap() {
 
 // ===== SHELF PRODUCT BROWSING =====
 
-function showShelfProducts(shelfId, shelfName) {
-    const shelfProducts = SHELF_PRODUCTS[shelfId];
-    
-    if (!shelfProducts) {
-        console.log('No products for shelf:', shelfId);
-        return;
-    }
-    
+async function showShelfProducts(shelfId, shelfName) {
     currentShelfProducts = shelfId;
     
     // Highlight the selected shelf
@@ -368,28 +361,44 @@ function showShelfProducts(shelfId, shelfName) {
     
     title.textContent = `📍 ${shelfName}`;
     panel.style.display = 'block';
+    container.innerHTML = '<p class="text-gray-500 text-center py-4">Loading products...</p>';
     
-    // Render products
-    container.innerHTML = '';
-    shelfProducts.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'bg-white p-3 rounded-lg border-2 border-gray-300 hover:border-indigo-500 transition-all';
+    try {
+        // Fetch real products from the API for this shelf
+        const response = await fetch(`/api/store/shelf/${shelfId}/products`);
+        const data = await response.json();
         
-        card.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-bold text-gray-900">${product.title}</h4>
-                <span class="text-lg font-bold text-green-700">$${product.price.toFixed(2)}</span>
-            </div>
-            <button onclick='addShelfProductToCart(${JSON.stringify(product).replace(/'/g, "&#39;")})' 
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">
-                Add to Cart
-            </button>
-        `;
+        if (!data.items || data.items.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No products available for this shelf.</p>';
+            console.log('No products for shelf:', shelfId);
+            return;
+        }
         
-        container.appendChild(card);
-    });
-    
-    console.log(`Showing ${shelfProducts.length} products from ${shelfName}`);
+        // Render products
+        container.innerHTML = '';
+        data.items.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-3 rounded-lg border-2 border-gray-300 hover:border-indigo-500 transition-all';
+            
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-bold text-gray-900">${product.title}</h4>
+                    <span class="text-lg font-bold text-green-700">$${product.price.toFixed(2)}</span>
+                </div>
+                <button onclick='addShelfProductToCart(${JSON.stringify(product).replace(/'/g, "&#39;")})' 
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">
+                    Add to Cart
+                </button>
+            `;
+            
+            container.appendChild(card);
+        });
+        
+        console.log(`Showing ${data.items.length} products from ${shelfName}`);
+    } catch (error) {
+        console.error('Failed to load shelf products:', error);
+        container.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load products.</p>';
+    }
 }
 
 function hideShelfProducts() {
