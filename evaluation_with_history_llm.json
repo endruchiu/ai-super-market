@@ -1,0 +1,141 @@
+{
+  "user_context": {
+    "user_type": "Active shopper with purchase history (3 recent orders: organic items, desserts, groceries)",
+    "budget": 80.0,
+    "cart_total": 122.96000000000001,
+    "over_budget": 42.96000000000001,
+    "cart_items": [
+      {
+        "id": "7875624813017570385",
+        "title": "David's Cookies Mile High Peanut Butter Cake, 6.8 lbs",
+        "subcat": "Bakery & Desserts",
+        "price": 56.99,
+        "qty": 1
+      },
+      {
+        "id": "8602147923846103921",
+        "title": "Premium Organic Beef Ribeye Steak, 12 oz",
+        "subcat": "Meat & Seafood",
+        "price": 45.99,
+        "qty": 1
+      },
+      {
+        "id": "3575723596463500350",
+        "title": "Kirkland Signature Organic Almond Beverage, Vanilla, 32 fl oz",
+        "subcat": "Organic",
+        "price": 9.99,
+        "qty": 2
+      }
+    ]
+  },
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "System A provides several dessert replacements that are somewhat relevant to the user's cart and could yield meaningful savings, while System B offers no suggestions. However, A also includes impractical or incorrect swaps (almond beverage to tomato sauce, 12 oz steak to a 10 lb tuna case), which hurts practicality and trust.",
+      "scores": {
+        "relevance": {
+          "A": 5,
+          "B": 0
+        },
+        "savings": {
+          "A": 6,
+          "B": 0
+        },
+        "practicality": {
+          "A": 4,
+          "B": 0
+        },
+        "ux": {
+          "A": 5,
+          "B": 0
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "System A offers several relevant dessert substitutes for the cake that deliver meaningful savings ($17\u2013$27) and can bring the cart closer to budget. However, it also includes some poor, impractical swaps (almond milk to tomato sauce; ribeye to a 10 lb tuna case), which hurt practicality and trust. System B provides no recommendations, yielding no savings or actionability.",
+      "scores": {
+        "relevance": {
+          "A": 6,
+          "B": 0
+        },
+        "savings": {
+          "A": 6,
+          "B": 0
+        },
+        "practicality": {
+          "A": 4,
+          "B": 0
+        },
+        "ux": {
+          "A": 5,
+          "B": 0
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Neither system returned any recommendations, providing no help to reduce the $42.96 overage or find suitable substitutes aligned with the user\u2019s organic/dessert preferences. Both therefore fail on relevance, savings, practicality, and user experience. A is selected by default due to a required tie-break.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 4,
+      "savings": 3,
+      "diversity": 4,
+      "explanation_quality": 3,
+      "feasibility": 2,
+      "overall_score": 3,
+      "reasoning": "Dessert swaps are somewhat relevant and could save ~$17\u2013$27, but two recommendations are clear mismatches (almond milk \u2192 tomato sauce; organic ribeye \u2192 10 lb tuna case with questionable pricing). Explanations are generic, lack size/feature (e.g., organic) comparisons, and the proposed savings aren\u2019t additive or sufficient to meet the $80 budget, making overall substitution feasibility low."
+    },
+    "personalized_cf": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so relevance, variety, explanations, and feasible substitutions cannot be assessed. The system offers no path to savings or budget alignment. Overall, it fails to assist the user with their current cart or preferences."
+    },
+    "hybrid_ai": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "The system returned no recommendations, so it fails to match the user's organic/dessert preferences or address cart items. With no alternatives or explanations, it delivers no savings and offers no feasible substitutions, and diversity cannot be assessed. Overall, it does not assist the user in reducing the $42.96 over-budget cart."
+    }
+  },
+  "summary": {
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": "budget_saving",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "budget_saving",
+    "key_insights": [],
+    "win_counts": {
+      "budget_saving": 2,
+      "personalized_cf": 1,
+      "hybrid_ai": 0
+    }
+  }
+}
