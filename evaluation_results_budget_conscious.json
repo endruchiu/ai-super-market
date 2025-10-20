@@ -21,20 +21,113 @@
       }
     ]
   },
-  "pairwise_comparisons": {},
-  "criteria_scores": {},
+  "pairwise_comparisons": {
+    "budget_vs_cf": {
+      "winner": "A",
+      "reasoning": "System A makes a (flawed) attempt to replace the steak with another protein from the same aisle, while System B offers no help at all. A\u2019s suggestion is impractical (10 lb tuna case for a 12 oz steak) and the claimed $0.99 saving is likely inaccurate, but it is at least directionally related; B provides zero value.",
+      "scores": {
+        "relevance": {
+          "A": 1,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    },
+    "budget_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "System A at least offers a same-category substitute, but it\u2019s a bulk 10-lb tuna case with only $0.99 stated savings\u2014mismatched in size and unlikely to help a budget-conscious shopper reach a $50 target. System B provides no suggestions, so it offers no path to savings or action.",
+      "scores": {
+        "relevance": {
+          "A": 3,
+          "B": 0
+        },
+        "savings": {
+          "A": 1,
+          "B": 0
+        },
+        "practicality": {
+          "A": 2,
+          "B": 0
+        },
+        "ux": {
+          "A": 2,
+          "B": 0
+        }
+      }
+    },
+    "cf_vs_hybrid": {
+      "winner": "A",
+      "reasoning": "Both systems provided no recommendations despite the user being over budget, so they deliver no relevance, savings, or practical value. Given identical (empty) outputs, neither is better; selecting A only to satisfy the winner field.",
+      "scores": {
+        "relevance": {
+          "A": 0,
+          "B": 0
+        },
+        "savings": {
+          "A": 0,
+          "B": 0
+        },
+        "practicality": {
+          "A": 0,
+          "B": 0
+        },
+        "ux": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    }
+  },
+  "criteria_scores": {
+    "budget_saving": {
+      "relevance": 3,
+      "savings": 1,
+      "diversity": 1,
+      "explanation_quality": 2,
+      "feasibility": 1,
+      "overall_score": 2,
+      "reasoning": "Only one recommendation swaps a 12 oz beef steak for a 10 lb case of ahi tuna\u2014a drastic change in product type and size that doesn\u2019t align with a $50 budget. The stated $0.99 savings is not credible given the bulk size and listed price, and the explanation is generic. This makes the swap impractical and unlikely to be accepted."
+    },
+    "personalized_cf": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matched the user\u2019s budget-conscious needs or current cart. The system missed a critical opportunity to suggest lower-cost substitutes for a pricey cake and ribeye to bring the $102.98 cart closer to the $50 budget. With no items or explanations, there is no diversity, savings, or feasible swaps."
+    },
+    "hybrid_ai": {
+      "relevance": 0,
+      "savings": 0,
+      "diversity": 0,
+      "explanation_quality": 0,
+      "feasibility": 0,
+      "overall_score": 0,
+      "reasoning": "No recommendations were provided, so nothing matched the user's budget-conscious needs or cart contents, and no explanations were given. With the user $52.98 over budget, the system failed to propose any feasible substitutions or savings, yielding no value."
+    }
+  },
   "summary": {
-    "evaluation_status": "incomplete",
-    "overall_winner": null,
-    "best_for_savings": null,
-    "best_for_relevance": null,
-    "best_for_ux": null,
-    "key_insights": [
-      "No evaluation data collected - check OpenAI API key and quota"
-    ],
+    "evaluation_status": "complete",
+    "overall_winner": "budget_saving",
+    "best_for_savings": "budget_saving",
+    "best_for_relevance": "budget_saving",
+    "best_for_ux": "budget_saving",
+    "key_insights": [],
     "win_counts": {
-      "budget_saving": 0,
-      "personalized_cf": 0,
+      "budget_saving": 2,
+      "personalized_cf": 1,
       "hybrid_ai": 0
     }
   }
