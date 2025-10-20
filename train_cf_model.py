@@ -17,7 +17,7 @@ import tensorflow as tf
 import tf_keras as keras
 from tf_keras import layers, Model
 from tf_keras.optimizers import Adam
-from tf_keras.regularizers import l2
+from tf_keras.regularizers import l1_l2
 from tf_keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 # Local imports
@@ -25,9 +25,10 @@ from recommendation_engine import load_datasets
 from evaluate_recommendations import evaluate_recommendations, print_evaluation_results
 
 
-def build_cf_model(num_users, num_products, embedding_dim=32, l2_reg=1e-6):
+def build_cf_model(num_users, num_products, embedding_dim=32, l1_reg=1e-6, l2_reg=1e-6):
     """
     Build collaborative filtering model with user and product embeddings.
+    Enhanced with Elastic Net regularization (L1 + L2).
     
     Architecture:
     - User embedding: (num_users, embedding_dim)
@@ -39,18 +40,22 @@ def build_cf_model(num_users, num_products, embedding_dim=32, l2_reg=1e-6):
         num_users: Number of unique users
         num_products: Number of unique products
         embedding_dim: Size of embedding vectors (default 32)
-        l2_reg: L2 regularization strength (default 1e-6)
+        l1_reg: L1 regularization strength for sparsity (default 1e-6)
+        l2_reg: L2 regularization strength for weight decay (default 1e-6)
         
     Returns:
-        Keras Model
+        Keras Model with Elastic Net regularization
     """
+    # Elastic Net regularizer (L1 + L2)
+    elasticnet_reg = l1_l2(l1=l1_reg, l2=l2_reg)
+    
     # User input and embedding
     user_input = layers.Input(shape=(1,), name='user_input')
     user_embedding = layers.Embedding(
         input_dim=num_users,
         output_dim=embedding_dim,
         embeddings_initializer='he_normal',
-        embeddings_regularizer=l2(l2_reg),
+        embeddings_regularizer=elasticnet_reg,
         name='user_embedding'
     )(user_input)
     user_vec = layers.Reshape((embedding_dim,))(user_embedding)
@@ -61,7 +66,7 @@ def build_cf_model(num_users, num_products, embedding_dim=32, l2_reg=1e-6):
         input_dim=num_products,
         output_dim=embedding_dim,
         embeddings_initializer='he_normal',
-        embeddings_regularizer=l2(l2_reg),
+        embeddings_regularizer=elasticnet_reg,
         name='product_embedding'
     )(product_input)
     product_vec = layers.Reshape((embedding_dim,))(product_embedding)
@@ -399,13 +404,14 @@ if __name__ == '__main__':
         random_state=42
     )
     
-    # Build model
+    # Build model with Elastic Net regularization
     embedding_dim = 32  # Latent factors
     model = build_cf_model(
         num_users=mappings['num_users'],
         num_products=mappings['num_products'],
         embedding_dim=embedding_dim,
-        l2_reg=1e-6
+        l1_reg=1e-6,  # L1 for feature selection/sparsity
+        l2_reg=1e-6   # L2 for weight decay
     )
     
     # Train model

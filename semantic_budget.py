@@ -197,7 +197,7 @@ def ensure_index(csv_path: Optional[str]=None, cache_dir: Optional[str]=None) ->
 
     return {"df": df, "emb": emb, "threshold": thr}
 
-_GLOBAL = {"df": None, "emb": None, "threshold": 0.6, "model": None, "explainer": None}
+_GLOBAL = {"df": None, "emb": None, "threshold": 0.6, "model": None, "explainer": None, "elastic_optimizer": None}
 
 def _get_model():
     if _GLOBAL["model"] is None:
@@ -223,6 +223,21 @@ def _maybe_explainer():
     except Exception:
         _GLOBAL["explainer"] = None
     return _GLOBAL["explainer"]
+
+def _get_elastic_optimizer():
+    """Load Elastic Net optimizer for feature weighting, or use defaults."""
+    if _GLOBAL["elastic_optimizer"] is not None:
+        return _GLOBAL["elastic_optimizer"]
+    
+    try:
+        from elastic_budget_optimizer import BudgetElasticNetOptimizer
+        optimizer = BudgetElasticNetOptimizer.load('ml_data/budget_elasticnet.pkl')
+        _GLOBAL["elastic_optimizer"] = optimizer
+        return optimizer
+    except Exception:
+        # Fall back to None (use default weights)
+        _GLOBAL["elastic_optimizer"] = None
+        return None
 
 def _template_explain(slots:Dict[str,Any]) -> str:
     tags = set([t.lower() for t in slots.get("tags",[])])
@@ -415,13 +430,22 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
         print(f"[BUDGET DEBUG] No suitable substitutes found for any items")
         return {"total": total, "budget": budget, "suggestions": [], "message": f"No suitable substitutes found, current total ${total:.2f}"}
     
-    # Score candidates
+    # Score candidates using Elastic Net optimizer if available
+    elastic_opt = _get_elastic_optimizer()
     max_save = max(c.saving for c in all_cands) if all_cands else 1.0
+    
     for c in all_cands:
         save_score = _norm01(c.saving, max_save)
         sim_score = c.similarity
         health_score = c.health_gain
-        c.score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
+        size_score = 1.0 if (c.size_ratio and 0.8 <= c.size_ratio <= 1.2) else 0.5
+        
+        # Use Elastic Net learned weights if available, otherwise use lambda
+        if elastic_opt and elastic_opt.is_trained:
+            c.score = elastic_opt.compute_score(save_score, sim_score, health_score, size_score)
+        else:
+            # Fallback to original lambda-based scoring
+            c.score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
     
     # Sort and pick top candidates
     all_cands.sort(key=lambda x: x.score, reverse=True)
