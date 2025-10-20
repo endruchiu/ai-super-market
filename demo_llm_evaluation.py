@@ -84,7 +84,7 @@ print("-" * 70)
 print("""
 Prerequisites:
 1. Set OpenAI API key: export OPENAI_API_KEY="sk-..."
-   (Already configured ✅)
+   (Must be configured - see Quickstart in README)
 
 2. Ensure Flask app is running on http://localhost:5000
    (Run: python main.py)

@@ -111,28 +111,61 @@ DETAILED CRITERIA SCORES:
     Overall: 8.2/10
 ```
 
-## Prerequisites
+## Quickstart Guide
 
-### OpenAI API Key
-Set your OpenAI API key:
+### 1. Set Up OpenAI API Key
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
-
 Or use Replit Secrets to store `OPENAI_API_KEY`.
 
-### Flask App Running
-The evaluation system calls the Flask API endpoints:
+### 2. Install Dependencies
+Install all required packages:
+```bash
+pip install -r requirements.txt
+```
+
+Or install manually if needed:
+```bash
+pip install flask flask-sqlalchemy pandas openai requests sentence-transformers tensorflow-cpu
+```
+
+### 3. Start the Flask API
+The evaluation system requires the Flask app running:
 ```bash
 python main.py
 ```
+Wait for the server to start on `http://localhost:5000`
 
-Ensure the app is running on `http://localhost:5000`.
+### 4. Run the Demo (Optional)
+See system overview without using API credits:
+```bash
+python demo_llm_evaluation.py
+```
+
+### 5. Run Evaluation
+Single scenario:
+```bash
+python test_llm_evaluation.py budget_conscious
+```
+
+All scenarios (uses ~18 GPT-5 API calls):
+```bash
+python test_llm_evaluation.py
+# Type 'y' when prompted
+```
+
+## Prerequisites
+
+- **OpenAI API Key**: Set via environment variable or Replit Secrets
+- **Flask App Running**: Required on `http://localhost:5000`
+- **API Endpoints**: `/api/budget/recommendations`, `/api/cf/recommendations`, `/api/blended/recommendations`
 
 ## Files
 
-- `llm_judge_evaluation.py` - Core evaluation engine
-- `test_llm_evaluation.py` - Test runner with scenarios
+- `llm_judge_evaluation.py` - Core evaluation engine with GPT-5 integration
+- `test_llm_evaluation.py` - Test runner with 3 scenarios
+- `demo_llm_evaluation.py` - Demonstration script (no API calls)
 - `LLM_EVALUATION_README.md` - This documentation
 
 ## Technical Details
@@ -161,6 +194,40 @@ The "new_user" scenario tests how each system handles:
 - GPT-5 model must be available
 - Evaluation quality depends on prompt engineering
 - Real user testing still recommended
+
+## Troubleshooting
+
+### Flask Server Not Running
+```bash
+# Error: "Connection refused" or "Failed to connect"
+# Solution: Start the Flask app
+python main.py
+# Wait for: "Running on http://127.0.0.1:5000"
+```
+
+### Missing Dependencies
+```bash
+# Error: "ModuleNotFoundError: No module named 'openai'"
+# Solution: Install requirements
+pip install -r requirements.txt
+```
+
+### OpenAI API Errors
+```bash
+# Error: "OPENAI_API_KEY environment variable is not set"
+# Solution: Set the API key
+export OPENAI_API_KEY="sk-..."
+
+# Error: "Invalid API key" or "Rate limit exceeded"
+# Solution: Check your OpenAI account has credits and valid key
+```
+
+### Empty Recommendations
+```bash
+# Error: Recommendations come back as []
+# Solution: Ensure you have purchase history for CF testing
+# Try the "budget_conscious" scenario first (works without history)
+```
 
 ## Next Steps
 
