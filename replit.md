@@ -22,13 +22,13 @@ Preferred communication style: Simple, everyday language.
 ### Frontend
 - **Design System**: Modern UI using Tailwind CSS CDN, Inter Font, and a blue/indigo gradient color scheme.
 - **Supermarket Interface**: Split-screen layout with interactive store map (60% left) and shopping cart/recommendations (40% right).
-- **Interactive Store Map**: SVG-based visualization showing 6 aisles (A-F) with 36 labeled shelves optimized for the recategorized product database:
-    - Aisle A: Fresh & Prepared Foods (Meat & Seafood, Deli, Floral, Gift Baskets)
-    - Aisle B: Breakfast & Snacks (Breakfast, Bakery & Desserts, Snacks)
-    - Aisle C: Candy & Treats (Snacks cont., Candy, Chocolate, Organic & Specialty)
-    - Aisle D: Pantry & Coffee (Pantry & Dry Goods, Kirkland Signature, Coffee)
-    - Aisle E: Beverages (Beverages & Water, Soft Drinks, Juices, Coffee Drinks)
-    - Aisle F: Household & Cleaning (Cleaning Supplies, Paper & Plastic, Laundry, Household)
+- **Interactive Store Map**: SVG-based visualization showing 6 aisles (A-F) with 36 shelves using ONLY actual category names from the recategorized data:
+    - Aisle A: Meat & Seafood (×2), Deli, Breakfast, Bakery & Desserts, Floral
+    - Aisle B: Snacks (×6 shelves - largest category with 289 products)
+    - Aisle C: Candy (×3), Gift Baskets, Organic, Kirkland Signature Grocery
+    - Aisle D: Pantry & Dry Goods (×4), Coffee (×2)
+    - Aisle E: Beverages & Water (×6 shelves - 147 products)
+    - Aisle F: Cleaning Supplies, Paper & Plastic Products, Laundry Detergent & Supplies, Household (×2), Gift Baskets
 - **Interactive Shelf Browsing**: Users can click on any shelf to explore products in that category:
     - Displays 3-4 mock products per shelf with name, price, and "Add to Cart" button
     - Purple/indigo themed panel appears on the right side
