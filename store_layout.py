@@ -181,42 +181,43 @@ CATEGORY_TO_SHELF = {
 }
 
 # Reverse mapping: shelf to categories (for looking up products)
+# Using ACTUAL subcategory names from the database
 SHELF_TO_CATEGORIES = {
     "A1": ["Organic", "Floral"],
-    "A2": ["Fresh Produce", "Fruits"],
-    "A3": ["Vegetables"],
-    "A4": ["Bakery & Desserts", "Bakery"],
-    "A5": ["Bread"],
-    "A6": ["Desserts", "Gift Baskets"],
-    "B1": ["Meat & Seafood", "Meat"],
-    "B2": ["Poultry"],
-    "B3": ["Seafood"],
+    "A2": ["Organic"],  # Fresh fruits are in Organic category
+    "A3": ["Organic"],  # Fresh vegetables are in Organic category
+    "A4": ["Bakery & Desserts"],
+    "A5": ["Bakery & Desserts"],  # Bread is part of Bakery
+    "A6": ["Bakery & Desserts", "Gift Baskets"],
+    "B1": ["Meat & Seafood"],
+    "B2": ["Poultry", "Meat & Seafood"],
+    "B3": ["Seafood", "Meat & Seafood"],
     "B4": ["Deli"],
     "B5": ["Deli", "Meat & Seafood"],
-    "B6": ["Deli", "Meat & Seafood"],
-    "C1": ["Dairy", "Milk"],
-    "C2": ["Cheese"],
-    "C3": ["Yogurt", "Eggs"],
-    "C4": ["Frozen", "Frozen Food"],
-    "C5": ["Ice Cream"],
-    "C6": ["Frozen", "Frozen Food"],
-    "D1": ["Canned Goods", "Pantry & Dry Goods"],
-    "D2": ["Pasta", "Rice", "Kirkland Signature Grocery", "Pantry & Dry Goods"],
+    "B6": ["Meat & Seafood", "Seafood"],
+    "C1": ["Beverages & Water"],  # Some beverages might be refrigerated
+    "C2": ["Snacks"],  # Cheese alternatives in snacks
+    "C3": ["Breakfast"],  # Eggs/yogurt related items in breakfast
+    "C4": ["Meat & Seafood"],  # Frozen meats
+    "C5": ["Snacks"],  # Frozen treats/snacks
+    "C6": ["Organic"],  # Frozen vegetables
+    "D1": ["Pantry & Dry Goods"],
+    "D2": ["Pantry & Dry Goods", "Kirkland Signature Grocery"],
     "D3": ["Snacks", "Candy"],
-    "D4": ["Cookies", "Crackers", "Snacks"],
-    "D5": ["Cereals", "Breakfast"],
-    "D6": ["Baking", "Pantry & Dry Goods"],
-    "E1": ["Beverages & Water", "Beverages", "Water", "Juice"],
-    "E2": ["Soft Drinks", "Soda", "Beverages & Water"],
-    "E3": ["Coffee", "Tea"],
-    "E4": ["Beverages & Water", "Soft Drinks"],
-    "E5": ["Wine", "Beer", "Beverages & Water"],
-    "E6": ["Beverages & Water", "Coffee"],
-    "F1": ["Household", "Cleaning Supplies", "Laundry Detergent & Supplies"],
+    "D4": ["Snacks", "Candy"],
+    "D5": ["Breakfast"],
+    "D6": ["Pantry & Dry Goods"],
+    "E1": ["Beverages & Water"],
+    "E2": ["Beverages & Water"],
+    "E3": ["Coffee"],
+    "E4": ["Beverages & Water"],
+    "E5": ["Beverages & Water"],
+    "E6": ["Coffee", "Beverages & Water"],
+    "F1": ["Cleaning Supplies", "Laundry Detergent & Supplies"],
     "F2": ["Paper & Plastic Products"],
-    "F3": ["Paper & Plastic Products", "Plastic"],
-    "F4": ["Household", "Storage"],
-    "F5": ["Household", "Kitchen"],
+    "F3": ["Paper & Plastic Products"],
+    "F4": ["Household"],
+    "F5": ["Household"],
     "F6": ["Household"],
 }
 
