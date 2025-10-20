@@ -22,7 +22,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-DEFAULT_DATA_CSV = os.environ.get("GROCERY_CSV", "attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv")
+DEFAULT_DATA_CSV = os.environ.get("GROCERY_CSV", "attached_assets/GroceryDataset_Recategorized.csv")
 CACHE_DIR = os.environ.get("GROCERY_CACHE_DIR", "/tmp/grocery_cache")
 EMB_PATH = os.path.join(CACHE_DIR, "embeddings.npy")
 IDX_PATH = os.path.join(CACHE_DIR, "products_index.parquet")
