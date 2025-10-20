@@ -227,30 +227,48 @@ def api_budget_recommendations():
     Focuses on the LAST cart item (most recently added) when over budget.
     This provides dynamic recommendations as user adds items to an over-budget cart.
     """
-    payload = request.get_json(force=True)
-    cart = payload.get("cart", [])
-    budget = float(payload.get("budget", 0))
-    
-    # Calculate cart total
-    total = sum(float(item.get("price", 0.0)) * int(item.get("qty", 1)) for item in cart)
-    
-    # Only return recommendations if over budget
-    if total <= budget or budget <= 0 or not cart:
+    try:
+        payload = request.get_json(force=True)
+        cart = payload.get("cart", [])
+        budget = float(payload.get("budget", 0))
+        
+        # Calculate cart total
+        total = sum(float(item.get("price", 0.0)) * int(item.get("qty", 1)) for item in cart)
+        
+        # Only return recommendations if over budget
+        if total <= budget or budget <= 0 or not cart:
+            return jsonify({
+                "suggestions": [],
+                "complementary_recommendations": [],
+                "total": total,
+                "budget": budget,
+                "message": f"Current total ${total:.2f} is within budget ${budget:.2f}"
+            })
+        
+        # Focus on the last item (most recent addition) and pass it as a single-item cart
+        last_item = [cart[-1]]  # Pass as list with one item for compatibility with recommend_substitutions
+        last_product_name = last_item[0].get("name", "Unknown")
+        last_product_subcat = last_item[0].get("subcat", "Unknown")
+        print(f"[BUDGET DEBUG] Requesting recommendations for: '{last_product_name}' (subcategory: '{last_product_subcat}')")
+        res = recommend_substitutions(last_item, budget)
+        print(f"[BUDGET DEBUG] Returned {len(res.get('suggestions', []))} suggestions for '{last_product_subcat}'")
+        
+        # Ensure complementary_recommendations field exists
+        if "complementary_recommendations" not in res:
+            res["complementary_recommendations"] = []
+        
+        return jsonify(res)
+    except Exception as e:
+        print(f"[BUDGET ERROR] {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "suggestions": [],
-            "total": total,
-            "budget": budget,
-            "message": f"Current total ${total:.2f} is within budget ${budget:.2f}"
-        })
-    
-    # Focus on the last item (most recent addition) and pass it as a single-item cart
-    last_item = [cart[-1]]  # Pass as list with one item for compatibility with recommend_substitutions
-    last_product_name = last_item[0].get("name", "Unknown")
-    last_product_subcat = last_item[0].get("subcat", "Unknown")
-    print(f"[BUDGET DEBUG] Requesting recommendations for: '{last_product_name}' (subcategory: '{last_product_subcat}')")
-    res = recommend_substitutions(last_item, budget)
-    print(f"[BUDGET DEBUG] Returned {len(res.get('suggestions', []))} suggestions for '{last_product_subcat}'")
-    return jsonify(res)
+            "complementary_recommendations": [],
+            "total": 0,
+            "budget": budget if 'budget' in locals() else 0,
+            "message": f"Error getting recommendations: {str(e)}"
+        }), 200  # Return 200 to avoid frontend JSON parsing errors
 
 @app.route("/api/cf/recommendations", methods=["GET", "POST"])
 def api_cf_recommendations():
@@ -265,40 +283,52 @@ def api_cf_recommendations():
       Query params: top_k
       Returns general personalized recommendations
     """
-    from cf_inference import load_cf_model
-    
-    # Get session_id from request payload (for warm-start testing) or Flask session
-    payload = request.get_json(force=True) if request.method == "POST" else {}
-    provided_session_id = payload.get("session_id") if payload else None
-    
-    if provided_session_id:
-        # Warm-start scenario: use provided session_id
-        user_id = provided_session_id
-    else:
-        # Normal flow: use Flask session
-        if 'user_session' not in session:
-            session['user_session'] = str(uuid.uuid4())
-        user_id = session['user_session']
-    
-    # Ensure user exists in database for CF to work
-    user = User.query.filter_by(session_id=user_id).first()
-    if not user:
-        user = User(session_id=user_id)
-        db.session.add(user)
-        db.session.commit()
-    
-    # Check if model is available
-    model, artifacts = load_cf_model()
-    model_available = (model is not None and artifacts is not None)
-    
-    if not model_available:
+    try:
+        from cf_inference import load_cf_model
+        
+        # Get session_id from request payload (for warm-start testing) or Flask session
+        payload = request.get_json(force=True) if request.method == "POST" else {}
+        provided_session_id = payload.get("session_id") if payload else None
+        
+        if provided_session_id:
+            # Warm-start scenario: use provided session_id
+            user_id = provided_session_id
+        else:
+            # Normal flow: use Flask session
+            if 'user_session' not in session:
+                session['user_session'] = str(uuid.uuid4())
+            user_id = session['user_session']
+        
+        # Ensure user exists in database for CF to work
+        user = User.query.filter_by(session_id=user_id).first()
+        if not user:
+            user = User(session_id=user_id)
+            db.session.add(user)
+            db.session.commit()
+        
+        # Check if model is available
+        model, artifacts = load_cf_model()
+        model_available = (model is not None and artifacts is not None)
+        
+        if not model_available:
+            return jsonify({
+                "recommendations": [],
+                "suggestions": [],
+                "complementary_recommendations": [],
+                "user_id": user_id,
+                "model_available": False,
+                "reason": "Model not trained yet. Make purchases to accumulate history, then run: python train_cf_model.py"
+            })
+    except Exception as e:
+        print(f"[CF ERROR] {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "recommendations": [],
             "suggestions": [],
-            "user_id": user_id,
-            "model_available": False,
-            "reason": "Model not trained yet. Make purchases to accumulate history, then run: python train_cf_model.py"
-        })
+            "complementary_recommendations": [],
+            "message": f"Error getting CF recommendations: {str(e)}"
+        }), 200
     
     # Handle POST request for cart-aware budget replacements
     if request.method == "POST":
