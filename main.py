@@ -10,6 +10,7 @@ from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
 from blended_recommendations import get_blended_recommendations
 from store_layout import STORE_LAYOUT, get_product_location, calculate_simple_route
+from bandits_exploration import get_bandit, save_bandit
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
