@@ -263,11 +263,18 @@ def api_cf_recommendations():
     """
     from cf_inference import load_cf_model
     
-    # Get or create session_id
-    if 'user_session' not in session:
-        session['user_session'] = str(uuid.uuid4())
+    # Get session_id from request payload (for warm-start testing) or Flask session
+    payload = request.get_json(force=True) if request.method == "POST" else {}
+    provided_session_id = payload.get("session_id") if payload else None
     
-    user_id = session['user_session']
+    if provided_session_id:
+        # Warm-start scenario: use provided session_id
+        user_id = provided_session_id
+    else:
+        # Normal flow: use Flask session
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        user_id = session['user_session']
     
     # Ensure user exists in database for CF to work
     user = User.query.filter_by(session_id=user_id).first()
@@ -498,18 +505,25 @@ def api_blended_recommendations():
     Get blended recommendations combining CF (60%) and semantic similarity (40%).
     
     POST (cart-aware budget replacements):
-      Body: {"cart": [...], "budget": 40.0}
+      Body: {"cart": [...], "budget": 40.0, "session_id": "optional_for_warm_start"}
       Returns cheaper alternatives when cart > budget
     
     GET (general recommendations - legacy):
       Query params: top_k
       Returns general blended recommendations
     """
-    # Get or create session_id
-    if 'user_session' not in session:
-        session['user_session'] = str(uuid.uuid4())
+    # Get session_id from request payload (for warm-start testing) or Flask session
+    payload = request.get_json(force=True) if request.method == "POST" else {}
+    provided_session_id = payload.get("session_id") if payload else None
     
-    user_id = session['user_session']
+    if provided_session_id:
+        # Warm-start scenario: use provided session_id
+        user_id = provided_session_id
+    else:
+        # Normal flow: use Flask session
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        user_id = session['user_session']
     
     # Ensure user exists in database for blended recommendations to work
     user = User.query.filter_by(session_id=user_id).first()
