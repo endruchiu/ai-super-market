@@ -149,7 +149,8 @@ def api_budget_recommendations():
     payload = request.get_json(force=True)
     cart = payload.get("cart", [])
     budget = float(payload.get("budget", 0))
-    res = recommend_substitutions(cart, budget)
+    last_added_product = payload.get("last_added_product", None)
+    res = recommend_substitutions(cart, budget, last_added_product=last_added_product)
     return jsonify(res)
 
 @app.route("/api/cf/recommendations", methods=["GET", "POST"])
