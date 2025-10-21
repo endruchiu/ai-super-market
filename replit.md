@@ -66,7 +66,17 @@ Preferred communication style: Simple, everyday language.
   - **Feature-Rich**: 21 features including CF scores, semantic similarity, price savings, quality tags, diet matching, behavioral context (beta_u, budget_pressure, intent, cart state, temporal).
   - **Performance**: Uses in-memory PRODUCTS_DF for O(1) product metadata lookup instead of database queries.
   - **Training**: 289 real samples from 68 user sessions, trained model saved to `models/lgbm_ltr.txt` (3.4 KB).
+  - **Improved Training Parameters**: 300 boost rounds (was 100), min_data_in_leaf=15 (was 50), early_stopping=75 rounds (was 20) for better feature learning.
   - **Files**: `lgbm_reranker.py` (re-ranker), `prepare_ltr_data.py` (data prep), `train_lgbm_ranker.py` (training), `LGBM_README.md` (documentation).
+- **Online Learning System** (✅ ACTIVE - Oct 21, 2025):
+  - **Real-Time Event Tracking**: Automatically captures all user interactions (view, cart_add, cart_remove, purchase) via `/api/track-event` endpoint.
+  - **Auto-Retrain Pipeline**: After every 5 purchases, system automatically exports fresh training data and retrains the LightGBM model in background thread.
+  - **Model Hot-Reload**: Newly trained models are loaded without restarting Flask via `reload_model()` method in LGBMReRanker.
+  - **User Feedback**: Animated toast notifications ("🎓 Learning from your purchases..." → "✨ AI model updated!") provide transparency.
+  - **Feature Importance Display**: Dynamic UI shows learned weights (CF %, Semantic %, Price %, Budget %) or training stats (samples, sessions, features).
+  - **Complete Learning Cycle**: View events → Cart interactions → Purchase → Data export → Model training → Hot reload → Updated recommendations.
+  - **Non-Blocking**: Background threading ensures retraining doesn't block user experience.
+  - **Demo-Ready**: Perfect for class presentation demonstrating "Scaling Research to Production" with adaptive ML.
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.

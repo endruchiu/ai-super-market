@@ -1006,9 +1006,14 @@ async function trackEvent(eventType, productId) {
     
     if (response.ok) {
       console.log(`✓ Tracked ${eventType} for product ${productId}`);
+    } else if (response.status === 400) {
+      // Silently ignore 400 errors (user session not ready yet)
+      // Events will be tracked once user interacts with the site
+      return;
     }
   } catch (error) {
-    console.error('Event tracking error:', error);
+    // Silently ignore errors to avoid spamming console
+    return;
   }
 }
 
