@@ -136,6 +136,45 @@ class LGBMReRanker:
             print("  Falling back to non-LightGBM ranking")
             self.use_lgbm = False
     
+    def get_feature_importance(self) -> Dict[str, float]:
+        """
+        Get feature importance from trained LightGBM model.
+        Returns dictionary of feature names and their importance scores.
+        """
+        if not self.use_lgbm or self.model is None:
+            return {}
+        
+        try:
+            # Get feature importance (gain-based)
+            importance = self.model.feature_importance(importance_type='gain')
+            
+            # Create dictionary mapping feature names to importance
+            feature_importance = {}
+            for i, feature_name in enumerate(self.feature_cols):
+                if i < len(importance):
+                    feature_importance[feature_name] = float(importance[i])
+            
+            # Normalize to percentages
+            total_importance = sum(feature_importance.values())
+            if total_importance > 0:
+                feature_importance = {
+                    k: (v / total_importance) * 100 
+                    for k, v in feature_importance.items()
+                }
+            
+            # Sort by importance (descending)
+            feature_importance = dict(sorted(
+                feature_importance.items(), 
+                key=lambda x: x[1], 
+                reverse=True
+            ))
+            
+            return feature_importance
+            
+        except Exception as e:
+            print(f"⚠ Failed to extract feature importance: {e}")
+            return {}
+    
     def compute_behavioral_features(self, user_id: str, session_context: Dict) -> Dict:
         """Compute behavioral and contextual features"""
         
