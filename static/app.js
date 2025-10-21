@@ -385,12 +385,18 @@ async function getSuggestions() {
   
   if (!data.suggestions || !data.suggestions.length) {
     sugsDiv.innerHTML = '<div class="bg-white border border-indigo-200 rounded-xl p-6 text-center text-gray-500">No suggestions available - you are within budget!</div>';
+    clearRecommendationHighlight();
   } else {
     sugsDiv.innerHTML = '<div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-4 rounded-r-lg">' +
       '<p class="text-indigo-800 font-medium">' + data.message + '</p>' +
     '</div>';
     
+    let mostRecentSubcat = null;
+    
     data.suggestions.forEach(function(s) {
+      if (s.replacement_product && s.replacement_product.subcat) {
+        mostRecentSubcat = s.replacement_product.subcat;
+      }
       const card = document.createElement('div');
       card.className = 'bg-white border border-indigo-200 rounded-xl p-5 hover:shadow-lg transition-all';
       
@@ -432,6 +438,8 @@ async function getSuggestions() {
       card.appendChild(applyBtn);
       sugsDiv.appendChild(card);
     });
+    
+    highlightAisleForRecommendation(mostRecentSubcat);
   }
   
   document.getElementById('suggestions').style.display = 'block';
