@@ -1,6 +1,7 @@
 // Shopping Cart Application
 let CART = [];
 let CURRENT_CATEGORY = '';
+let LAST_ADDED_PRODUCT = null;
 
 // Subcategory to Aisle Mapping
 const SUBCATEGORY_TO_AISLE = {
@@ -240,9 +241,18 @@ function addToCart(p) {
     item.qty = 1;
     CART.push(item);
   }
+  
+  // Track the last added product for category-focused recommendations
+  LAST_ADDED_PRODUCT = {
+    title: p.title,
+    subcat: p.subcat,
+    price: p.price
+  };
+  
   updateBadge();
   updateCartDisplay();
   console.log('Cart now has', CART.length, 'items');
+  console.log('Last added product:', LAST_ADDED_PRODUCT.subcat);
 }
 
 function updateBadge() {
@@ -439,7 +449,11 @@ async function getSuggestions() {
   const res = await fetch('/api/budget/recommendations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cart: CART, budget: budget })
+    body: JSON.stringify({ 
+      cart: CART, 
+      budget: budget,
+      last_added_product: LAST_ADDED_PRODUCT 
+    })
   });
   
   const data = await res.json();
@@ -573,7 +587,11 @@ async function getCFRecommendations() {
     const res = await fetch('/api/cf/recommendations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: CART, budget: budget })
+      body: JSON.stringify({ 
+        cart: CART, 
+        budget: budget,
+        last_added_product: LAST_ADDED_PRODUCT 
+      })
     });
     const data = await res.json();
     console.log('CF recommendations response:', data);
@@ -660,7 +678,11 @@ async function getBlendedRecommendations() {
     const res = await fetch('/api/blended/recommendations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: CART, budget: budget })
+      body: JSON.stringify({ 
+        cart: CART, 
+        budget: budget,
+        last_added_product: LAST_ADDED_PRODUCT 
+      })
     });
     const data = await res.json();
     console.log('Blended recommendations response:', data);
