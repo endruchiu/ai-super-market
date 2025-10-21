@@ -640,6 +640,24 @@ async function getBlendedRecommendations() {
   }
 }
 
+// Toggle User Panel
+function toggleUserPanel() {
+  const panel = document.getElementById('userPanel');
+  const overlay = document.getElementById('userPanelOverlay');
+  
+  if (panel.classList.contains('translate-x-full')) {
+    // Open panel
+    panel.classList.remove('translate-x-full');
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  } else {
+    // Close panel
+    panel.classList.add('translate-x-full');
+    overlay.classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+}
+
 // Auto-load products on page load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');
