@@ -36,7 +36,14 @@ Preferred communication style: Simple, everyday language.
     - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).
     - **Hybrid AI**: 60% CF + 40% semantic similarity blend (Emerald/Teal theme).
     - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
-    - **Aisle Highlighting**: When recommendations appear, the corresponding aisle/shelf on the store map is highlighted with an orange gradient and pulsing glow animation, helping users visually locate recommended products. Only the most recent recommendation's aisle is highlighted at any time.
+    - **Multi-System Aisle Highlighting** (Hybrid Approach):
+        - **Main Pulsing Highlight**: The most recent recommendation's aisle displays an orange gradient with pulsing glow animation for maximum visibility.
+        - **Colored Dots System**: Small colored badges appear in the top-right corner of each aisle to show which recommendation systems have suggestions for that category:
+            - 🔵 Blue dot = Budget-Saving system recommends this aisle
+            - 🟣 Purple dot = Personalized (CF) system recommends this aisle
+            - 🟢 Green dot = Hybrid AI system recommends this aisle
+        - Multiple dots can appear on the same aisle when different systems recommend products from the same category, providing a comprehensive visual overview of all recommendation sources.
+        - Highlights and dots automatically clear when the cart is within budget or after checkout.
 
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
