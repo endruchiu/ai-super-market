@@ -81,23 +81,12 @@ function updateRecommendationDots() {
     if (!matchingSubcat) return;
     
     const systems = RECOMMENDATION_DOTS[matchingSubcat];
-    const dots = [];
     
-    // Add dots for each active system (in order: budget, cf, hybrid)
-    if (systems.budget) {
-      dots.push('<span class="rec-dot rec-dot-blue" title="Budget-Saving"></span>');
-    }
-    if (systems.cf) {
-      dots.push('<span class="rec-dot rec-dot-purple" title="Personalized (CF)"></span>');
-    }
+    // Only show green dot for Hybrid AI system
     if (systems.hybrid) {
-      dots.push('<span class="rec-dot rec-dot-green" title="Hybrid AI"></span>');
-    }
-    
-    if (dots.length > 0) {
       dotsContainer = document.createElement('div');
       dotsContainer.className = 'rec-dots-container';
-      dotsContainer.innerHTML = dots.join('');
+      dotsContainer.innerHTML = '<span class="rec-dot rec-dot-green" title="Hybrid AI"></span>';
       shelf.style.position = 'relative';
       shelf.appendChild(dotsContainer);
     }
@@ -106,18 +95,11 @@ function updateRecommendationDots() {
 
 // Helper function: Update Recommendations Module visibility
 function updateRecommendationsModule() {
-  const budgetSaving = document.getElementById('suggestions');
-  const personalized = document.getElementById('cfRecommendations');
   const hybrid = document.getElementById('blendedRecommendations');
   const module = document.getElementById('recommendationsModule');
   
-  // Show module if any recommendation section is visible
-  const anyVisible = 
-    budgetSaving.style.display === 'block' || 
-    personalized.style.display === 'block' || 
-    hybrid.style.display === 'block';
-  
-  module.style.display = anyVisible ? 'block' : 'none';
+  // Show module if hybrid recommendation section is visible
+  module.style.display = hybrid.style.display === 'block' ? 'block' : 'none';
 }
 
 // New function: Filter by category (for store map)
@@ -316,15 +298,11 @@ function updateCartDisplay() {
   // Auto-show all recommendation systems if over budget
   const sum = CART.reduce((s, x) => s + (x.price * x.qty), 0);
   if (sum > budget && budget > 0) {
-    console.log('Over budget! Triggering all recommendation systems...');
+    console.log('Over budget! Triggering Hybrid AI recommendation system...');
     setTimeout(function() { 
-      getSuggestions();
-      getCFRecommendations();
       getBlendedRecommendations();
     }, 100);
   } else {
-    document.getElementById('suggestions').style.display = 'none';
-    document.getElementById('cfRecommendations').style.display = 'none';
     document.getElementById('blendedRecommendations').style.display = 'none';
     updateRecommendationsModule();
     clearRecommendationHighlight();
@@ -562,8 +540,6 @@ async function checkout() {
       CART = [];
       updateBadge();
       updateCartDisplay();
-      document.getElementById('suggestions').style.display = 'none';
-      document.getElementById('cfRecommendations').style.display = 'none';
       document.getElementById('blendedRecommendations').style.display = 'none';
       updateRecommendationsModule();
       clearRecommendationHighlight();
