@@ -24,6 +24,22 @@
       color: white;
       font-weight: 600;
     }
+    .aisle-shelf.recommendation-highlight {
+      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+      color: white;
+      font-weight: 700;
+      border-color: #fb923c;
+      box-shadow: 0 0 20px rgba(251, 146, 60, 0.6);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(251, 146, 60, 0.6);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(251, 146, 60, 0.9);
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
