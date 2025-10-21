@@ -7,6 +7,9 @@ let RECOMMENDATION_HIGHLIGHT_CATEGORY = null;
 // Format: { subcategory: { budget: true, cf: true, hybrid: true } }
 let RECOMMENDATION_DOTS = {};
 
+// Store ML-learned feature importance
+let MODEL_FEATURE_IMPORTANCE = null;
+
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
 }
@@ -654,9 +657,49 @@ async function getCFRecommendations() {
   }
 }
 
+// Fetch ML feature importance from trained model
+async function fetchFeatureImportance() {
+  try {
+    const res = await fetch('/api/model/feature-importance');
+    const data = await res.json();
+    if (data.model_available) {
+      MODEL_FEATURE_IMPORTANCE = data;
+    }
+  } catch (error) {
+    console.error('Error fetching feature importance:', error);
+  }
+}
+
+// Generate smart description based on learned weights
+function getModelWeightsDescription() {
+  if (!MODEL_FEATURE_IMPORTANCE || !MODEL_FEATURE_IMPORTANCE.model_available) {
+    return 'Combining 60% CF + 40% semantic similarity for best results';
+  }
+  
+  const weights = MODEL_FEATURE_IMPORTANCE.key_weights;
+  const training = MODEL_FEATURE_IMPORTANCE.training_info;
+  
+  // Build dynamic description
+  const parts = [];
+  if (weights.cf_score > 0) parts.push(`CF ${weights.cf_score.toFixed(0)}%`);
+  if (weights.semantic_similarity > 0) parts.push(`Semantic ${weights.semantic_similarity.toFixed(0)}%`);
+  if (weights.price_saving > 0) parts.push(`Price ${weights.price_saving.toFixed(0)}%`);
+  if (weights.budget_pressure > 0) parts.push(`Budget ${weights.budget_pressure.toFixed(0)}%`);
+  
+  const description = 'ML-Optimized: ' + parts.join(', ');
+  const learnedFrom = `Learned from ${training.samples} real shopping sessions`;
+  
+  return `${description} — ${learnedFrom}`;
+}
+
 async function getBlendedRecommendations() {
   console.log('getBlendedRecommendations() called');
   const budget = parseFloat(document.getElementById('budget').value || '0');
+  
+  // Fetch feature importance if not already loaded
+  if (!MODEL_FEATURE_IMPORTANCE) {
+    await fetchFeatureImportance();
+  }
   
   try {
     const res = await fetch('/api/blended/recommendations', {
@@ -684,9 +727,12 @@ async function getBlendedRecommendations() {
       contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No hybrid replacements found') + '</div>';
       clearRecommendationHighlight();
     } else {
+      // Get dynamic ML weights description
+      const weightsDesc = getModelWeightsDescription();
+      
       contentDiv.innerHTML = '<div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4 rounded-r-lg">' +
         '<p class="text-emerald-800 font-medium">🤖 ' + data.message + '</p>' +
-        '<p class="text-emerald-600 text-sm mt-1">Combining 60% CF + 40% semantic similarity for best results</p>' +
+        '<p class="text-emerald-600 text-sm mt-1">' + weightsDesc + '</p>' +
       '</div>';
       
       let mostRecentSubcat = null;
