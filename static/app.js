@@ -257,6 +257,7 @@ function updateCartDisplay() {
     document.getElementById('cfRecommendations').style.display = 'none';
     document.getElementById('blendedRecommendations').style.display = 'none';
     updateRecommendationsModule();
+    clearRecommendationHighlight();
   }
 }
 
