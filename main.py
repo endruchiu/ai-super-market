@@ -803,6 +803,127 @@ def api_checkout():
         print(f"Checkout error: {e}")
         return jsonify({"success": False, "error": "Checkout failed. Please try again."}), 500
 
+@app.route("/api/track-event", methods=["POST"])
+def track_event():
+    """
+    Track user interactions (cart_add, cart_remove, view) for model training
+    """
+    try:
+        data = request.json
+        user_uuid = session.get('user_uuid')
+        if not user_uuid:
+            return jsonify({"success": False, "error": "No user session"}), 400
+        
+        user = User.query.filter_by(uuid=user_uuid).first()
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        
+        event_type = data.get('event_type')  # 'cart_add', 'cart_remove', 'view'
+        product_id = data.get('product_id')
+        
+        if not event_type or not product_id:
+            return jsonify({"success": False, "error": "Missing event_type or product_id"}), 400
+        
+        # Convert product_id to integer for database lookup
+        try:
+            product_id = int(product_id)
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid product_id"}), 400
+        
+        # Get product details from in-memory DataFrame
+        if product_id not in PRODUCTS_DF.index:
+            return jsonify({"success": False, "error": "Product not found"}), 404
+        
+        product_row = PRODUCTS_DF.loc[product_id]
+        product_title = str(product_row['Title'])
+        product_subcat = str(product_row['Sub Category'])
+        
+        # Create event
+        event = UserEvent(
+            user_id=user.id,
+            event_type=event_type,
+            product_id=product_id,
+            product_title=product_title,
+            product_subcat=product_subcat,
+            event_data=data.get('metadata', {})
+        )
+        db.session.add(event)
+        db.session.commit()
+        
+        return jsonify({"success": True, "event_id": event.id})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Event tracking error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/model/retrain", methods=["POST"])
+def retrain_model():
+    """
+    Trigger model retraining with fresh data from database
+    """
+    try:
+        import subprocess
+        import threading
+        
+        # Check if retraining is already in progress
+        if hasattr(app, '_retrain_in_progress') and app._retrain_in_progress:
+            return jsonify({"success": False, "error": "Retraining already in progress"}), 429
+        
+        def background_retrain():
+            try:
+                app._retrain_in_progress = True
+                print("\n🎓 Starting model retraining...")
+                
+                # Step 1: Export fresh training data from database
+                result1 = subprocess.run(
+                    ['python', 'prepare_ltr_data.py'],
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+                print("Export result:", result1.stdout if result1.returncode == 0 else result1.stderr)
+                
+                if result1.returncode != 0:
+                    print(f"❌ Data export failed: {result1.stderr}")
+                    return
+                
+                # Step 2: Train new model
+                result2 = subprocess.run(
+                    ['python', 'train_lgbm_ranker.py'],
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+                print("Training result:", result2.stdout if result2.returncode == 0 else result2.stderr)
+                
+                if result2.returncode == 0:
+                    print("✅ Model retrained successfully! Reloading...")
+                    # Reload the model in the recommendation system
+                    from lgbm_reranker import reranker
+                    reranker.reload_model()
+                else:
+                    print(f"❌ Training failed: {result2.stderr}")
+                    
+            except Exception as e:
+                print(f"❌ Retrain error: {e}")
+            finally:
+                app._retrain_in_progress = False
+        
+        # Start background thread
+        thread = threading.Thread(target=background_retrain, daemon=True)
+        thread.start()
+        
+        return jsonify({
+            "success": True,
+            "message": "Model retraining started in background",
+            "status": "in_progress"
+        })
+        
+    except Exception as e:
+        print(f"Retrain trigger error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory('static', filename)

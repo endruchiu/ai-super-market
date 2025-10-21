@@ -77,26 +77,31 @@ class LGBMRankerTrainer:
             "objective": "lambdarank",
             "metric": "ndcg",
             "ndcg_eval_at": [5, 10],
-            "learning_rate": 0.06,
-            "num_leaves": 63,
-            "min_data_in_leaf": 50,
+            "learning_rate": 0.05,
+            "num_leaves": 31,
+            "min_data_in_leaf": 15,
             "feature_pre_filter": False,
             "device": "gpu" if use_gpu else "cpu",
-            "verbose": 1
+            "verbose": 1,
+            "force_col_wise": True,
+            "min_gain_to_split": 0.0
         }
         
         print(f"\nTraining LightGBM LambdaMART (device: {params['device']})...")
+        print(f"  - num_boost_round: 300 (increased for better feature learning)")
+        print(f"  - min_data_in_leaf: 15 (reduced to allow finer splits)")
+        print(f"  - early_stopping: 75 rounds (more patient)")
         
         try:
             self.model = lgb.train(
                 params,
                 train_data,
-                num_boost_round=100,
+                num_boost_round=300,
                 valid_sets=[train_data],
                 valid_names=['train'],
                 callbacks=[
-                    lgb.log_evaluation(period=10),
-                    lgb.early_stopping(stopping_rounds=20)
+                    lgb.log_evaluation(period=25),
+                    lgb.early_stopping(stopping_rounds=75)
                 ]
             )
             

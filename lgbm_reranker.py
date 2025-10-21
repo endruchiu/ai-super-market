@@ -136,6 +136,21 @@ class LGBMReRanker:
             print("  Falling back to non-LightGBM ranking")
             self.use_lgbm = False
     
+    def reload_model(self):
+        """
+        Reload the LightGBM model from disk without restarting the application.
+        Used after model retraining to hot-swap the new model.
+        """
+        print(f"🔄 Reloading LightGBM model from {self.model_path}...")
+        self.use_lgbm = True  # Re-enable LightGBM
+        self._load_model()
+        if self.use_lgbm and self.model is not None:
+            print("✅ Model reloaded successfully!")
+            return True
+        else:
+            print("❌ Model reload failed")
+            return False
+    
     def get_feature_importance(self) -> Dict[str, float]:
         """
         Get feature importance from trained LightGBM model.

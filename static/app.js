@@ -183,6 +183,9 @@ async function loadProducts(subcat = '') {
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-gray-50 transition-colors';
       
+      // Track view event when product is displayed
+      trackEvent('view', p.id);
+      
       const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
       
       const titleCell = document.createElement('td');
@@ -240,6 +243,9 @@ function addToCart(p) {
   updateBadge();
   updateCartDisplay();
   console.log('Cart now has', CART.length, 'items');
+  
+  // Track cart_add event for model learning
+  trackEvent('cart_add', p.id);
 }
 
 function updateBadge() {
@@ -377,9 +383,15 @@ function decQty(i) {
 }
 
 function removeItem(i) {
+  const item = CART[i];
   CART.splice(i, 1);
   updateCartDisplay();
   updateBadge();
+  
+  // Track cart_remove event for model learning
+  if (item && item.id) {
+    trackEvent('cart_remove', item.id);
+  }
 }
 
 function applyReplacement(originalTitle, replacementProduct) {
@@ -547,6 +559,9 @@ async function checkout() {
       updateRecommendationsModule();
       clearRecommendationHighlight();
       clearRecommendationDots();
+      
+      // Trigger auto-retrain after purchase
+      triggerAutoRetrain();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
@@ -975,6 +990,94 @@ function showNotification(message, type = 'success') {
       document.body.removeChild(notification);
     }, 300);
   }, 3000);
+}
+
+// Track user events for model learning
+async function trackEvent(eventType, productId) {
+  try {
+    const response = await fetch('/api/track-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: eventType,
+        product_id: productId
+      })
+    });
+    
+    if (response.ok) {
+      console.log(`✓ Tracked ${eventType} for product ${productId}`);
+    }
+  } catch (error) {
+    console.error('Event tracking error:', error);
+  }
+}
+
+// Auto-retrain model after purchases
+let purchaseCount = 0;
+const RETRAIN_THRESHOLD = 5; // Retrain after every 5 purchases
+
+async function triggerAutoRetrain() {
+  purchaseCount++;
+  console.log(`Purchase count: ${purchaseCount}/${RETRAIN_THRESHOLD}`);
+  
+  if (purchaseCount >= RETRAIN_THRESHOLD) {
+    purchaseCount = 0;
+    
+    showToast('🎓 Learning from your purchases...', 'info');
+    
+    try {
+      const response = await fetch('/api/model/retrain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✓ Model retraining started');
+        setTimeout(() => {
+          showToast('✨ AI model updated! Recommendations improved!', 'success');
+          // Refresh feature importance display
+          fetchFeatureImportance();
+        }, 5000); // Show success after 5 seconds
+      }
+    } catch (error) {
+      console.error('Auto-retrain error:', error);
+    }
+  }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-6 right-6 px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
+  toast.style.transform = 'translateX(400px)';
+  
+  if (type === 'success') {
+    toast.className += ' bg-emerald-500 text-white';
+  } else if (type === 'info') {
+    toast.className += ' bg-blue-500 text-white';
+  } else if (type === 'warning') {
+    toast.className += ' bg-yellow-500 text-white';
+  }
+  
+  toast.innerHTML = '<div class="flex items-center space-x-3">' +
+    '<span class="text-2xl">🎓</span>' +
+    '<span class="font-semibold">' + message + '</span>' +
+  '</div>';
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.transform = 'translateX(0)';
+  }, 10);
+  
+  setTimeout(() => {
+    toast.style.transform = 'translateX(400px)';
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 4000);
 }
 
 // Auto-load products on page load
