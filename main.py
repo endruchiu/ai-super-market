@@ -441,7 +441,9 @@ def api_blended_recommendations():
         
         recs = get_blended_recommendations(
             user_id, 
-            top_k=100, 
+            top_k=100,
+            cf_weight=0.6,      # ← Change this (Collaborative Filtering weight)
+            semantic_weight=0.4, # ← Change this (Semantic similarity weight)
             session_context=session_context,
             use_lgbm=True
         )
