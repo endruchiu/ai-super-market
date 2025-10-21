@@ -159,7 +159,7 @@ def api_cf_recommendations():
     Get collaborative filtering (CF) personalized recommendations.
     
     POST (cart-aware budget replacements):
-      Body: {"cart": [...], "budget": 40.0}
+      Body: {"cart": [...], "budget": 40.0, "last_added_product": {...}}
       Returns cheaper alternatives when cart > budget
     
     GET (general recommendations - legacy):
@@ -199,6 +199,7 @@ def api_cf_recommendations():
         payload = request.get_json(force=True)
         cart = payload.get("cart", [])
         budget = float(payload.get("budget", 0))
+        last_added_product = payload.get("last_added_product", None)
         
         # Calculate cart total
         total = sum(float(item.get("price", 0.0)) * int(item.get("qty", 1)) for item in cart)
@@ -318,6 +319,22 @@ def api_cf_recommendations():
                 # Add top 2 alternatives for this item
                 cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
                 suggestions.extend(cheaper_alts[:2])
+        
+        # Prioritize suggestions for items from the last added product's category
+        if last_added_product and last_added_product.get("subcat"):
+            last_added_subcat = last_added_product.get("subcat")
+            
+            # Sort: last_added category first, then by savings
+            def sort_key(sugg):
+                # Check if this suggestion is for an item from the last_added category
+                is_priority = any(
+                    item.get("subcat") == last_added_subcat and item.get("title") == sugg.get("replace")
+                    for item in cart
+                )
+                # Return tuple: (priority_flag, savings) - priority items come first (False < True, so we negate)
+                return (not is_priority, -float(sugg["expected_saving"]))
+            
+            suggestions.sort(key=sort_key)
         
         return jsonify({
             "suggestions": suggestions,
