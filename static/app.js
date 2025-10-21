@@ -179,6 +179,8 @@ function updateCartDisplay() {
   if (CART.length === 0) {
     div.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Your cart is empty.</p>';
     totalSpan.textContent = '$0.00';
+    // Clear budget warning when cart is empty
+    updateBudgetWarning(0, budget);
   } else {
     let sum = 0;
     CART.forEach(function(x, i) {
