@@ -24,6 +24,33 @@
       color: white;
       font-weight: 600;
     }
+    .aisle-shelf.recommended-aisle {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border-color: #f59e0b !important;
+      animation: pulse-glow 2s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    }
+    .aisle-header.recommended-aisle-header {
+      color: #f59e0b !important;
+      animation: pulse-text 2s ease-in-out infinite;
+      font-weight: 700;
+    }
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+      }
+    }
+    @keyframes pulse-text {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -77,7 +104,7 @@
             
             <!-- Aisle A -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE A</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE A</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Meat & Seafood')">
                 <div class="font-semibold text-gray-700">Aisle A</div>
                 <div class="text-gray-600 mt-1">Meat & Seafood</div>
@@ -106,7 +133,7 @@
             
             <!-- Aisle B -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE B</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE B</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Snacks')">
                 <div class="font-semibold text-gray-700">Aisle B</div>
                 <div class="text-gray-600 mt-1">Snacks</div>
@@ -135,7 +162,7 @@
             
             <!-- Aisle C -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE C</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE C</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Candy')">
                 <div class="font-semibold text-gray-700">Aisle C</div>
                 <div class="text-gray-600 mt-1">Candy</div>
@@ -164,7 +191,7 @@
             
             <!-- Aisle D -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE D</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE D</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Pantry & Dry Goods')">
                 <div class="font-semibold text-gray-700">Aisle D</div>
                 <div class="text-gray-600 mt-1">Pantry & Dry Goods</div>
@@ -193,7 +220,7 @@
             
             <!-- Aisle E -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE E</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE E</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Beverages & Water')">
                 <div class="font-semibold text-gray-700">Aisle E</div>
                 <div class="text-gray-600 mt-1">Beverages & Water</div>
@@ -222,7 +249,7 @@
             
             <!-- Aisle F -->
             <div class="flex flex-col space-y-2">
-              <div class="text-center font-bold text-sm text-indigo-700 mb-1">AISLE F</div>
+              <div class="aisle-header text-center font-bold text-sm text-indigo-700 mb-1">AISLE F</div>
               <div class="aisle-shelf bg-indigo-50 border-2 border-indigo-200 rounded-lg p-3 text-center text-xs" onclick="filterByCategory('Bakery & Desserts')">
                 <div class="font-semibold text-gray-700">Aisle F</div>
                 <div class="text-gray-600 mt-1">Bakery & Desserts</div>
