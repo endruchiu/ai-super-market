@@ -48,8 +48,9 @@ Preferred communication style: Simple, everyday language.
 - **Hybrid System**: Combines CF and semantic similarity with configurable weights (60% CF + 40% Semantic).
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
-- **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
+- **Filtering**: Recommendations are strictly filtered to suggest cheaper alternatives **only within the same subcategory**. No cross-category suggestions are made to ensure practical shopping recommendations.
 - **Category-Focused Recommendations**: All three recommendation systems (Budget-Saving, CF, Hybrid) automatically prioritize suggestions from the same category as the last product added to the cart, even when the budget is already exceeded. This provides contextually relevant alternatives to help users find savings in the categories they're actively shopping.
+- **No Cross-Category Fallbacks**: If no same-category cheaper alternatives exist, the system returns no suggestions rather than suggesting impractical cross-category replacements (e.g., Tuna → Candy). This ensures all recommendations make practical shopping sense.
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
