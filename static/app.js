@@ -2,8 +2,84 @@
 let CART = [];
 let CURRENT_CATEGORY = '';
 
+// Subcategory to Aisle Mapping
+const SUBCATEGORY_TO_AISLE = {
+  'Meat & Seafood': 'A',
+  'Seafood': 'A',
+  'Poultry': 'A',
+  'Deli': 'A',
+  'Breakfast': 'A',
+  'Floral': 'A',
+  'Snacks': 'B',
+  'Candy': 'C',
+  'Gift Baskets': 'C',
+  'Organic': 'C',
+  'Kirkland Signature Grocery': 'C',
+  'Pantry & Dry Goods': 'D',
+  'Coffee': 'D',
+  'Beverages & Water': 'E',
+  'Paper & Plastic Products': 'E',
+  'Household': 'E',
+  'Bakery & Desserts': 'F',
+  'Cleaning Supplies': 'F',
+  'Laundry Detergent & Supplies': 'F'
+};
+
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
+}
+
+// Function to highlight aisles based on recommendation subcategories
+function highlightRecommendedAisles(recommendations) {
+  clearAisleHighlights();
+  
+  if (!recommendations || recommendations.length === 0) {
+    return;
+  }
+  
+  const aislesSet = new Set();
+  recommendations.forEach(rec => {
+    if (rec.replacement_product && rec.replacement_product.subcat) {
+      const subcat = rec.replacement_product.subcat;
+      const aisle = SUBCATEGORY_TO_AISLE[subcat];
+      if (aisle) {
+        aislesSet.add(aisle);
+      }
+    }
+  });
+  
+  const aisles = Array.from(aislesSet);
+  if (aisles.length > 0) {
+    aisles.forEach(aisle => {
+      const aisleHeaders = document.querySelectorAll('.aisle-header');
+      aisleHeaders.forEach(header => {
+        if (header.textContent.includes('AISLE ' + aisle)) {
+          header.classList.add('recommended-aisle-header');
+        }
+      });
+      
+      const shelves = document.querySelectorAll('.aisle-shelf');
+      shelves.forEach(shelf => {
+        const shelfText = shelf.textContent;
+        if (shelfText.includes('Aisle ' + aisle)) {
+          shelf.classList.add('recommended-aisle');
+        }
+      });
+    });
+  }
+}
+
+// Function to clear aisle highlights
+function clearAisleHighlights() {
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  shelves.forEach(shelf => {
+    shelf.classList.remove('recommended-aisle');
+  });
+  
+  const headers = document.querySelectorAll('.aisle-header');
+  headers.forEach(header => {
+    header.classList.remove('recommended-aisle-header');
+  });
 }
 
 // Helper function: Update Recommendations Module visibility
