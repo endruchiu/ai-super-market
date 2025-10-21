@@ -55,6 +55,14 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
+- **LightGBM LambdaMART Re-Ranking** (Optional, production-ready):
+  - **Behavior-Aware Re-Ranking**: LightGBM LambdaMART model for intelligent re-ranking based on user intent and session context.
+  - **Feature Consistency**: Training features extracted from actual recommendation pipeline (real CF/semantic scores, product metadata).
+  - **Intent Tracking**: EMA smoothing (α=0.3) with 45s cooldown logic to prevent mode thrashing.
+  - **Guardrail Modes**: Quality (high similarity), Economy (price-focused), Balanced (mix of both).
+  - **Graceful Fallback**: When LightGBM unavailable (system dependency libgomp.so.1 missing in Replit), falls back to standard 60/40 blending.
+  - **Feature-Rich**: 21 features including CF scores, semantic similarity, price savings, quality tags, diet matching, behavioral context (beta_u, budget_pressure, intent, cart state, temporal).
+  - **Files**: `lgbm_reranker.py` (re-ranker), `prepare_ltr_data.py` (data prep), `train_lgbm_ranker.py` (training), `LGBM_README.md` (documentation).
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
@@ -80,6 +88,8 @@ Preferred communication style: Simple, everyday language.
 - **scikit-learn**: Machine learning utilities.
 - **openai**: OpenAI API client for GPT-5 LLM evaluation.
 - **requests**: HTTP client for API calls.
+- **lightgbm**: Gradient boosting framework for LambdaMART re-ranking (optional).
+- **pyarrow**: Parquet file support for training data.
 
 ### Database
 - **PostgreSQL**: Primary data storage, configured via `DATABASE_URL`.
