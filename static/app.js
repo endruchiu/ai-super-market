@@ -3,6 +3,10 @@ let CART = [];
 let CURRENT_CATEGORY = '';
 let RECOMMENDATION_HIGHLIGHT_CATEGORY = null;
 
+// Track which recommendation systems have suggestions for each subcategory
+// Format: { subcategory: { budget: true, cf: true, hybrid: true } }
+let RECOMMENDATION_DOTS = {};
+
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
 }
@@ -31,6 +35,72 @@ function clearRecommendationHighlight() {
   const shelves = document.querySelectorAll('.aisle-shelf');
   shelves.forEach(shelf => {
     shelf.classList.remove('recommendation-highlight');
+  });
+}
+
+// Add a recommendation dot for a specific system and subcategory
+function addRecommendationDot(subcategory, system) {
+  if (!subcategory || !system) return;
+  
+  if (!RECOMMENDATION_DOTS[subcategory]) {
+    RECOMMENDATION_DOTS[subcategory] = {};
+  }
+  RECOMMENDATION_DOTS[subcategory][system] = true;
+  
+  updateRecommendationDots();
+}
+
+// Clear all recommendation dots
+function clearRecommendationDots() {
+  RECOMMENDATION_DOTS = {};
+  updateRecommendationDots();
+}
+
+// Update the visual display of recommendation dots on all shelves
+function updateRecommendationDots() {
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  
+  shelves.forEach(shelf => {
+    // Remove existing dots container if present
+    let dotsContainer = shelf.querySelector('.rec-dots-container');
+    if (dotsContainer) {
+      dotsContainer.remove();
+    }
+    
+    // Find which subcategory this shelf represents
+    const categoryText = shelf.textContent.trim();
+    let matchingSubcat = null;
+    
+    for (const subcat in RECOMMENDATION_DOTS) {
+      if (categoryText.includes(subcat)) {
+        matchingSubcat = subcat;
+        break;
+      }
+    }
+    
+    if (!matchingSubcat) return;
+    
+    const systems = RECOMMENDATION_DOTS[matchingSubcat];
+    const dots = [];
+    
+    // Add dots for each active system (in order: budget, cf, hybrid)
+    if (systems.budget) {
+      dots.push('<span class="rec-dot rec-dot-blue" title="Budget-Saving"></span>');
+    }
+    if (systems.cf) {
+      dots.push('<span class="rec-dot rec-dot-purple" title="Personalized (CF)"></span>');
+    }
+    if (systems.hybrid) {
+      dots.push('<span class="rec-dot rec-dot-green" title="Hybrid AI"></span>');
+    }
+    
+    if (dots.length > 0) {
+      dotsContainer = document.createElement('div');
+      dotsContainer.className = 'rec-dots-container';
+      dotsContainer.innerHTML = dots.join('');
+      shelf.style.position = 'relative';
+      shelf.appendChild(dotsContainer);
+    }
   });
 }
 
@@ -258,6 +328,7 @@ function updateCartDisplay() {
     document.getElementById('blendedRecommendations').style.display = 'none';
     updateRecommendationsModule();
     clearRecommendationHighlight();
+    clearRecommendationDots();
   }
 }
 
@@ -397,6 +468,8 @@ async function getSuggestions() {
     data.suggestions.forEach(function(s) {
       if (s.replacement_product && s.replacement_product.subcat) {
         mostRecentSubcat = s.replacement_product.subcat;
+        // Register blue dot for Budget-Saving system
+        addRecommendationDot(s.replacement_product.subcat, 'budget');
       }
       const card = document.createElement('div');
       card.className = 'bg-white border border-indigo-200 rounded-xl p-5 hover:shadow-lg transition-all';
@@ -494,6 +567,7 @@ async function checkout() {
       document.getElementById('blendedRecommendations').style.display = 'none';
       updateRecommendationsModule();
       clearRecommendationHighlight();
+      clearRecommendationDots();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
@@ -548,6 +622,8 @@ async function getCFRecommendations() {
       data.suggestions.forEach(function(s) {
         if (s.replacement_product && s.replacement_product.subcat) {
           mostRecentSubcat = s.replacement_product.subcat;
+          // Register purple dot for CF system
+          addRecommendationDot(s.replacement_product.subcat, 'cf');
         }
         const card = document.createElement('div');
         card.className = 'bg-white border border-purple-200 rounded-xl p-5 hover:shadow-lg transition-all';
@@ -642,6 +718,8 @@ async function getBlendedRecommendations() {
       data.suggestions.forEach(function(s) {
         if (s.replacement_product && s.replacement_product.subcat) {
           mostRecentSubcat = s.replacement_product.subcat;
+          // Register green dot for Hybrid AI system
+          addRecommendationDot(s.replacement_product.subcat, 'hybrid');
         }
         const card = document.createElement('div');
         card.className = 'bg-white border border-emerald-200 rounded-xl p-5 hover:shadow-lg transition-all';
