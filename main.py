@@ -810,13 +810,17 @@ def track_event():
     """
     try:
         data = request.json
-        user_uuid = session.get('user_uuid')
-        if not user_uuid:
-            return jsonify({"success": False, "error": "No user session"}), 400
+        # Use session_id pattern like the rest of the code
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        session_id = session['user_session']
         
-        user = User.query.filter_by(uuid=user_uuid).first()
+        user = User.query.filter_by(session_id=session_id).first()
         if not user:
-            return jsonify({"success": False, "error": "User not found"}), 404
+            # Auto-create user record for anonymous tracking
+            user = User(session_id=session_id)
+            db.session.add(user)
+            db.session.commit()
         
         event_type = data.get('event_type')  # 'cart_add', 'cart_remove', 'view'
         product_id = data.get('product_id')
