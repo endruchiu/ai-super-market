@@ -324,7 +324,7 @@ def _collect_candidates_for_item(df:pd.DataFrame, emb:np.ndarray, item_text:str,
 def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
                             lam: float=0.6, sim_threshold: Optional[float]=None,
                             buffer_ratio: float=0.05, buffer_min: float=1.0,
-                            topk:int=100, last_added_product: Optional[Dict[str,Any]]=None) -> Dict[str,Any]:
+                            topk:int=100) -> Dict[str,Any]:
     """
     cart item format:
       - title (str)
@@ -376,21 +376,11 @@ def recommend_substitutions(cart: List[Dict[str,Any]], budget: float,
     
     # Score candidates
     max_save = max(c.saving for c in all_cands) if all_cands else 1.0
-    
-    # Get last added product's category for prioritization
-    last_added_subcat = last_added_product.get("subcat") if last_added_product else None
-    
     for c in all_cands:
         save_score = _norm01(c.saving, max_save)
         sim_score = c.similarity
         health_score = c.health_gain
-        base_score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
-        
-        # Boost score for items from the same category as the last added product
-        if last_added_subcat and cart[c.src_idx].get("subcat") == last_added_subcat:
-            c.score = base_score * 1.5  # 50% boost for last added category
-        else:
-            c.score = base_score
+        c.score = lam * save_score + (1-lam) * sim_score + HEALTH_WEIGHT * health_score
     
     # Sort and pick top candidates
     all_cands.sort(key=lambda x: x.score, reverse=True)

@@ -36,11 +36,6 @@ Preferred communication style: Simple, everyday language.
     - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).
     - **Hybrid AI**: 60% CF + 40% semantic similarity blend (Emerald/Teal theme).
     - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
-- **Interactive Aisle Highlighting**:
-    - **Visual Feedback**: Aisles glow with yellow/amber gradient and pulse animation when they contain recommended products.
-    - **Smart Mapping**: JavaScript maps 19 product subcategories to 6 store aisles (A-F) using a deterministic lookup table.
-    - **Dynamic Updates**: Highlights automatically appear when recommendations load and clear when cart goes under budget, after checkout, or when a replacement is applied.
-    - **Multi-System Support**: Works seamlessly across all three recommendation systems (Budget-Saving, CF, Hybrid) with flexible data structure handling.
 
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
@@ -49,7 +44,6 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
-- **Category-Focused Recommendations**: All three recommendation systems (Budget-Saving, CF, Hybrid) automatically prioritize suggestions from the same category as the last product added to the cart, even when the budget is already exceeded. This provides contextually relevant alternatives to help users find savings in the categories they're actively shopping.
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
