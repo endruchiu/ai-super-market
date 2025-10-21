@@ -1,0 +1,287 @@
+{
+  "user_context": {
+    "budget": 80,
+    "cart_total": 82.97,
+    "over_budget": 2.97,
+    "cart_items": [
+      {
+        "id": "8109155892113059923",
+        "title": "Kirkland Signature Alkaline AA Batteries, 48-count",
+        "price": 17.99,
+        "qty": 1,
+        "subcat": "Household"
+      },
+      {
+        "id": "7293913056878821982",
+        "title": "Tide HE Ultra Oxi Powder Laundry Detergent, Original, 143 Loads, 250 oz",
+        "price": 35.99,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies"
+      },
+      {
+        "id": "6753113089999639799",
+        "title": "Old Trapper Beef Jerky, Hot & Spicy, 10 oz",
+        "price": 10.99,
+        "qty": 1,
+        "subcat": "Snacks"
+      },
+      {
+        "id": "8663854775074821175",
+        "title": "Chocolate Moonshine Co. Belgian Artisan Chocolate Caramel Biscuit Bark, 20 oz.",
+        "price": 11.99,
+        "qty": 1,
+        "subcat": "Candy"
+      },
+      {
+        "id": "2653925871030095464",
+        "title": "Kirkland Signature, Extra Virgin Italian Olive Oil, 2 L",
+        "price": 18.99,
+        "qty": 1,
+        "subcat": "Pantry & Dry Goods"
+      }
+    ]
+  },
+  "budget_saving": [],
+  "personalized_cf": [
+    {
+      "expected_saving": "9.50",
+      "reason": "Popular among shoppers like you: Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count — similar taste, 52% cheaper (save $9.50)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "6700367747912138268",
+        "price": 8.49,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "1.00",
+      "reason": "Popular among shoppers like you: Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White — similar taste, 5% cheaper (save $1.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "8758420445336052636",
+        "price": 16.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White"
+    },
+    {
+      "expected_saving": "1.00",
+      "reason": "Popular among shoppers like you: Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count — similar taste, 5% cheaper (save $1.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "7528518092093014181",
+        "price": 16.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "2.00",
+      "reason": "Popular among shoppers like you: Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count — similar taste, 11% cheaper (save $2.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "4408098899833933953",
+        "price": 15.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "1.60",
+      "reason": "Popular among shoppers like you: Kirkland Signature Alkaline AAA Batteries, 48-count — similar taste, 8% cheaper (save $1.60)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "8361993063009936892",
+        "price": 16.39,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Kirkland Signature Alkaline AAA Batteries, 48-count"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Kirkland Signature Alkaline AAA Batteries, 48-count"
+    },
+    {
+      "expected_saving": "15.00",
+      "reason": "Popular among shoppers like you: Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz — similar taste, 42% cheaper (save $15.00)",
+      "replace": "Tide HE Ultra Oxi Powder Laundry Detergent, Original, 143 Loads, 250 oz",
+      "replacement_product": {
+        "id": "1062676361618765855",
+        "price": 20.99,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies",
+        "title": "Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz"
+    },
+    {
+      "expected_saving": "7.50",
+      "reason": "Popular among shoppers like you: Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count — similar taste, 20% cheaper (save $7.50)",
+      "replace": "Tide HE Ultra Oxi Powder Laundry Detergent, Original, 143 Loads, 250 oz",
+      "replacement_product": {
+        "id": "3729876313738467588",
+        "price": 28.49,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies",
+        "title": "Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count"
+    },
+    {
+      "expected_saving": "4.00",
+      "reason": "Popular among shoppers like you: Downy Infusions Liquid Fabric Softener, Lavender Serenity, 150 oz — similar taste, 33% cheaper (save $4.00)",
+      "replace": "Chocolate Moonshine Co. Belgian Artisan Chocolate Caramel Biscuit Bark, 20 oz.",
+      "replacement_product": {
+        "id": "7562293527297695559",
+        "price": 7.99,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies",
+        "title": "Downy Infusions Liquid Fabric Softener, Lavender Serenity, 150 oz"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Downy Infusions Liquid Fabric Softener, Lavender Serenity, 150 oz"
+    },
+    {
+      "expected_saving": "9.00",
+      "reason": "Popular among shoppers like you: Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L — similar taste, 47% cheaper (save $9.00)",
+      "replace": "Kirkland Signature, Extra Virgin Italian Olive Oil, 2 L",
+      "replacement_product": {
+        "id": "4917797606827068838",
+        "price": 9.99,
+        "qty": 1,
+        "subcat": "Pantry & Dry Goods",
+        "title": "Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L"
+      },
+      "similarity": "Popular among shoppers like you",
+      "with": "Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L"
+    }
+  ],
+  "hybrid_ai": [
+    {
+      "expected_saving": "9.50",
+      "reason": "Smart recommendation: Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count — similar product, 52% cheaper (save $9.50)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "6700367747912138268",
+        "price": 8.49,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Tramontina ProLine Windsor Teaspoon, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "15.00",
+      "reason": "Smart recommendation: Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz — similar product, 42% cheaper (save $15.00)",
+      "replace": "Tide HE Ultra Oxi Powder Laundry Detergent, Original, 143 Loads, 250 oz",
+      "replacement_product": {
+        "id": "1062676361618765855",
+        "price": 20.99,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies",
+        "title": "Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Kirkland Signature Ultra Clean Free & Clear HE Liquid Laundry Detergent, 146 loads, 194 fl oz"
+    },
+    {
+      "expected_saving": "7.50",
+      "reason": "Smart recommendation: Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count — similar product, 20% cheaper (save $7.50)",
+      "replace": "Tide HE Ultra Oxi Powder Laundry Detergent, Original, 143 Loads, 250 oz",
+      "replacement_product": {
+        "id": "3729876313738467588",
+        "price": 28.49,
+        "qty": 1,
+        "subcat": "Laundry Detergent & Supplies",
+        "title": "Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Kirkland Signature Ultra Clean Pacs Laundry Detergent Pacs, 152-count"
+    },
+    {
+      "expected_saving": "1.60",
+      "reason": "Smart recommendation: Kirkland Signature Alkaline AAA Batteries, 48-count — similar product, 8% cheaper (save $1.60)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "8361993063009936892",
+        "price": 16.39,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Kirkland Signature Alkaline AAA Batteries, 48-count"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Kirkland Signature Alkaline AAA Batteries, 48-count"
+    },
+    {
+      "expected_saving": "2.00",
+      "reason": "Smart recommendation: Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count — similar product, 11% cheaper (save $2.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "4408098899833933953",
+        "price": 15.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Tramontina ProLine Windsor Soup Spoon, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "1.00",
+      "reason": "Smart recommendation: Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White — similar product, 5% cheaper (save $1.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "8758420445336052636",
+        "price": 16.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Nouvelle Legende Rectangular Tablecloth, 52\" x 114\" - White"
+    },
+    {
+      "expected_saving": "1.00",
+      "reason": "Smart recommendation: Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count — similar product, 5% cheaper (save $1.00)",
+      "replace": "Kirkland Signature Alkaline AA Batteries, 48-count",
+      "replacement_product": {
+        "id": "7528518092093014181",
+        "price": 16.99,
+        "qty": 1,
+        "subcat": "Household",
+        "title": "Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Tramontina ProLine Windsor Salad Fork, Stainless Steel, 36-count"
+    },
+    {
+      "expected_saving": "9.00",
+      "reason": "Smart recommendation: Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L — similar product, 47% cheaper (save $9.00)",
+      "replace": "Kirkland Signature, Extra Virgin Italian Olive Oil, 2 L",
+      "replacement_product": {
+        "id": "4917797606827068838",
+        "price": 9.99,
+        "qty": 1,
+        "subcat": "Pantry & Dry Goods",
+        "title": "Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L"
+      },
+      "similarity": "Smart recommendation",
+      "with": "Kirkland Signature, Organic Extra Virgin Olive Oil, 2 L"
+    }
+  ]
+}
