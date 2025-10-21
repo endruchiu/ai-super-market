@@ -208,6 +208,9 @@ function updateCartDisplay() {
     });
     
     totalSpan.textContent = '$' + fmt(sum);
+    
+    // Update budget warning
+    updateBudgetWarning(sum, budget);
   }
   
   // Auto-show all recommendation systems if over budget
@@ -224,6 +227,49 @@ function updateCartDisplay() {
     document.getElementById('cfRecommendations').style.display = 'none';
     document.getElementById('blendedRecommendations').style.display = 'none';
     updateRecommendationsModule();
+  }
+}
+
+function updateBudgetWarning(cartTotal, budget) {
+  const warningDiv = document.getElementById('budgetWarning');
+  if (!warningDiv || budget <= 0) {
+    if (warningDiv) warningDiv.style.display = 'none';
+    return;
+  }
+  
+  const percentage = (cartTotal / budget) * 100;
+  
+  if (cartTotal > budget) {
+    // RED WARNING - Over budget
+    const overAmount = cartTotal - budget;
+    warningDiv.className = 'mt-3 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-lg';
+    warningDiv.innerHTML = '<div class="flex items-center space-x-2">' +
+      '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>' +
+      '</svg>' +
+      '<div class="flex-1">' +
+        '<p class="text-red-800 font-bold text-sm">Over Budget!</p>' +
+        '<p class="text-red-600 text-xs mt-0.5">You are $' + fmt(overAmount) + ' over your $' + fmt(budget) + ' budget (' + Math.round(percentage) + '%)</p>' +
+      '</div>' +
+    '</div>';
+    warningDiv.style.display = 'block';
+  } else if (percentage >= 80) {
+    // YELLOW WARNING - Approaching budget (80-100%)
+    const remaining = budget - cartTotal;
+    warningDiv.className = 'mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg';
+    warningDiv.innerHTML = '<div class="flex items-center space-x-2">' +
+      '<svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>' +
+      '</svg>' +
+      '<div class="flex-1">' +
+        '<p class="text-yellow-800 font-bold text-sm">Approaching Budget</p>' +
+        '<p class="text-yellow-600 text-xs mt-0.5">$' + fmt(remaining) + ' remaining of $' + fmt(budget) + ' budget (' + Math.round(percentage) + '%)</p>' +
+      '</div>' +
+    '</div>';
+    warningDiv.style.display = 'block';
+  } else {
+    // GREEN - Within budget (< 80%)
+    warningDiv.style.display = 'none';
   }
 }
 
@@ -598,4 +644,12 @@ async function getBlendedRecommendations() {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');
   refreshProducts();
+  
+  // Add budget input change listener
+  const budgetInput = document.getElementById('budget');
+  if (budgetInput) {
+    budgetInput.addEventListener('input', function() {
+      updateCartDisplay();
+    });
+  }
 });
