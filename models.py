@@ -110,7 +110,6 @@ def init_models(db):
         
         id = db.Column(db.Integer, primary_key=True)
         session_id = db.Column(db.String(255), nullable=False, unique=True, index=True)
-        preferences = db.Column(db.JSON, nullable=True, default=dict)
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
         last_active = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
         
