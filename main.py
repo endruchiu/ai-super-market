@@ -602,6 +602,66 @@ def api_blended_recommendations():
         "weights": {"cf": 0.6, "semantic": 0.4}
     })
 
+@app.route("/api/model/feature-importance", methods=["GET"])
+def api_model_feature_importance():
+    """
+    Get feature importance from trained LightGBM model.
+    Shows what the ML model learned (not hardcoded 60/40 weights).
+    """
+    try:
+        from lgbm_reranker import get_reranker
+        
+        # Get the reranker instance
+        reranker = get_reranker(use_lgbm=True)
+        
+        # Extract feature importance
+        importance = reranker.get_feature_importance()
+        
+        if not importance:
+            return jsonify({
+                "model_available": False,
+                "reason": "LightGBM model not loaded or feature importance unavailable",
+                "fallback_weights": {"cf": 60, "semantic": 40}
+            })
+        
+        # Get training stats (if available)
+        training_samples = 289  # From training data
+        training_sessions = 68  # From training data
+        
+        # Group related features for display
+        top_features = dict(list(importance.items())[:10])  # Top 10 features
+        
+        # Calculate aggregated scores for main components
+        cf_importance = importance.get('cf_bpr_score', 0)
+        semantic_importance = importance.get('semantic_sim', 0)
+        price_importance = importance.get('price_saving', 0)
+        budget_importance = importance.get('budget_pressure', 0)
+        
+        return jsonify({
+            "model_available": True,
+            "all_features": importance,
+            "top_features": top_features,
+            "key_weights": {
+                "cf_score": round(cf_importance, 1),
+                "semantic_similarity": round(semantic_importance, 1),
+                "price_saving": round(price_importance, 1),
+                "budget_pressure": round(budget_importance, 1)
+            },
+            "training_info": {
+                "samples": training_samples,
+                "sessions": training_sessions,
+                "total_features": len(importance)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting feature importance: {e}")
+        return jsonify({
+            "model_available": False,
+            "reason": str(e),
+            "fallback_weights": {"cf": 60, "semantic": 40}
+        })
+
 @app.route("/api/checkout", methods=["POST"])
 def api_checkout():
     """Complete the purchase and persist order history"""
