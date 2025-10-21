@@ -41,17 +41,11 @@ Preferred communication style: Simple, everyday language.
     - Animated toast notifications for user feedback (sign-in success, sign-out, etc.).
     - No backend authentication logic - purely for demonstration and UI/UX purposes.
 - **AI Recommendation UI**:
-    - **Budget-Saving**: Semantic similarity-based (Blue/Indigo theme).
-    - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).
-    - **Hybrid AI**: 60% CF + 40% semantic similarity blend (Emerald/Teal theme).
+    - **Hybrid AI System**: The sole recommendation engine combining 60% Collaborative Filtering + 40% semantic similarity (Emerald/Teal theme).
     - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
-    - **Multi-System Aisle Highlighting** (Hybrid Approach):
+    - **Aisle Highlighting System**:
         - **Main Pulsing Highlight**: The most recent recommendation's aisle displays an orange gradient with pulsing glow animation for maximum visibility.
-        - **Colored Dots System**: Small colored badges appear in the top-right corner of each aisle to show which recommendation systems have suggestions for that category:
-            - 🔵 Blue dot = Budget-Saving system recommends this aisle
-            - 🟣 Purple dot = Personalized (CF) system recommends this aisle
-            - 🟢 Green dot = Hybrid AI system recommends this aisle
-        - Multiple dots can appear on the same aisle when different systems recommend products from the same category, providing a comprehensive visual overview of all recommendation sources.
+        - **Green Dot Indicators**: Small green badges appear in the top-right corner of aisles where the Hybrid AI system has product recommendations.
         - Highlights and dots automatically clear when the cart is within budget or after checkout.
 
 ### AI & Recommendations
