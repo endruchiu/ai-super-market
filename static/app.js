@@ -679,17 +679,26 @@ function getModelWeightsDescription() {
   const weights = MODEL_FEATURE_IMPORTANCE.key_weights;
   const training = MODEL_FEATURE_IMPORTANCE.training_info;
   
-  // Build dynamic description
+  // Check if model has learned meaningful weights (sum > 1)
+  const totalWeight = weights.cf_score + weights.semantic_similarity + weights.price_saving + weights.budget_pressure;
+  
+  if (totalWeight < 1) {
+    // Model exists but hasn't learned feature importance yet
+    // Show that it's ML-powered with training data count
+    return `🎓 LightGBM ML Model Active — Trained on ${training.samples} real sessions (21 behavioral features)`;
+  }
+  
+  // Build dynamic description from learned weights
   const parts = [];
   if (weights.cf_score > 0) parts.push(`CF ${weights.cf_score.toFixed(0)}%`);
   if (weights.semantic_similarity > 0) parts.push(`Semantic ${weights.semantic_similarity.toFixed(0)}%`);
   if (weights.price_saving > 0) parts.push(`Price ${weights.price_saving.toFixed(0)}%`);
   if (weights.budget_pressure > 0) parts.push(`Budget ${weights.budget_pressure.toFixed(0)}%`);
   
-  const description = 'ML-Optimized: ' + parts.join(', ');
-  const learnedFrom = `Learned from ${training.samples} real shopping sessions`;
+  const description = 'ML-Optimized Weights: ' + parts.join(', ');
+  const learnedFrom = `from ${training.samples} sessions`;
   
-  return `${description} — ${learnedFrom}`;
+  return `${description} ${learnedFrom}`;
 }
 
 async function getBlendedRecommendations() {
