@@ -305,6 +305,7 @@ function updateCartDisplay() {
     document.getElementById('cfRecommendations').style.display = 'none';
     document.getElementById('blendedRecommendations').style.display = 'none';
     updateRecommendationsModule();
+    clearAisleHighlights();
   }
 }
 
@@ -484,6 +485,8 @@ async function getSuggestions() {
   
   document.getElementById('suggestions').style.display = 'block';
   updateRecommendationsModule();
+  
+  highlightRecommendedAisles(data.suggestions || []);
 }
 
 async function checkout() {
@@ -532,6 +535,7 @@ async function checkout() {
       document.getElementById('cfRecommendations').style.display = 'none';
       document.getElementById('blendedRecommendations').style.display = 'none';
       updateRecommendationsModule();
+      clearAisleHighlights();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
@@ -626,6 +630,8 @@ async function getCFRecommendations() {
     
     document.getElementById('cfRecommendations').style.display = 'block';
     updateRecommendationsModule();
+    
+    highlightRecommendedAisles(data.suggestions || []);
   } catch (error) {
     console.error('Error fetching CF recommendations:', error);
     alert('Failed to load CF recommendations: ' + error.message);
@@ -712,6 +718,8 @@ async function getBlendedRecommendations() {
     
     document.getElementById('blendedRecommendations').style.display = 'block';
     updateRecommendationsModule();
+    
+    highlightRecommendedAisles(data.suggestions || []);
   } catch (error) {
     console.error('Error fetching blended recommendations:', error);
     alert('Failed to load hybrid recommendations: ' + error.message);
