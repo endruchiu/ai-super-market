@@ -107,7 +107,10 @@ def get_blended_recommendations(
             user_profile_emb = user_profile_emb / (np.linalg.norm(user_profile_emb) + 1e-9)
     
     # Compute semantic scores for CF recommendations and add metadata
-    from models import Product
+    # Import PRODUCTS_DF for fast in-memory lookup
+    from main import PRODUCTS_DF
+    import pandas as pd
+    
     blended_recs = []
     
     # Get session context for feature computation
@@ -118,6 +121,10 @@ def get_blended_recommendations(
     for cf_rec in cf_recs:
         product_id = int(cf_rec["product_id"])
         cf_score = cf_rec["score"]
+        
+        # Skip if product not in catalog
+        if product_id not in PRODUCTS_DF.index:
+            continue
         
         # Compute semantic score
         semantic_score = 0.0
@@ -141,12 +148,12 @@ def get_blended_recommendations(
         # Blend scores (both now in [0, 1] range)
         blended_score = cf_weight * cf_score + semantic_weight * semantic_score
         
-        # Get product metadata for LightGBM features
-        product = Product.query.get(product_id)
-        product_price = float(product.price) if product and product.price else 10.0
-        product_name_lower = product.product_name.lower() if product and product.product_name else ""
-        product_rating = float(product.rating) if product and product.rating else 2.5
-        product_category = product.category if product else ""
+        # Get product metadata for LightGBM features from PRODUCTS_DF
+        product_row = PRODUCTS_DF.loc[product_id]
+        product_price = float(product_row.get("_price_final", 10.0))
+        product_name_lower = str(product_row.get("Title", "")).lower()
+        product_rating = float(product_row.get("_rating", 2.5)) if pd.notna(product_row.get("_rating")) else 2.5
+        product_category = str(product_row.get("Sub Category", ""))
         
         # Compute feature-rich candidate dict
         avg_cart_price = cart_value / cart_size if cart_size > 0 else 20.0

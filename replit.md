@@ -55,14 +55,17 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
-- **LightGBM LambdaMART Re-Ranking** (✅ ACTIVE):
+- **LightGBM LambdaMART Re-Ranking** (✅ ACTIVE - Oct 21, 2025):
   - **Behavior-Aware Re-Ranking**: LightGBM LambdaMART model for intelligent re-ranking based on user intent and session context.
+  - **Production Integration**: Session context (cart, budget, budget_pressure) automatically passed from `/api/blended/recommendations` endpoint when cart exceeds budget.
   - **Feature Consistency**: Training features extracted from actual recommendation pipeline (real CF/semantic scores, product metadata).
   - **Intent Tracking**: EMA smoothing (α=0.3) with 45s cooldown logic to prevent mode thrashing.
   - **Guardrail Modes**: Quality (high similarity), Economy (price-focused), Balanced (mix of both).
   - **System Setup**: GCC installed via Nix packages (`pkgs.gcc`), `LD_LIBRARY_PATH` configured in workflow to provide `libgomp.so.1` OpenMP library.
   - **Graceful Fallback**: Uses standard 60/40 blending when no trained model available; automatically activates LightGBM re-ranking when model file exists.
   - **Feature-Rich**: 21 features including CF scores, semantic similarity, price savings, quality tags, diet matching, behavioral context (beta_u, budget_pressure, intent, cart state, temporal).
+  - **Performance**: Uses in-memory PRODUCTS_DF for O(1) product metadata lookup instead of database queries.
+  - **Training**: 289 real samples from 68 user sessions, trained model saved to `models/lgbm_ltr.txt` (3.4 KB).
   - **Files**: `lgbm_reranker.py` (re-ranker), `prepare_ltr_data.py` (data prep), `train_lgbm_ranker.py` (training), `LGBM_README.md` (documentation).
 
 ### LLM-as-a-Judge Evaluation System
