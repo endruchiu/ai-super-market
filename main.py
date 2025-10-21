@@ -774,7 +774,7 @@ def api_user_profile():
                 "items": items_list
             })
         
-        budget = UserBudget.query.filter_by(user_id=user.id).first()
+        budget = UserBudget.query.filter_by(session_id=session_id).first()
         current_budget = float(budget.budget_amount) if budget else 0.0
         
         return jsonify({
