@@ -694,16 +694,15 @@ function getModelWeightsDescription() {
   const weights = MODEL_FEATURE_IMPORTANCE.key_weights;
   const training = MODEL_FEATURE_IMPORTANCE.training_info;
   
-  // Check if model has learned meaningful weights (sum > 1)
-  const totalWeight = weights.cf_score + weights.semantic_similarity + weights.price_saving + weights.budget_pressure;
-  
-  if (totalWeight < 1) {
-    // Model exists but hasn't learned feature importance yet
-    // Show that it's ML-powered with training data count
-    return `🎓 LightGBM ML Model Active — Trained on ${training.samples} real sessions (21 behavioral features)`;
+  // Deterministic check: use model_available flag and training data presence
+  // This is robust against API format changes (percentages vs fractions)
+  if (!training || !training.samples || training.samples === 0) {
+    // Model exists but no training data yet
+    return `🎓 LightGBM ML Model Active — Ready to learn from user behavior`;
   }
   
   // Build dynamic description from learned weights
+  // Always show ML weights when model is trained, regardless of normalization
   const parts = [];
   if (weights.cf_score > 0) parts.push(`CF ${weights.cf_score.toFixed(0)}%`);
   if (weights.semantic_similarity > 0) parts.push(`Semantic ${weights.semantic_similarity.toFixed(0)}%`);

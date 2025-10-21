@@ -1,0 +1,60 @@
+{
+  "presentation_date": "2025-10-21",
+  "demo_title": "Scaling Research to Production: LightGBM Feature Importance",
+  "locked_values": {
+    "model_feature_importance": {
+      "cf_score": 10.3,
+      "semantic_similarity": 7.3,
+      "price_saving": 8.5,
+      "budget_pressure": 2.2
+    },
+    "training_info": {
+      "samples": 1000,
+      "sessions": 200,
+      "total_features": 21
+    },
+    "expected_ui_display": "ML-Optimized Weights: CF 10%, Semantic 7%, Price 9%, Budget 2% from 1000 sessions"
+  },
+  "validation_checklist": [
+    "✓ API endpoint /api/model/feature-importance returns non-zero percentages",
+    "✓ UI displays 'ML-Optimized Weights' message (not generic 60/40)",
+    "✓ Event tracking works (view events logged in browser console)",
+    "✓ Model file exists at models/lgbm_ltr.txt",
+    "✓ Training data at data/ltr_train.parquet has 1000 samples"
+  ],
+  "quick_verification_commands": {
+    "check_api": "curl -s http://localhost:5000/api/model/feature-importance | python -m json.tool",
+    "check_data": "python -c \"import pandas as pd; df = pd.read_parquet('data/ltr_train.parquet'); print(f'Samples: {len(df)}, Positive: {df.label.sum()}')\""
+  },
+  "demo_flow": [
+    "1. Open app in browser",
+    "2. Show empty cart, default budget $40",
+    "3. Click 'Snacks' aisle to browse products",
+    "4. Add expensive items to cart (total > $40)",
+    "5. Scroll down to see 'Smart Recommendations' panel",
+    "6. Point to emerald panel showing 'ML-Optimized Weights: CF 10%, Semantic 7%...'",
+    "7. Explain: These percentages are learned from 1000 training sessions, not hardcoded",
+    "8. Open terminal, run: curl http://localhost:5000/api/model/feature-importance",
+    "9. Show API response matches UI display",
+    "10. Conclude: Model adapts to user behavior through online learning"
+  ],
+  "backup_plan": {
+    "if_ui_not_showing_weights": [
+      "1. Check browser console for MODEL_FEATURE_IMPORTANCE value",
+      "2. Verify getModelWeightsDescription() returns ML weights string",
+      "3. Ensure cart total exceeds budget to trigger recommendations"
+    ],
+    "if_api_returns_zeros": [
+      "1. Check models/lgbm_ltr.txt exists and timestamp",
+      "2. Retrain model: python train_lgbm_ranker.py",
+      "3. Reload Flask: touch main.py"
+    ]
+  },
+  "talking_points": [
+    "Hardcoded blending (60/40) doesn't adapt to different user types",
+    "LightGBM learns from actual behavior: budget hunters vs quality seekers",
+    "Feature importance visible in UI proves adaptive learning",
+    "Production system with online learning: retrains after 5 purchases",
+    "Scales research (LambdaMART ranking) to production (REST API + UI)"
+  ]
+}
