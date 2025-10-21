@@ -171,14 +171,17 @@ class LGBMReRanker:
         }
     
     def assemble_features(self, candidate: Dict, behavioral_feats: Dict) -> Dict:
-        """Assemble all features for a single candidate"""
+        """Assemble all features for a single candidate - MUST match training feature keys"""
         
         features = {}
         
+        # Candidate features (use exact keys from blended_recommendations)
         features['cf_bpr_score'] = candidate.get('cf_score', 0.5)
         features['semantic_sim'] = candidate.get('semantic_sim', 0.5)
         features['price_saving'] = candidate.get('price_saving', 0)
-        features['within_budget_flag'] = 1 if features['price_saving'] > 0 else 0
+        # Respect candidate's within_budget_flag, fallback to price_saving logic only if missing
+        features['within_budget_flag'] = candidate.get('within_budget_flag', 
+                                                        1 if candidate.get('price_saving', 0) > 0 else 0)
         features['size_ratio'] = candidate.get('size_ratio', 1.0)
         features['category_match'] = candidate.get('category_match', 0)
         features['popularity'] = candidate.get('popularity', 0.5)
@@ -188,8 +191,10 @@ class LGBMReRanker:
         features['same_semantic_id_flag'] = candidate.get('same_semantic_cluster', 0)
         features['distance_to_semantic_center'] = candidate.get('semantic_distance', 0.5)
         
+        # Add behavioral features from session context
         features.update(behavioral_feats)
         
+        # Fill in any missing features with zeros
         for col in self.feature_cols:
             if col not in features:
                 features[col] = 0

@@ -125,10 +125,14 @@ class LTRDataPreparation:
             dow = ts.weekday()
             hour = ts.hour
             
+            # Combine all cart/purchased items for feature computation
+            all_session_items = list(set(list(purchased_items) + list(cart_items)))
+            
             for item_id in purchased_items:
                 sample = self._create_feature_row(
                     session_id, user_id, item_id, 1, 3,
-                    beta_u, budget_pressure, cart_value, cart_size, dow, hour
+                    beta_u, budget_pressure, cart_value, cart_size, dow, hour,
+                    cart_items=all_session_items, budget=budget
                 )
                 training_data.append(sample)
             
@@ -136,7 +140,8 @@ class LTRDataPreparation:
                 if item_id not in purchased_items:
                     sample = self._create_feature_row(
                         session_id, user_id, item_id, 0, 2,
-                        beta_u, budget_pressure, cart_value, cart_size, dow, hour
+                        beta_u, budget_pressure, cart_value, cart_size, dow, hour,
+                        cart_items=all_session_items, budget=budget
                     )
                     training_data.append(sample)
             
@@ -144,7 +149,8 @@ class LTRDataPreparation:
                 if item_id not in purchased_items and item_id not in cart_items:
                     sample = self._create_feature_row(
                         session_id, user_id, item_id, 0, 1,
-                        beta_u, budget_pressure, cart_value, cart_size, dow, hour
+                        beta_u, budget_pressure, cart_value, cart_size, dow, hour,
+                        cart_items=all_session_items, budget=budget
                     )
                     training_data.append(sample)
         
@@ -154,13 +160,94 @@ class LTRDataPreparation:
         return df
     
     def _create_feature_row(self, session_id, user_id, item_id, label, weight,
-                           beta_u, budget_pressure, cart_value, cart_size, dow, hour):
-        """Create a single feature row for training"""
+                           beta_u, budget_pressure, cart_value, cart_size, dow, hour,
+                           cart_items=None, budget=40.0):
+        """Create a single feature row with REAL features from recommendation pipeline"""
+        from blended_recommendations import get_blended_recommendations
         
-        cf_score = np.random.uniform(0.3, 0.9) if label == 1 else np.random.uniform(0.1, 0.6)
-        semantic_sim = np.random.uniform(0.5, 1.0) if label == 1 else np.random.uniform(0.2, 0.7)
-        price_saving = np.random.uniform(5, 20) if label == 1 else np.random.uniform(-10, 10)
-        within_budget = 1 if price_saving > 0 else 0
+        # Get real CF + semantic scores from the actual recommendation pipeline
+        # This ensures training features match inference-time features
+        blended_recs = get_blended_recommendations(
+            user_id=user_id,
+            top_k=50,  # Get enough candidates
+            use_lgbm=False  # Don't use LightGBM during training data prep
+        )
+        
+        # Find this item in the recommendations
+        cf_score = 0.1
+        semantic_sim = 0.1
+        blended_score = 0.1
+        
+        for rec in blended_recs:
+            if int(rec.get('product_id', -1)) == int(item_id):
+                cf_score = rec.get('cf_score', 0.1)
+                semantic_sim = rec.get('semantic_score', 0.1)
+                blended_score = rec.get('blended_score', 0.1)
+                break
+        
+        # Get product metadata from database
+        product = Product.query.get(item_id)
+        if product is None:
+            # Fallback to defaults if product not found
+            return {
+                'session_id': session_id,
+                'user_id': user_id,
+                'item_id': item_id,
+                'label': label,
+                'weight': weight,
+                'cf_bpr_score': cf_score,
+                'semantic_sim': semantic_sim,
+                'price_saving': 0.0,
+                'within_budget_flag': 1,
+                'size_ratio': 1.0,
+                'category_match': 0,
+                'popularity': 0.5,
+                'recency': 0.5,
+                'diet_match_flag': 0,
+                'quality_tags_score': 0.5,
+                'same_semantic_id_flag': 0,
+                'distance_to_semantic_center': 0.5,
+                'beta_u': beta_u,
+                'budget_pressure': budget_pressure,
+                'intent_keep_quality_ema': 0.5,
+                'premium_anchor': 1 if cart_value > 50 else 0,
+                'mission_type_id': 1,
+                'cart_value': cart_value,
+                'cart_size': cart_size,
+                'dow': dow,
+                'hour': hour
+            }
+        
+        # Compute real features
+        product_price = float(product.price) if product.price else 10.0
+        
+        # Price saving: if cart is over budget, how much cheaper is this vs. avg cart item?
+        avg_cart_price = cart_value / cart_size if cart_size > 0 else 20.0
+        price_saving = avg_cart_price - product_price
+        within_budget = 1 if (cart_value - avg_cart_price + product_price) <= budget else 0
+        
+        # Category/quality features
+        product_name_lower = product.product_name.lower() if product.product_name else ""
+        quality_keywords = ['organic', 'premium', 'gourmet', 'artisan', 'fresh']
+        quality_tags_score = sum(1 for kw in quality_keywords if kw in product_name_lower) / len(quality_keywords)
+        
+        # Diet match (simplified - check for diet keywords)
+        diet_keywords = ['organic', 'gluten-free', 'vegan', 'non-gmo']
+        diet_match_flag = 1 if any(kw in product_name_lower for kw in diet_keywords) else 0
+        
+        # Popularity proxy (use product rating if available)
+        popularity = float(product.rating) / 5.0 if product.rating else 0.5
+        
+        # Category match (if cart items provided, check if same category)
+        category_match = 0
+        if cart_items and product.category:
+            # Simple match: if any cart item has same category
+            cart_categories = set()
+            for cart_item_id in cart_items:
+                cart_prod = Product.query.get(cart_item_id)
+                if cart_prod and cart_prod.category:
+                    cart_categories.add(cart_prod.category)
+            category_match = 1 if product.category in cart_categories else 0
         
         return {
             'session_id': session_id,
@@ -172,19 +259,19 @@ class LTRDataPreparation:
             'semantic_sim': semantic_sim,
             'price_saving': price_saving,
             'within_budget_flag': within_budget,
-            'size_ratio': np.random.uniform(0.8, 1.2),
-            'category_match': np.random.randint(0, 2),
-            'popularity': np.random.uniform(0, 1),
-            'recency': np.random.uniform(0, 1),
-            'diet_match_flag': np.random.randint(0, 2),
-            'quality_tags_score': np.random.uniform(0, 1),
-            'same_semantic_id_flag': np.random.randint(0, 2),
-            'distance_to_semantic_center': np.random.uniform(0, 1),
+            'size_ratio': 1.0,  # Not applicable without original item
+            'category_match': category_match,
+            'popularity': popularity,
+            'recency': 0.5,  # Would need product freshness data
+            'diet_match_flag': diet_match_flag,
+            'quality_tags_score': quality_tags_score,
+            'same_semantic_id_flag': 0,  # Would need semantic clustering
+            'distance_to_semantic_center': semantic_sim,  # Use semantic score as proxy
             'beta_u': beta_u,
             'budget_pressure': budget_pressure,
-            'intent_keep_quality_ema': np.random.uniform(0.3, 0.7),
+            'intent_keep_quality_ema': 0.5,  # Would need historical intent tracking
             'premium_anchor': 1 if cart_value > 50 else 0,
-            'mission_type_id': np.random.randint(0, 3),
+            'mission_type_id': 1,  # Would need mission classification
             'cart_value': cart_value,
             'cart_size': cart_size,
             'dow': dow,
@@ -218,7 +305,8 @@ class LTRDataPreparation:
                 
                 sample = self._create_feature_row(
                     session_id, user_id, item_id, label, weight,
-                    beta_u, budget_pressure, cart_value, cart_size, dow, hour
+                    beta_u, budget_pressure, cart_value, cart_size, dow, hour,
+                    cart_items=[], budget=40.0
                 )
                 training_data.append(sample)
         

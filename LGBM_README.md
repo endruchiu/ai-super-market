@@ -15,12 +15,14 @@ This system integrates **LightGBM LambdaMART** re-ranking into the hybrid recomm
 ### Components
 
 1. **Data Preparation** (`prepare_ltr_data.py`)
-   - Extracts user events (purchases, cart adds, views)
-   - Generates feature-rich training samples
+   - Extracts user events (purchases, cart adds, views) from database
+   - **Calls actual recommendation pipeline** to get real CF and semantic scores
+   - Fetches product metadata from database for feature computation
+   - Computes training features matching inference-time features
    - Exports to `data/ltr_train.parquet`
 
 2. **Model Training** (`train_lgbm_ranker.py`)
-   - Trains LightGBM LambdaMART model
+   - Trains LightGBM LambdaMART model on real features
    - GPU→CPU fallback logic
    - Feature importance analysis
    - Saves model to `models/lgbm_ltr.txt`
@@ -29,12 +31,29 @@ This system integrates **LightGBM LambdaMART** re-ranking into the hybrid recomm
    - Intent tracking with EMA smoothing (α=0.3)
    - Cooldown logic (45s before mode switches)
    - Guardrail filtering (quality/economy/balanced)
-   - Behavioral feature computation
+   - Behavioral feature computation from session context
 
 4. **Integration** (`blended_recommendations.py`)
+   - **Enriches candidates** with product metadata and computed features
+   - Ensures feature consistency between training and inference
    - Seamless integration with existing hybrid system
    - Optional LightGBM re-ranking
    - Graceful fallback when unavailable
+
+### Key Design: Feature Consistency
+
+**Training Time** (prepare_ltr_data.py):
+- Calls `get_blended_recommendations()` to get real CF + semantic scores
+- Fetches product metadata from `Product` table
+- Computes price_saving, quality_tags_score, popularity, etc.
+
+**Inference Time** (blended_recommendations.py):
+- Same CF + semantic pipeline generates scores
+- Same product metadata lookup
+- Same feature computation logic
+- Passes enriched candidates to LightGBM re-ranker
+
+**Result**: Training features = Inference features (no distribution shift!)
 
 ## 🧮 Features
 

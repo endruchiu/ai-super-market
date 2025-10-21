@@ -106,8 +106,14 @@ def get_blended_recommendations(
             # Normalize for cosine similarity
             user_profile_emb = user_profile_emb / (np.linalg.norm(user_profile_emb) + 1e-9)
     
-    # Compute semantic scores for CF recommendations
+    # Compute semantic scores for CF recommendations and add metadata
+    from models import Product
     blended_recs = []
+    
+    # Get session context for feature computation
+    budget = session_context.get('budget', 40.0) if session_context else 40.0
+    cart_value = session_context.get('cart_value', 0.0) if session_context else 0.0
+    cart_size = session_context.get('cart_size', 0) if session_context else 0
     
     for cf_rec in cf_recs:
         product_id = int(cf_rec["product_id"])
@@ -135,12 +141,46 @@ def get_blended_recommendations(
         # Blend scores (both now in [0, 1] range)
         blended_score = cf_weight * cf_score + semantic_weight * semantic_score
         
+        # Get product metadata for LightGBM features
+        product = Product.query.get(product_id)
+        product_price = float(product.price) if product and product.price else 10.0
+        product_name_lower = product.product_name.lower() if product and product.product_name else ""
+        product_rating = float(product.rating) if product and product.rating else 2.5
+        product_category = product.category if product else ""
+        
+        # Compute feature-rich candidate dict
+        avg_cart_price = cart_value / cart_size if cart_size > 0 else 20.0
+        price_saving = avg_cart_price - product_price
+        within_budget = 1 if (cart_value - avg_cart_price + product_price) <= budget else 0
+        
+        # Quality and diet features
+        quality_keywords = ['organic', 'premium', 'gourmet', 'artisan', 'fresh']
+        quality_tags_score = sum(1 for kw in quality_keywords if kw in product_name_lower) / len(quality_keywords)
+        
+        diet_keywords = ['organic', 'gluten-free', 'vegan', 'non-gmo']
+        diet_match_flag = 1 if any(kw in product_name_lower for kw in diet_keywords) else 0
+        
         blended_recs.append({
             "product_id": str(product_id),
             "cf_score": float(cf_score),
             "semantic_score": float(semantic_score),
             "blended_score": float(blended_score),
-            "rank": 0  # Will be set after sorting
+            "rank": 0,  # Will be set after sorting
+            # Additional features for LightGBM (using correct key names)
+            "price": product_price,
+            "price_saving": price_saving,
+            "within_budget_flag": within_budget,
+            "category": product_category,
+            "category_match": 0,  # Will be computed if needed
+            "popularity": product_rating / 5.0,
+            "recency": 0.5,
+            # Match lgbm_reranker expected keys
+            "semantic_sim": semantic_score,  # Key for LightGBM
+            "diet_match": diet_match_flag,  # Key for LightGBM
+            "quality_tags_score": quality_tags_score,
+            "same_semantic_cluster": 0,  # Key for LightGBM
+            "semantic_distance": semantic_score,  # Key for LightGBM
+            "size_ratio": 1.0
         })
     
     # Apply LightGBM re-ranking if available and enabled
