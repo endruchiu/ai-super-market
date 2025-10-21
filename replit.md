@@ -55,11 +55,34 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
 - **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
 - **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
+- **ISRec Intent Detection System** (✅ ACTIVE - Oct 21, 2025):
+  - **Analysis Window**: Analyzes up to 10 recent actions (max_actions=10) within 10-minute lookback (lookback_minutes=10).
+  - **Quality Signal Rules**:
+    - Premium keywords: 'organic', 'premium', 'grass-fed', 'free-range', 'artisan', 'imported', 'gourmet', 'specialty'
+    - Price thresholds: expensive (>$25), cheap (<$15 for removal scoring)
+    - Scoring: view premium +1.0, view expensive +0.5, cart_add premium +2.0, cart_add expensive +1.0, cart_remove cheap +1.5
+  - **Economy Signal Rules**:
+    - Budget keywords: 'value', 'budget', 'saver', 'basic', 'everyday'
+    - Price thresholds: cheap (<$10), expensive (>$20 for removal scoring)
+    - Scoring: view value/cheap +1.0, cart_add value +2.0, cart_add cheap +1.5, cart_remove expensive +2.0
+  - **Intent Calculation**: intent_score = quality_signals / (quality_signals + economy_signals); returns 0.5 if no signals detected.
+  - **End-to-End Integration Flow** (runtime pipeline):
+    1. `/api/blended/recommendations` endpoint triggered when cart exceeds budget (main.py line 434)
+    2. `IntentDetector.detect_intent(user_id, cart, db.session)` queries UserEvent table for recent actions
+    3. Calculated `current_intent` score [0, 1] added to `session_context` dict (main.py line 444)
+    4. `session_context` passed to `get_blended_recommendations()` which calls LGBMReRanker
+    5. `LGBMReRanker.compute_behavioral_features()` extracts `current_intent` from session_context (lgbm_reranker.py line 204)
+    6. `IntentTracker.update_intent(user_id, current_intent)` applies EMA smoothing with α=0.3, 45s cooldown (line 205)
+    7. Smoothed `intent_ema` value becomes one of 21 features in LightGBM feature vector
+    8. LightGBM model re-ranks recommendations using intent_ema + other behavioral/contextual features
+  - **Dynamic Updates**: Intent recalculated on every recommendation request from fresh database query, capturing current session behavior (not cached historical data).
+  - **Database Integration**: Uses dependency injection pattern to avoid circular imports; queries UserEvent table via db.session parameter.
+  - **Files**: `intent_detector.py` (IntentDetector class with detect_intent, _calculate_quality_signals, _calculate_economy_signals methods).
 - **LightGBM LambdaMART Re-Ranking** (✅ ACTIVE - Oct 21, 2025):
   - **Behavior-Aware Re-Ranking**: LightGBM LambdaMART model for intelligent re-ranking based on user intent and session context.
-  - **Production Integration**: Session context (cart, budget, budget_pressure) automatically passed from `/api/blended/recommendations` endpoint when cart exceeds budget.
+  - **Production Integration**: Session context (cart, budget, budget_pressure, current_intent) automatically passed from `/api/blended/recommendations` endpoint when cart exceeds budget.
   - **Feature Consistency**: Training features extracted from actual recommendation pipeline (real CF/semantic scores, product metadata).
-  - **Intent Tracking**: EMA smoothing (α=0.3) with 45s cooldown logic to prevent mode thrashing.
+  - **Intent Tracking**: EMA smoothing (α=0.3) with 45s cooldown logic processes current_intent from ISRec detector to prevent mode thrashing.
   - **Guardrail Modes**: Quality (high similarity), Economy (price-focused), Balanced (mix of both).
   - **System Setup**: GCC installed via Nix packages (`pkgs.gcc`), `LD_LIBRARY_PATH` configured in workflow to provide `libgomp.so.1` OpenMP library.
   - **Graceful Fallback**: Uses standard 60/40 blending when no trained model available; automatically activates LightGBM re-ranking when model file exists.
