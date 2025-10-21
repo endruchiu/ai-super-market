@@ -37,7 +37,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "export LD_LIBRARY_PATH=/nix/store/bmi5znnqk4kg2grkrhk6py0irc8phf6l-gcc-14.2.1.20250322-lib/lib:$LD_LIBRARY_PATH && python main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -48,8 +48,8 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 32899
-externalPort = 3003
+localPort = 33657
+externalPort = 4200
 
 [[ports]]
 localPort = 42105
