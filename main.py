@@ -428,7 +428,23 @@ def api_blended_recommendations():
         
         # Get blended cheaper alternatives for each cart item (requires purchase history)
         suggestions = []
-        recs = get_blended_recommendations(user_id, top_k=100)
+        
+        # Build session context for LightGBM re-ranking
+        session_context = {
+            'session_id': user_id,
+            'cart': cart,
+            'cart_value': total,
+            'cart_size': len(cart),
+            'budget': budget,
+            'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0
+        }
+        
+        recs = get_blended_recommendations(
+            user_id, 
+            top_k=100, 
+            session_context=session_context,
+            use_lgbm=True
+        )
         
         # Only generate suggestions if user has purchase history
         if len(recs) > 0:
