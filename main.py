@@ -431,7 +431,7 @@ def api_blended_recommendations():
         suggestions = []
         
         # Detect user intent from recent session behavior
-        current_intent = intent_detector.detect_intent(user_id, cart)
+        current_intent = intent_detector.detect_intent(user_id, cart, db.session)
         
         # Build session context for LightGBM re-ranking
         session_context = {

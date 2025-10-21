@@ -12,7 +12,6 @@ transformers for real-time performance.
 
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
-from models import UserEvent, db
 import pandas as pd
 
 
@@ -35,19 +34,20 @@ class IntentDetector:
         self.lookback_minutes = lookback_minutes
         self.max_actions = max_actions
     
-    def detect_intent(self, user_id: str, current_cart: List[Dict] = None) -> float:
+    def detect_intent(self, user_id: str, current_cart: List[Dict] = None, db_session=None) -> float:
         """
         Analyze recent user actions to detect current intent.
         
         Args:
             user_id: User session ID
             current_cart: Current cart items (optional, for context)
+            db_session: Database session (required for querying events)
             
         Returns:
             Intent score [0, 1] where 0=economy, 1=quality
         """
         # Get recent user events
-        recent_actions = self._get_recent_actions(user_id)
+        recent_actions = self._get_recent_actions(user_id, db_session)
         
         if len(recent_actions) == 0:
             return 0.5  # Default: balanced mode
@@ -66,11 +66,20 @@ class IntentDetector:
         
         return quality_ratio
     
-    def _get_recent_actions(self, user_id: str) -> List[Dict]:
+    def _get_recent_actions(self, user_id: str, db_session=None) -> List[Dict]:
         """Get recent user events from database"""
+        if db_session is None:
+            return []  # No database session provided
+        
+        # Import UserEvent dynamically to avoid circular import
+        try:
+            from models import UserEvent
+        except ImportError:
+            return []
+        
         cutoff_time = datetime.utcnow() - timedelta(minutes=self.lookback_minutes)
         
-        events = UserEvent.query.filter(
+        events = db_session.query(UserEvent).filter(
             UserEvent.user_id == user_id,
             UserEvent.created_at >= cutoff_time
         ).order_by(UserEvent.created_at.desc()).limit(self.max_actions).all()
