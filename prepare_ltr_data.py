@@ -5,22 +5,20 @@ Generates training data with behavioral and contextual features
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from models import db, UserEvent, Order, OrderItem, Product
-from recommendation_engine import RecommendationEngine
 import os
 
 class LTRDataPreparation:
     """Prepare Learning-to-Rank training data from user interactions"""
     
     def __init__(self):
-        self.rec_engine = RecommendationEngine()
+        pass
         
     def extract_user_events(self, days_back=90):
         """Extract user interaction events (purchases, cart adds, clicks)"""
         cutoff_date = datetime.now() - timedelta(days=days_back)
         
         events = UserEvent.query.filter(
-            UserEvent.timestamp >= cutoff_date
+            UserEvent.created_at >= cutoff_date
         ).all()
         
         event_data = []
@@ -29,8 +27,8 @@ class LTRDataPreparation:
                 'user_id': event.user_id,
                 'item_id': event.product_id,
                 'event_type': event.event_type,
-                'timestamp': event.timestamp,
-                'session_id': event.session_id or f"sess_{event.user_id}_{event.timestamp.date()}"
+                'timestamp': event.created_at,
+                'session_id': f"sess_{event.user_id}_{event.created_at.date()}"
             })
         
         return pd.DataFrame(event_data)
@@ -40,20 +38,20 @@ class LTRDataPreparation:
         cutoff_date = datetime.now() - timedelta(days=days_back)
         
         orders = Order.query.filter(
-            Order.timestamp >= cutoff_date
+            Order.created_at >= cutoff_date
         ).all()
         
         purchase_data = []
         for order in orders:
-            for item in order.items:
+            for item in order.order_items:
                 purchase_data.append({
                     'user_id': order.user_id,
                     'item_id': item.product_id,
                     'event_type': 'purchase',
-                    'timestamp': order.timestamp,
-                    'session_id': f"sess_{order.user_id}_{order.timestamp.date()}",
+                    'timestamp': order.created_at,
+                    'session_id': f"sess_{order.user_id}_{order.created_at.date()}",
                     'quantity': item.quantity,
-                    'price': item.price
+                    'price': float(item.unit_price) if item.unit_price else 10.0
                 })
         
         return pd.DataFrame(purchase_data)
@@ -186,7 +184,8 @@ class LTRDataPreparation:
                 break
         
         # Get product metadata from database
-        product = Product.query.get(item_id)
+        # Convert numpy.int64 to Python int for psycopg2 compatibility
+        product = Product.query.get(int(item_id))
         if product is None:
             # Fallback to defaults if product not found
             return {
@@ -219,7 +218,7 @@ class LTRDataPreparation:
             }
         
         # Compute real features
-        product_price = float(product.price) if product.price else 10.0
+        product_price = float(product.price_numeric) if product.price_numeric else 10.0
         
         # Price saving: if cart is over budget, how much cheaper is this vs. avg cart item?
         avg_cart_price = cart_value / cart_size if cart_size > 0 else 20.0
@@ -227,7 +226,7 @@ class LTRDataPreparation:
         within_budget = 1 if (cart_value - avg_cart_price + product_price) <= budget else 0
         
         # Category/quality features
-        product_name_lower = product.product_name.lower() if product.product_name else ""
+        product_name_lower = product.title.lower() if product.title else ""
         quality_keywords = ['organic', 'premium', 'gourmet', 'artisan', 'fresh']
         quality_tags_score = sum(1 for kw in quality_keywords if kw in product_name_lower) / len(quality_keywords)
         
@@ -236,18 +235,19 @@ class LTRDataPreparation:
         diet_match_flag = 1 if any(kw in product_name_lower for kw in diet_keywords) else 0
         
         # Popularity proxy (use product rating if available)
-        popularity = float(product.rating) / 5.0 if product.rating else 0.5
+        popularity = float(product.rating_numeric) / 5.0 if product.rating_numeric else 0.5
         
         # Category match (if cart items provided, check if same category)
         category_match = 0
-        if cart_items and product.category:
+        if cart_items and product.sub_category:
             # Simple match: if any cart item has same category
             cart_categories = set()
             for cart_item_id in cart_items:
-                cart_prod = Product.query.get(cart_item_id)
-                if cart_prod and cart_prod.category:
-                    cart_categories.add(cart_prod.category)
-            category_match = 1 if product.category in cart_categories else 0
+                # Convert to int for psycopg2 compatibility
+                cart_prod = Product.query.get(int(cart_item_id))
+                if cart_prod and cart_prod.sub_category:
+                    cart_categories.add(cart_prod.sub_category)
+            category_match = 1 if product.sub_category in cart_categories else 0
         
         return {
             'session_id': session_id,
@@ -331,7 +331,16 @@ class LTRDataPreparation:
         return df
 
 if __name__ == '__main__':
-    from main import app
+    # Import everything from main to get initialized app, db, and models
+    from main import app, db, Product, User, Order, OrderItem, UserEvent
+    
+    # Make models available globally for the class methods
+    globals()['Product'] = Product
+    globals()['User'] = User
+    globals()['Order'] = Order
+    globals()['OrderItem'] = OrderItem
+    globals()['UserEvent'] = UserEvent
+    globals()['db'] = db
     
     with app.app_context():
         prep = LTRDataPreparation()
