@@ -1,6 +1,7 @@
 """
 Blended Recommendations: Combines CF and Semantic Similarity
 60% Collaborative Filtering + 40% Semantic Content Similarity
+Enhanced with LightGBM LambdaMART re-ranking for behavior-aware recommendations
 """
 
 import numpy as np
@@ -8,21 +9,39 @@ from typing import List, Dict, Optional
 from cf_inference import get_cf_recommendations, get_user_purchase_history, load_cf_model
 from semantic_budget import _GLOBAL, ensure_index, _encode
 
+# LightGBM Re-Ranker (optional, graceful fallback if not available)
+LGBM_AVAILABLE = False
+try:
+    from lgbm_reranker import get_reranker
+    LGBM_AVAILABLE = True
+    print("✓ LightGBM re-ranker loaded successfully")
+except (ImportError, OSError) as e:
+    print(f"⚠ LightGBM re-ranker not available (system dependency issue): {str(e)[:100]}")
+    print("  → Using standard 60% CF + 40% Semantic blending")
+    print("  → To enable LightGBM: install system libraries (libgomp) via Nix packages")
+
 
 def get_blended_recommendations(
     user_id: str,
     top_k: int = 10,
     cf_weight: float = 0.6,
-    semantic_weight: float = 0.4
+    semantic_weight: float = 0.4,
+    session_context: Optional[Dict] = None,
+    use_lgbm: bool = True,
+    guardrail_mode: str = 'balanced'
 ) -> List[Dict]:
     """
     Get blended recommendations combining CF and semantic similarity.
+    Enhanced with LightGBM LambdaMART re-ranking when available.
     
     Args:
         user_id: User ID (session_id)
         top_k: Number of recommendations to return
         cf_weight: Weight for CF scores (default 0.6)
         semantic_weight: Weight for semantic scores (default 0.4)
+        session_context: Session context (cart, budget, etc.) for LightGBM
+        use_lgbm: Whether to use LightGBM re-ranking (default True)
+        guardrail_mode: Filtering mode: 'quality', 'economy', or 'balanced'
     
     Returns:
         List of recommendations with blended scores:
@@ -32,6 +51,7 @@ def get_blended_recommendations(
                 "cf_score": 0.85,
                 "semantic_score": 0.72,
                 "blended_score": 0.80,
+                "ltr_score": 0.92,  # If LightGBM is used
                 "rank": 1
             },
             ...
@@ -123,8 +143,26 @@ def get_blended_recommendations(
             "rank": 0  # Will be set after sorting
         })
     
-    # Sort by blended score
-    blended_recs.sort(key=lambda x: x["blended_score"], reverse=True)
+    # Apply LightGBM re-ranking if available and enabled
+    if use_lgbm and LGBM_AVAILABLE and session_context is not None:
+        try:
+            reranker = get_reranker(use_lgbm=True)
+            
+            session_id = session_context.get('session_id', f"sess_{user_id}")
+            
+            blended_recs = reranker.re_rank(
+                session_id=session_id,
+                user_id=user_id,
+                candidates=blended_recs,
+                session_context=session_context,
+                guardrail_mode=guardrail_mode
+            )
+            
+        except Exception as e:
+            print(f"⚠ LightGBM re-ranking failed, using standard blending: {e}")
+    else:
+        # Standard blending: sort by blended score
+        blended_recs.sort(key=lambda x: x["blended_score"], reverse=True)
     
     # Set ranks and return top-K
     for i, rec in enumerate(blended_recs[:top_k], 1):
