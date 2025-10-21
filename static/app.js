@@ -535,12 +535,18 @@ async function getCFRecommendations() {
     
     if (!data.suggestions || data.suggestions.length === 0) {
       contentDiv.innerHTML = '<div class="bg-white border border-purple-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No CF replacements found') + '</div>';
+      clearRecommendationHighlight();
     } else {
       contentDiv.innerHTML = '<div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4 rounded-r-lg">' +
         '<p class="text-purple-800 font-medium">' + data.message + '</p>' +
       '</div>';
       
+      let mostRecentSubcat = null;
+      
       data.suggestions.forEach(function(s) {
+        if (s.replacement_product && s.replacement_product.subcat) {
+          mostRecentSubcat = s.replacement_product.subcat;
+        }
         const card = document.createElement('div');
         card.className = 'bg-white border border-purple-200 rounded-xl p-5 hover:shadow-lg transition-all';
         
@@ -582,6 +588,8 @@ async function getCFRecommendations() {
         card.appendChild(applyBtn);
         contentDiv.appendChild(card);
       });
+      
+      highlightAisleForRecommendation(mostRecentSubcat);
     }
     
     document.getElementById('cfRecommendations').style.display = 'block';
