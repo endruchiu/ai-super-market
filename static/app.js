@@ -568,6 +568,8 @@ async function checkout() {
       updateRecommendationsModule();
       clearRecommendationHighlight();
       clearRecommendationDots();
+      
+      loadUserProfile();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
@@ -774,21 +776,127 @@ async function getBlendedRecommendations() {
   }
 }
 
+// Load User Profile Data
+async function loadUserProfile() {
+  try {
+    const response = await fetch('/api/user/profile');
+    const data = await response.json();
+    
+    document.getElementById('userTotalOrders').textContent = data.total_orders;
+    document.getElementById('userTotalSpent').textContent = '$' + data.total_spent.toFixed(2);
+    document.getElementById('userTotalItems').textContent = data.total_items;
+    document.getElementById('userAvgOrder').textContent = '$' + data.avg_order.toFixed(2);
+    
+    const historyContainer = document.getElementById('userPurchaseHistory');
+    if (data.purchase_history.length === 0) {
+      historyContainer.innerHTML = '<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">No purchase history yet. Complete a purchase to see your order history!</div>';
+    } else {
+      historyContainer.innerHTML = data.purchase_history.map(order => {
+        const date = new Date(order.created_at);
+        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        return `
+          <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-bold text-gray-900">Order #${order.order_id}</div>
+                <div class="text-xs text-gray-500">${formattedDate}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-green-600">$${order.total_amount.toFixed(2)}</div>
+                <div class="text-xs text-gray-500">${order.item_count} items</div>
+              </div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-100">
+              <div class="text-xs text-gray-600 space-y-1">
+                ${order.items.slice(0, 3).map(item => `
+                  <div class="flex justify-between">
+                    <span class="truncate">${item.quantity}x ${item.title.substring(0, 40)}${item.title.length > 40 ? '...' : ''}</span>
+                    <span class="ml-2 font-medium">$${item.line_total.toFixed(2)}</span>
+                  </div>
+                `).join('')}
+                ${order.items.length > 3 ? `<div class="text-gray-400 italic">+ ${order.items.length - 3} more items</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    const aiRecsToggle = document.getElementById('aiRecommendationsToggle');
+    const budgetAlertsToggle = document.getElementById('budgetAlertsToggle');
+    if (aiRecsToggle) aiRecsToggle.checked = data.preferences.ai_recommendations;
+    if (budgetAlertsToggle) budgetAlertsToggle.checked = data.preferences.budget_alerts;
+    
+  } catch (error) {
+    console.error('Error loading profile:', error);
+  }
+}
+
+// Update User Preferences
+async function updatePreferences(preferenceType, value) {
+  try {
+    const preferences = {};
+    preferences[preferenceType] = value;
+    
+    await fetch('/api/user/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferences })
+    });
+    
+    console.log(`Updated ${preferenceType} to ${value}`);
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+  }
+}
+
+// Clear Session Data
+async function clearSessionData() {
+  if (!confirm('Are you sure you want to clear all your session data? This will delete your purchase history, budget, and preferences.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/user/clear-session', {
+      method: 'POST'
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Session data cleared successfully!');
+      
+      CART = [];
+      updateCartDisplay();
+      
+      loadUserProfile();
+      
+      toggleUserPanel();
+    } else {
+      alert('Failed to clear session data: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Error clearing session:', error);
+    alert('Failed to clear session data');
+  }
+}
+
 // Toggle User Panel
 function toggleUserPanel() {
   const panel = document.getElementById('userPanel');
   const overlay = document.getElementById('userPanelOverlay');
   
   if (panel.classList.contains('translate-x-full')) {
-    // Open panel
+    // Open panel - load fresh data
+    loadUserProfile();
     panel.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
   } else {
     // Close panel
     panel.classList.add('translate-x-full');
     overlay.classList.add('hidden');
-    document.body.style.overflow = ''; // Restore scrolling
+    document.body.style.overflow = '';
   }
 }
 
