@@ -1,8 +1,4 @@
 import re
-from datetime import datetime
-from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
-from flask_login import UserMixin
-from sqlalchemy import UniqueConstraint
 
 
 def init_models(db):
@@ -107,27 +103,22 @@ def init_models(db):
         def __repr__(self):
             return f'<Budget {self.id}: ${self.budget_amount} ({self.warning_threshold}%)>'
 
-    class User(UserMixin, db.Model):
-        """User model for tracking customer identity and preferences - supports both Replit Auth and anonymous users"""
+    class User(db.Model):
+        """User model for tracking customer identity and preferences"""
         __tablename__ = 'users'
         __table_args__ = {'extend_existing': True}
         
-        id = db.Column(db.String, primary_key=True)
-        session_id = db.Column(db.String(255), nullable=True, unique=True, index=True)
-        email = db.Column(db.String, unique=True, nullable=True)
-        first_name = db.Column(db.String, nullable=True)
-        last_name = db.Column(db.String, nullable=True)
-        profile_image_url = db.Column(db.String, nullable=True)
-        created_at = db.Column(db.DateTime, default=datetime.now)
-        last_active = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+        id = db.Column(db.Integer, primary_key=True)
+        session_id = db.Column(db.String(255), nullable=False, unique=True, index=True)
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+        last_active = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
         
+        # Relationships
         orders = db.relationship('Order', backref='user', lazy='dynamic', cascade='all, delete-orphan')
         events = db.relationship('UserEvent', backref='user', lazy='dynamic', cascade='all, delete-orphan')
         
         def __repr__(self):
-            if self.email:
-                return f'<User {self.id}: {self.email}>'
-            return f'<User {self.id}: session {self.session_id[:8] if self.session_id else "N/A"}...>'
+            return f'<User {self.id}: session {self.session_id[:8]}...>'
 
     class Order(db.Model):
         """Order model for completed purchases"""
@@ -135,7 +126,7 @@ def init_models(db):
         __table_args__ = {'extend_existing': True}
         
         id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False, index=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
         total_amount = db.Column(db.Numeric(10, 2), nullable=False)
         item_count = db.Column(db.Integer, nullable=False)
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
@@ -169,7 +160,7 @@ def init_models(db):
         __table_args__ = {'extend_existing': True}
         
         id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False, index=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
         event_type = db.Column(db.String(50), nullable=False, index=True)
         product_id = db.Column(db.BigInteger, nullable=True, index=True)  # BigInteger for 63-bit IDs, no FK since products in memory
         product_title = db.Column(db.Text, nullable=True)
@@ -179,21 +170,5 @@ def init_models(db):
         
         def __repr__(self):
             return f'<UserEvent {self.id}: {self.event_type} by User {self.user_id}>'
-
-    class OAuth(OAuthConsumerMixin, db.Model):
-        """OAuth token storage for Replit Auth"""
-        __tablename__ = 'flask_dance_oauth'
-        __table_args__ = (
-            UniqueConstraint('user_id', 'browser_session_key', 'provider', 
-                           name='uq_user_browser_session_key_provider'),
-            {'extend_existing': True}
-        )
-        
-        user_id = db.Column(db.String, db.ForeignKey(User.id))
-        browser_session_key = db.Column(db.String, nullable=False)
-        user = db.relationship(User)
-        
-        def __repr__(self):
-            return f'<OAuth {self.provider} for User {self.user_id}>'
     
-    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, OAuth
+    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent

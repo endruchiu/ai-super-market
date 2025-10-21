@@ -5,12 +5,10 @@ import pandas as pd
 import numpy as np
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
-from werkzeug.middleware.proxy_fix import ProxyFix
 import uuid
 from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
 from blended_recommendations import get_blended_recommendations
-from flask_login import current_user
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -18,8 +16,7 @@ class Base(DeclarativeBase):
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get('SESSION_SECRET', os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production'))
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///grocery_app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -33,17 +30,7 @@ db.init_app(app)
 
 # Import and initialize models
 from models import init_models
-Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, OAuth = init_models(db)
-
-# Initialize authentication
-from replit_auth import init_auth
-replit_bp, require_login = init_auth(app, db, User, OAuth)
-app.register_blueprint(replit_bp, url_prefix="/auth")
-
-# Make session permanent
-@app.before_request
-def make_session_permanent():
-    session.permanent = True
+Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent = init_models(db)
 
 # Create tables
 with app.app_context():
@@ -189,7 +176,7 @@ def api_cf_recommendations():
     # Ensure user exists in database for CF to work
     user = User.query.filter_by(session_id=user_id).first()
     if not user:
-        user = User(id=user_id, session_id=user_id)
+        user = User(session_id=user_id)
         db.session.add(user)
         db.session.commit()
     
@@ -401,7 +388,7 @@ def api_blended_recommendations():
     # Ensure user exists in database for blended recommendations to work
     user = User.query.filter_by(session_id=user_id).first()
     if not user:
-        user = User(id=user_id, session_id=user_id)
+        user = User(session_id=user_id)
         db.session.add(user)
         db.session.commit()
     
@@ -615,7 +602,7 @@ def api_checkout():
         # Get or create user
         user = User.query.filter_by(session_id=session_id).first()
         if not user:
-            user = User(id=session_id, session_id=session_id)
+            user = User(session_id=session_id)
             db.session.add(user)
             db.session.flush()
         else:
@@ -744,7 +731,7 @@ def static_files(filename):
 
 @app.route("/")
 def index():
-    return render_template("index.html", current_user=current_user)
+    return render_template("index.html")
 
 if __name__ == "__main__":
     # For Replit, host=0.0.0.0 is typical

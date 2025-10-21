@@ -573,46 +573,12 @@
 
       <!-- Action Buttons -->
       <div class="space-y-3">
-        {% if current_user.is_authenticated %}
-        <!-- Logged In User -->
-        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-3">
-          <div class="flex items-center space-x-3">
-            {% if current_user.profile_image_url %}
-            <img src="{{ current_user.profile_image_url }}" alt="Profile" class="w-10 h-10 rounded-full object-cover">
-            {% else %}
-            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
-              {{ (current_user.first_name or current_user.email or 'U')[0].upper() }}
-            </div>
-            {% endif %}
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-900 truncate">
-                {% if current_user.first_name or current_user.last_name %}
-                  {{ current_user.first_name }} {{ current_user.last_name }}
-                {% else %}
-                  {{ current_user.email or 'User' }}
-                {% endif %}
-              </p>
-              {% if current_user.email %}
-              <p class="text-xs text-gray-600 truncate">{{ current_user.email }}</p>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-        <a href="{{ url_for('replit_auth.logout') }}" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-          </svg>
-          <span>Sign Out</span>
-        </a>
-        {% else %}
-        <!-- Not Logged In -->
-        <a href="{{ url_for('replit_auth.login') }}" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center space-x-2">
+        <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center space-x-2">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
           </svg>
           <span>Sign In / Register</span>
-        </a>
-        {% endif %}
+        </button>
         <button class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-all">
           Clear Session Data
         </button>
