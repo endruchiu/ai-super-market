@@ -31,6 +31,15 @@ Preferred communication style: Simple, everyday language.
   - Aisle F: Bakery & Desserts, Cleaning Supplies, Laundry Detergent & Supplies, Household
 - **Components**: Responsive header, interactive aisle cards with click-to-filter, clean product cards, budget controls, shopping cart display with quantity controls, collapsible product browser, and animated success notifications.
 - **Responsiveness**: Mobile-friendly layout with a flexible grid system.
+- **User Panel & Sign-In**:
+  - **User Panel**: Slide-in panel from the right displaying user profile, purchase history, shopping stats, and preferences.
+  - **Demo Sign-In Flow**: Fake/demo authentication modal triggered by "Sign In / Register" button:
+    - Clean modal form with name and email fields (no password required - demo only).
+    - User data stored in browser localStorage for persistence across sessions.
+    - Dynamic UI updates: displays signed-in user's name/email in user panel when authenticated.
+    - Sign-out functionality to clear user data and return to guest mode.
+    - Animated toast notifications for user feedback (sign-in success, sign-out, etc.).
+    - No backend authentication logic - purely for demonstration and UI/UX purposes.
 - **AI Recommendation UI**:
     - **Budget-Saving**: Semantic similarity-based (Blue/Indigo theme).
     - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).

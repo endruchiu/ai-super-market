@@ -792,10 +792,167 @@ function toggleUserPanel() {
   }
 }
 
+// Sign-In Modal Functions
+function showSignInModal() {
+  const modal = document.getElementById('signInModal');
+  const overlay = document.getElementById('signInModalOverlay');
+  
+  modal.classList.remove('hidden', 'scale-95');
+  modal.classList.add('scale-100');
+  overlay.classList.remove('hidden');
+  
+  // Focus on name input
+  setTimeout(() => {
+    document.getElementById('signInName').focus();
+  }, 100);
+}
+
+function hideSignInModal() {
+  const modal = document.getElementById('signInModal');
+  const overlay = document.getElementById('signInModalOverlay');
+  
+  modal.classList.add('scale-95');
+  overlay.classList.add('hidden');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+  }, 300);
+}
+
+function handleSignIn(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('signInName').value.trim();
+  const email = document.getElementById('signInEmail').value.trim();
+  
+  if (!name || !email) {
+    alert('Please enter both name and email.');
+    return;
+  }
+  
+  // Store user data in localStorage (demo only)
+  const userData = {
+    name: name,
+    email: email,
+    signedInAt: new Date().toISOString()
+  };
+  
+  localStorage.setItem('demoUser', JSON.stringify(userData));
+  
+  // Update UI
+  updateUserDisplay(userData);
+  
+  // Close modal
+  hideSignInModal();
+  
+  // Show success message
+  showNotification('Signed in successfully as ' + name + '!', 'success');
+}
+
+function signOut() {
+  // Clear user data
+  localStorage.removeItem('demoUser');
+  
+  // Reset UI to guest user
+  updateUserDisplay(null);
+  
+  // Show notification
+  showNotification('Signed out successfully', 'info');
+}
+
+function clearSessionData() {
+  if (confirm('This will clear your cart, purchase history, and sign-in data. Continue?')) {
+    // Clear localStorage
+    localStorage.removeItem('demoUser');
+    
+    // Clear cart
+    CART = [];
+    updateCartDisplay();
+    
+    // Reset UI
+    updateUserDisplay(null);
+    
+    showNotification('Session data cleared', 'info');
+  }
+}
+
+function updateUserDisplay(userData) {
+  const displayName = document.getElementById('userDisplayName');
+  const displayEmail = document.getElementById('userDisplayEmail');
+  const signInBtn = document.getElementById('signInBtn');
+  const signOutBtn = document.getElementById('signOutBtn');
+  
+  if (userData) {
+    // Signed in
+    displayName.textContent = userData.name;
+    displayEmail.textContent = userData.email;
+    signInBtn.style.display = 'none';
+    signOutBtn.style.display = 'flex';
+  } else {
+    // Guest user
+    displayName.textContent = 'Guest User';
+    displayEmail.textContent = 'Session Active';
+    signInBtn.style.display = 'flex';
+    signOutBtn.style.display = 'none';
+  }
+}
+
+function loadUserData() {
+  // Load user data from localStorage
+  const userDataStr = localStorage.getItem('demoUser');
+  
+  if (userDataStr) {
+    try {
+      const userData = JSON.parse(userDataStr);
+      updateUserDisplay(userData);
+    } catch (e) {
+      console.error('Error loading user data:', e);
+      localStorage.removeItem('demoUser');
+    }
+  }
+}
+
+function showNotification(message, type = 'success') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-20 right-6 z-50 px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300 translate-x-0';
+  
+  if (type === 'success') {
+    notification.className += ' bg-green-500 text-white';
+  } else if (type === 'info') {
+    notification.className += ' bg-blue-500 text-white';
+  }
+  
+  notification.innerHTML = '<div class="flex items-center space-x-3">' +
+    '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+    '</svg>' +
+    '<span class="font-semibold">' + message + '</span>' +
+  '</div>';
+  
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+  }, 10);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.transform = 'translateX(400px)';
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 300);
+  }, 3000);
+}
+
 // Auto-load products on page load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');
   refreshProducts();
+  
+  // Load user data
+  loadUserData();
   
   // Add budget input change listener
   const budgetInput = document.getElementById('budget');
