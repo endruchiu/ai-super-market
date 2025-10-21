@@ -1,9 +1,37 @@
 // Shopping Cart Application
 let CART = [];
 let CURRENT_CATEGORY = '';
+let RECOMMENDATION_HIGHLIGHT_CATEGORY = null;
 
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
+}
+
+function highlightAisleForRecommendation(subcategory) {
+  if (!subcategory) {
+    clearRecommendationHighlight();
+    return;
+  }
+  
+  RECOMMENDATION_HIGHLIGHT_CATEGORY = subcategory;
+  
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  shelves.forEach(shelf => {
+    shelf.classList.remove('recommendation-highlight');
+    
+    if (shelf.textContent.includes(subcategory)) {
+      shelf.classList.add('recommendation-highlight');
+    }
+  });
+}
+
+function clearRecommendationHighlight() {
+  RECOMMENDATION_HIGHLIGHT_CATEGORY = null;
+  
+  const shelves = document.querySelectorAll('.aisle-shelf');
+  shelves.forEach(shelf => {
+    shelf.classList.remove('recommendation-highlight');
+  });
 }
 
 // Helper function: Update Recommendations Module visibility
