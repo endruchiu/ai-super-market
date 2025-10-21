@@ -725,6 +725,139 @@ def api_checkout():
         print(f"Checkout error: {e}")
         return jsonify({"success": False, "error": "Checkout failed. Please try again."}), 500
 
+@app.route("/api/user/profile", methods=["GET"])
+def api_user_profile():
+    """Get user profile data including purchase history and stats"""
+    try:
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        session_id = session['user_session']
+        
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            return jsonify({
+                "session_id": session_id,
+                "total_orders": 0,
+                "total_spent": 0.0,
+                "total_items": 0,
+                "avg_order": 0.0,
+                "purchase_history": [],
+                "preferences": {
+                    "ai_recommendations": True,
+                    "budget_alerts": True
+                }
+            })
+        
+        orders = Order.query.filter_by(user_id=user.id).order_by(Order.created_at.desc()).limit(10).all()
+        
+        total_orders = Order.query.filter_by(user_id=user.id).count()
+        total_spent = db.session.query(db.func.sum(Order.total_amount)).filter_by(user_id=user.id).scalar() or 0.0
+        total_items = db.session.query(db.func.sum(Order.item_count)).filter_by(user_id=user.id).scalar() or 0
+        avg_order = total_spent / total_orders if total_orders > 0 else 0.0
+        
+        purchase_history = []
+        for order in orders:
+            order_items = OrderItem.query.filter_by(order_id=order.id).all()
+            items_list = [{
+                "title": item.product_title,
+                "subcat": item.product_subcat,
+                "quantity": item.quantity,
+                "unit_price": float(item.unit_price),
+                "line_total": float(item.line_total)
+            } for item in order_items]
+            
+            purchase_history.append({
+                "order_id": order.id,
+                "created_at": order.created_at.isoformat(),
+                "total_amount": float(order.total_amount),
+                "item_count": order.item_count,
+                "items": items_list
+            })
+        
+        budget = UserBudget.query.filter_by(user_id=user.id).first()
+        current_budget = float(budget.budget_amount) if budget else 0.0
+        
+        return jsonify({
+            "session_id": session_id,
+            "total_orders": total_orders,
+            "total_spent": float(total_spent),
+            "total_items": int(total_items),
+            "avg_order": float(avg_order),
+            "current_budget": current_budget,
+            "purchase_history": purchase_history,
+            "preferences": {
+                "ai_recommendations": user.preferences.get("ai_recommendations", True) if user.preferences else True,
+                "budget_alerts": user.preferences.get("budget_alerts", True) if user.preferences else True
+            }
+        })
+        
+    except Exception as e:
+        print(f"Profile fetch error: {e}")
+        return jsonify({"error": "Failed to fetch profile"}), 500
+
+@app.route("/api/user/preferences", methods=["POST"])
+def api_user_preferences():
+    """Update user preferences"""
+    try:
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        session_id = session['user_session']
+        
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            user = User(session_id=session_id)
+            db.session.add(user)
+            db.session.flush()
+        
+        payload = request.get_json(force=True)
+        preferences = payload.get("preferences", {})
+        
+        if user.preferences is None:
+            user.preferences = {}
+        
+        user.preferences["ai_recommendations"] = preferences.get("ai_recommendations", True)
+        user.preferences["budget_alerts"] = preferences.get("budget_alerts", True)
+        user.last_active = db.func.current_timestamp()
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "preferences": user.preferences
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Preferences update error: {e}")
+        return jsonify({"success": False, "error": "Failed to update preferences"}), 500
+
+@app.route("/api/user/clear-session", methods=["POST"])
+def api_clear_session():
+    """Clear user session data"""
+    try:
+        if 'user_session' in session:
+            session_id = session['user_session']
+            user = User.query.filter_by(session_id=session_id).first()
+            
+            if user:
+                UserEvent.query.filter_by(user_id=user.id).delete()
+                OrderItem.query.filter(OrderItem.order_id.in_(
+                    db.session.query(Order.id).filter_by(user_id=user.id)
+                )).delete(synchronize_session=False)
+                Order.query.filter_by(user_id=user.id).delete()
+                UserBudget.query.filter_by(user_id=user.id).delete()
+                db.session.delete(user)
+                db.session.commit()
+            
+            session.pop('user_session', None)
+        
+        return jsonify({"success": True, "message": "Session data cleared"})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Clear session error: {e}")
+        return jsonify({"success": False, "error": "Failed to clear session"}), 500
+
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory('static', filename)
