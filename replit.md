@@ -43,6 +43,7 @@ Preferred communication style: Simple, everyday language.
             - 🟣 Purple dot = Personalized (CF) system recommends this aisle
             - 🟢 Green dot = Hybrid AI system recommends this aisle
         - Multiple dots can appear on the same aisle when different systems recommend products from the same category, providing a comprehensive visual overview of all recommendation sources.
+        - **Interactive Legend**: A clear, visual legend below the store map explains what each colored dot means, featuring gradient-styled dot examples matching the actual recommendation indicators.
         - Highlights and dots automatically clear when the cart is within budget or after checkout.
 
 ### AI & Recommendations
