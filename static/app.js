@@ -628,13 +628,19 @@ async function getBlendedRecommendations() {
     
     if (!data.suggestions || data.suggestions.length === 0) {
       contentDiv.innerHTML = '<div class="bg-white border border-emerald-200 rounded-xl p-6 text-center text-gray-500">' + (data.message || 'No hybrid replacements found') + '</div>';
+      clearRecommendationHighlight();
     } else {
       contentDiv.innerHTML = '<div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4 rounded-r-lg">' +
         '<p class="text-emerald-800 font-medium">🤖 ' + data.message + '</p>' +
         '<p class="text-emerald-600 text-sm mt-1">Combining 60% CF + 40% semantic similarity for best results</p>' +
       '</div>';
       
+      let mostRecentSubcat = null;
+      
       data.suggestions.forEach(function(s) {
+        if (s.replacement_product && s.replacement_product.subcat) {
+          mostRecentSubcat = s.replacement_product.subcat;
+        }
         const card = document.createElement('div');
         card.className = 'bg-white border border-emerald-200 rounded-xl p-5 hover:shadow-lg transition-all';
         
@@ -676,6 +682,8 @@ async function getBlendedRecommendations() {
         card.appendChild(applyBtn);
         contentDiv.appendChild(card);
       });
+      
+      highlightAisleForRecommendation(mostRecentSubcat);
     }
     
     document.getElementById('blendedRecommendations').style.display = 'block';
