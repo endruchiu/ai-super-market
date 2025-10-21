@@ -283,6 +283,27 @@
             </div>
           </div>
         </div>
+        
+        <!-- Products Browser (Collapsible) -->
+        <div id="productsBrowser" class="mt-6" style="display:none;">
+          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">All Products</h2>
+            <div class="overflow-x-auto">
+              <table id="prodTable" class="w-full">
+                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Product</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Category</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Price</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Nutrition</th>
+                    <th class="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody id="prodTableBody" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Right: Shopping Cart Panel (1/3 width) -->
@@ -390,27 +411,6 @@
         
       </div>
       
-    </div>
-    
-    <!-- Products Browser (Collapsible) -->
-    <div id="productsBrowser" class="mt-6" style="display:none;">
-      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">All Products</h2>
-        <div class="overflow-x-auto">
-          <table id="prodTable" class="w-full">
-            <thead class="bg-gray-50 border-b-2 border-gray-200">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Product</th>
-                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Category</th>
-                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Price</th>
-                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Nutrition</th>
-                <th class="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody id="prodTableBody" class="divide-y divide-gray-200"></tbody>
-          </table>
-        </div>
-      </div>
     </div>
     
   </div>
