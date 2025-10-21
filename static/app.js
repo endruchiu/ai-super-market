@@ -39,8 +39,18 @@ function highlightRecommendedAisles(recommendations) {
   
   const aislesSet = new Set();
   recommendations.forEach(rec => {
+    let subcat = null;
+    
+    // Handle different recommendation data structures
+    // Budget-Saving: rec.replacement_product.subcat
+    // CF/Hybrid: rec.replacement_product.subcat OR direct subcat field
     if (rec.replacement_product && rec.replacement_product.subcat) {
-      const subcat = rec.replacement_product.subcat;
+      subcat = rec.replacement_product.subcat;
+    } else if (rec.subcat) {
+      subcat = rec.subcat;
+    }
+    
+    if (subcat) {
       const aisle = SUBCATEGORY_TO_AISLE[subcat];
       if (aisle) {
         aislesSet.add(aisle);
@@ -394,6 +404,10 @@ function applyReplacement(originalTitle, replacementProduct) {
   
   updateBadge();
   updateCartDisplay();
+  
+  // Note: updateCartDisplay() will automatically re-fetch recommendations if still over budget
+  // and those will trigger new highlights. Clear now to avoid stale highlights.
+  clearAisleHighlights();
   
   const msg = document.createElement('div');
   msg.className = 'fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-300 ease-in-out';
