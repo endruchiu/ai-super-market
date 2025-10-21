@@ -9,6 +9,7 @@ import uuid
 from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
 from blended_recommendations import get_blended_recommendations
+from intent_detector import intent_detector
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -429,6 +430,9 @@ def api_blended_recommendations():
         # Get blended cheaper alternatives for each cart item (requires purchase history)
         suggestions = []
         
+        # Detect user intent from recent session behavior
+        current_intent = intent_detector.detect_intent(user_id, cart)
+        
         # Build session context for LightGBM re-ranking
         session_context = {
             'session_id': user_id,
@@ -436,7 +440,8 @@ def api_blended_recommendations():
             'cart_value': total,
             'cart_size': len(cart),
             'budget': budget,
-            'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0
+            'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0,
+            'current_intent': current_intent  # Intent score [0=economy, 1=quality]
         }
         
         recs = get_blended_recommendations(
