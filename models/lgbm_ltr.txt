@@ -20,7 +20,7 @@ left_child=
 right_child=
 leaf_value=0
 leaf_weight=
-leaf_count=289
+leaf_count=291
 internal_value=
 internal_weight=
 internal_count=
@@ -41,17 +41,17 @@ parameters:
 [data_sample_strategy: bagging]
 [data: ]
 [valid: ]
-[num_iterations: 100]
-[learning_rate: 0.06]
-[num_leaves: 63]
+[num_iterations: 300]
+[learning_rate: 0.05]
+[num_leaves: 31]
 [num_threads: 0]
 [seed: 0]
 [deterministic: 0]
-[force_col_wise: 0]
+[force_col_wise: 1]
 [force_row_wise: 0]
 [histogram_pool_size: -1]
 [max_depth: -1]
-[min_data_in_leaf: 50]
+[min_data_in_leaf: 15]
 [min_sum_hessian_in_leaf: 0.001]
 [bagging_fraction: 1]
 [pos_bagging_fraction: 1]
