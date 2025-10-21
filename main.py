@@ -845,7 +845,8 @@ def api_clear_session():
                     db.session.query(Order.id).filter_by(user_id=user.id)
                 )).delete(synchronize_session=False)
                 Order.query.filter_by(user_id=user.id).delete()
-                UserBudget.query.filter_by(user_id=user.id).delete()
+                UserBudget.query.filter_by(session_id=session_id).delete()
+                CartItem.query.filter_by(session_id=session_id).delete()
                 db.session.delete(user)
                 db.session.commit()
             
