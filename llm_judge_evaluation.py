@@ -70,7 +70,7 @@ Respond with JSON in this exact format:
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-5",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -129,7 +129,7 @@ Respond with JSON in this exact format:
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-5",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",

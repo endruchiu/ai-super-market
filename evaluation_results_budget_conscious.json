@@ -24,36 +24,36 @@
   "pairwise_comparisons": {
     "budget_vs_cf": {
       "winner": "A",
-      "reasoning": "System A makes a (flawed) attempt to replace the steak with another protein from the same aisle, while System B offers no help at all. A\u2019s suggestion is impractical (10 lb tuna case for a 12 oz steak) and the claimed $0.99 saving is likely inaccurate, but it is at least directionally related; B provides zero value.",
+      "reasoning": "System A, although offering a savings of only $0.99, attempts to provide a replacement within the user's budget and shopping style by suggesting a different meat product. While the replacement isn't perfect, considering it remains within the 'Meat & Seafood' category, it is more aligned with the user's budget-conscious needs compared to System B, which provides no recommendation at all.",
       "scores": {
         "relevance": {
-          "A": 1,
+          "A": 5,
           "B": 0
         },
         "savings": {
-          "A": 0,
+          "A": 2,
           "B": 0
         },
         "practicality": {
-          "A": 0,
+          "A": 4,
           "B": 0
         },
         "ux": {
-          "A": 0,
+          "A": 3,
           "B": 0
         }
       }
     },
     "budget_vs_hybrid": {
       "winner": "A",
-      "reasoning": "System A at least offers a same-category substitute, but it\u2019s a bulk 10-lb tuna case with only $0.99 stated savings\u2014mismatched in size and unlikely to help a budget-conscious shopper reach a $50 target. System B provides no suggestions, so it offers no path to savings or action.",
+      "reasoning": "System A provides a tangible recommendation aimed at reducing the cart total, although the price reduction is minimal. System B offers no recommendations, resulting in a lack of potential savings or actionable alternatives. System A's suggestion might not be very practical given the small savings and different product category, but it makes an attempt to address the user's budget concern.",
       "scores": {
         "relevance": {
-          "A": 3,
+          "A": 5,
           "B": 0
         },
         "savings": {
-          "A": 1,
+          "A": 3,
           "B": 0
         },
         "practicality": {
@@ -61,14 +61,14 @@
           "B": 0
         },
         "ux": {
-          "A": 2,
+          "A": 4,
           "B": 0
         }
       }
     },
     "cf_vs_hybrid": {
       "winner": "A",
-      "reasoning": "Both systems provided no recommendations despite the user being over budget, so they deliver no relevance, savings, or practical value. Given identical (empty) outputs, neither is better; selecting A only to satisfy the winner field.",
+      "reasoning": "Both systems failed to provide recommendations, leaving no immediate, tangible benefits in terms of savings or replacements. Since neither system provided data to evaluate, System A is chosen by default based on equal performance in terms of output.",
       "scores": {
         "relevance": {
           "A": 0,
@@ -92,30 +92,30 @@
   "criteria_scores": {
     "budget_saving": {
       "relevance": 3,
-      "savings": 1,
+      "savings": 2,
       "diversity": 1,
-      "explanation_quality": 2,
-      "feasibility": 1,
+      "explanation_quality": 4,
+      "feasibility": 2,
       "overall_score": 2,
-      "reasoning": "Only one recommendation swaps a 12 oz beef steak for a 10 lb case of ahi tuna\u2014a drastic change in product type and size that doesn\u2019t align with a $50 budget. The stated $0.99 savings is not credible given the bulk size and listed price, and the explanation is generic. This makes the swap impractical and unlikely to be accepted."
+      "reasoning": "The recommendation system provides a substitution from beef to tuna, which may not align with user preferences centered on meat products. The recommended tuna product saves only $0.99, which is negligible against the user's over-budget amount. The recommendation lacks diversity, offering just one alternative with questionable suitability. Though explanations are detailed, they don't adequately convey how the swap significantly aids the user's budget or dietary needs, presenting a low feasibility for actual user acceptance."
     },
     "personalized_cf": {
-      "relevance": 0,
-      "savings": 0,
-      "diversity": 0,
-      "explanation_quality": 0,
-      "feasibility": 0,
-      "overall_score": 0,
-      "reasoning": "No recommendations were provided, so nothing matched the user\u2019s budget-conscious needs or current cart. The system missed a critical opportunity to suggest lower-cost substitutes for a pricey cake and ribeye to bring the $102.98 cart closer to the $50 budget. With no items or explanations, there is no diversity, savings, or feasible swaps."
+      "relevance": 1,
+      "savings": 1,
+      "diversity": 1,
+      "explanation_quality": 1,
+      "feasibility": 1,
+      "overall_score": 1,
+      "reasoning": "The recommendation system failed to provide any suggestions, which means it cannot address the user's budget concern or offer applicable substitutes. This results in absolute minimal scores across all categories due to an absence of data to evaluate these crucial aspects. Overall, the system's performance is poor in this scenario."
     },
     "hybrid_ai": {
-      "relevance": 0,
-      "savings": 0,
-      "diversity": 0,
-      "explanation_quality": 0,
-      "feasibility": 0,
-      "overall_score": 0,
-      "reasoning": "No recommendations were provided, so nothing matched the user's budget-conscious needs or cart contents, and no explanations were given. With the user $52.98 over budget, the system failed to propose any feasible substitutions or savings, yielding no value."
+      "relevance": 1,
+      "savings": 1,
+      "diversity": 1,
+      "explanation_quality": 1,
+      "feasibility": 1,
+      "overall_score": 1,
+      "reasoning": "The recommendation system currently provides no recommendations, making it unable to address the user's budget constraints, product preferences, or substitution needs. Without relevant suggestions or explanations, it cannot contribute to savings or show diversity in options. The overall utility of the system in this situation is minimal."
     }
   },
   "summary": {
