@@ -17,3 +17,6 @@ openai
 requests
 openai
 requests
+flask-dance
+flask-login
+PyJWT
