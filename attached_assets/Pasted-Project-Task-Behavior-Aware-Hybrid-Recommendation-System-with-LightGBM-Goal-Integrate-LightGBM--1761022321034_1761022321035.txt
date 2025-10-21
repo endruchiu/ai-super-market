@@ -1,0 +1,212 @@
+Project Task: Behavior-Aware Hybrid Recommendation System with LightGBM
+🎯 Goal
+
+Integrate LightGBM LambdaMART re-ranking into the existing hybrid recommendation system (budget-aware + CF + semantic).
+Use behavioral and contextual insights (per Stanford GSB: “Behavioral Insights > More Data”) instead of fixed rules.
+The system should automatically adjust ranking logic based on user intent and budget context — without UI switches.
+
+🧩 1. Data Schema for LightGBM Training
+
+File: data/ltr_train.parquet
+
+Each row = one (session, candidate item).
+
+Required columns:
+session_id (query_id)
+user_id
+item_id
+label (0 or 1)
+weight (int: purchase=3, add_to_cart=2, click=1)
+
+# candidate features
+cf_bpr_score
+semantic_sim
+price_saving
+within_budget_flag
+size_ratio
+category_match
+popularity
+recency
+diet_match_flag
+quality_tags_score
+same_semantic_id_flag
+distance_to_semantic_center
+
+# behavioral/context features
+beta_u
+budget_pressure
+intent_keep_quality_ema
+premium_anchor
+mission_type_id
+cart_value
+cart_size
+dow
+hour
+
+⚙️ 2. Code Files & Integration Points
+a) Create: train_lgbm_ranker.py
+
+Reads data/ltr_train.parquet
+
+Trains LightGBM LambdaMART
+
+GPU→CPU fallback logic
+
+Saves model to models/lgbm_ltr.txt
+
+Key params:
+
+params = {
+  "objective": "lambdarank",
+  "metric": "ndcg",
+  "ndcg_eval_at": [10],
+  "learning_rate": 0.06,
+  "num_leaves": 63,
+  "min_data_in_leaf": 50,
+  "feature_pre_filter": False,
+  "device": "gpu"
+}
+
+
+If GPU fails → automatically switch to device="cpu".
+
+b) Edit: blended_recommendations.py
+
+Implement:
+
+re_rank_with_lgbm(session_id, candidates, user_feats, session_feats)
+
+
+Assemble all features listed above into a DataFrame.
+
+Handle missing columns (fill with 0).
+
+Call LGBM_MODEL.predict() to get ltr_score.
+
+Sort by ltr_score descending to return ranked results.
+
+🧠 3. Intent Smoothing & Cooldown (stability logic)
+Formula:
+intent_keep_quality_ema = 0.3 * current_intent + 0.7 * previous_ema
+
+
+EMA prevents sudden flips between “quality” and “economy”.
+
+0.3 → adapt to latest actions; 0.7 → retain short-term history.
+
+Cooldown:
+if (now - last_mode_switch_ts) >= 45:
+    allow_guardrail_switch = True
+
+
+Wait at least 45 seconds before changing guardrail mode (quality/economy/balanced).
+
+Avoids “thrashing” and keeps UX stable.
+
+🧱 4. Guardrail Logic (light filtering only)
+
+Keep your modes — but only as guardrails, not rankers.
+
+Mode	Filter	Example threshold
+Quality	Keep same semantic cluster, high similarity	τ ≥ 0.60
+Economy	Same use + price cap	within ±15% of target price
+Balanced	Mix both	τ ≈ 0.5
+
+After filtering, all candidates go through LightGBM for final scoring.
+
+📊 5. Logging & Evaluation Metrics
+a) Online logging schema
+user_id
+session_id
+item_id
+position
+model_score
+propensity (optional)
+clicked
+added
+purchased
+policy_id
+latency_ms
+
+b) Offline evaluation (temporal split)
+
+Train: weeks t–4 … t–1
+
+Test: week t
+
+Metrics: NDCG@10, Recall@10, Precision@10
+
+Segmented by:
+
+premium_anchor_flag
+
+mission_type
+
+beta_u_tier (low/mid/high)
+
+cold_start (U/I)
+
+c) Business metrics
+
+CTR / ATC / Purchase
+
+Basket Size
+
+%BudgetMet
+
+Overshoot
+
+p95 latency (<200 ms target)
+
+🧮 6. Exploration & Propensity Logging (optional but recommended)
+
+Enable small ε-greedy exploration (1–3%) in the final slate.
+
+Log propensity for offline IPS/SNIPS unbiased evaluation.
+
+✅ 7. Definition of Done (DoD)
+Category	Requirement
+Offline lift	NDCG@10 / Recall@10 improve in ≥2 key segments
+Online metrics	ATC or Purchase ↑, %BudgetMet no worse
+Latency	p95 < 200 ms
+Fallback	Safe toggle USE_LGBM=False returns to old hybrid
+Data validation	Missing feature columns auto-filled with 0
+GPU safety	Training auto-fallback to CPU
+Logging	Segment-based dashboards active
+💡 8. Optional Enhancements
+
+Add semantic dimension embedding (e.g., “luxury gourmet” dimension so truffle → oyster works).
+
+Add quality_tags_score (“prime”, “couverture”, “organic”) to strengthen dimension-level intent.
+
+Implement propensity-weighted offline validation.
+
+Maintain a weekly retraining + daily incremental fine-tune schedule.
+
+📦 9. Summary for Replit
+
+Task:
+
+Add a LightGBM LambdaMART re-ranker using behavioral & context features.
+
+Keep quality/economy/balanced as guardrails only.
+
+Implement EMA (α=0.3) + 45 s cooldown.
+
+Build train_lgbm_ranker.py & update blended_recommendations.py.
+
+Include full feature schema.
+
+Enable GPU→CPU fallback, segment logging, and exploration slot.
+
+Deliverables:
+
+Working LightGBM model (models/lgbm_ltr.txt)
+
+Integrated re-ranking function
+
+Updated online logger & dashboards
+
+Temporal evaluation reports (segmented)
+
+Success = adaptive behavioral ranking, stable UX, <200 ms latency, measurable lift in premium/economy user segments.

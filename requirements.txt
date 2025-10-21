@@ -17,3 +17,5 @@ openai
 requests
 openai
 requests
+lightgbm
+pyarrow
