@@ -492,6 +492,7 @@ async function checkout() {
       document.getElementById('cfRecommendations').style.display = 'none';
       document.getElementById('blendedRecommendations').style.display = 'none';
       updateRecommendationsModule();
+      clearRecommendationHighlight();
     } else {
       alert('Checkout failed: ' + (data.error || 'Unknown error'));
     }
