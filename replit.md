@@ -36,6 +36,11 @@ Preferred communication style: Simple, everyday language.
     - **Personalized**: Collaborative Filtering (CF) based on purchase history (Purple/Pink theme).
     - **Hybrid AI**: 60% CF + 40% semantic similarity blend (Emerald/Teal theme).
     - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
+- **Interactive Aisle Highlighting**:
+    - **Visual Feedback**: Aisles glow with yellow/amber gradient and pulse animation when they contain recommended products.
+    - **Smart Mapping**: JavaScript maps 19 product subcategories to 6 store aisles (A-F) using a deterministic lookup table.
+    - **Dynamic Updates**: Highlights automatically appear when recommendations load and clear when cart goes under budget, after checkout, or when a replacement is applied.
+    - **Multi-System Support**: Works seamlessly across all three recommendation systems (Budget-Saving, CF, Hybrid) with flexible data structure handling.
 
 ### AI & Recommendations
 - **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
