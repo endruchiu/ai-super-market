@@ -1084,6 +1084,82 @@ function showToast(message, type = 'success') {
   }, 4000);
 }
 
+// Update ISRec Intent Monitor
+async function updateISRecMonitor() {
+  try {
+    const response = await fetch('/api/isrec/intent');
+    const data = await response.json();
+    
+    // Update intent score and pointer position
+    const scoreElement = document.getElementById('isrecScore');
+    const pointerElement = document.getElementById('isrecPointer');
+    const modeElement = document.getElementById('isrecMode');
+    
+    if (scoreElement) {
+      scoreElement.textContent = data.intent_score.toFixed(2);
+    }
+    
+    // Move pointer (0.0 = left/0%, 0.5 = center/50%, 1.0 = right/100%)
+    if (pointerElement) {
+      pointerElement.style.left = (data.intent_score * 100) + '%';
+    }
+    
+    // Update mode badge
+    if (modeElement) {
+      modeElement.textContent = data.mode.toUpperCase();
+      modeElement.className = 'text-xs font-bold px-3 py-1 rounded-full';
+      
+      if (data.mode === 'quality') {
+        modeElement.className += ' bg-purple-500 text-white';
+      } else if (data.mode === 'economy') {
+        modeElement.className += ' bg-green-500 text-white';
+      } else {
+        modeElement.className += ' bg-gray-200 text-gray-700';
+      }
+    }
+    
+    // Update signals
+    const qualityElement = document.getElementById('qualitySignals');
+    const economyElement = document.getElementById('economySignals');
+    
+    if (qualityElement) {
+      qualityElement.textContent = data.quality_signals.toFixed(1);
+    }
+    if (economyElement) {
+      economyElement.textContent = data.economy_signals.toFixed(1);
+    }
+    
+    // Update recent actions
+    const actionsElement = document.getElementById('recentActions');
+    if (actionsElement && data.recent_actions && data.recent_actions.length > 0) {
+      actionsElement.innerHTML = data.recent_actions.map(action => {
+        let icon = '👁️';
+        if (action.type === 'cart_add') icon = '➕';
+        if (action.type === 'cart_remove') icon = '➖';
+        
+        return `<div class="flex items-center justify-between py-1 border-b border-gray-100">
+          <div class="flex items-center space-x-2">
+            <span>${icon}</span>
+            <span class="text-gray-700 truncate">${action.product}</span>
+          </div>
+          <span class="text-gray-500 ml-2">$${action.price.toFixed(2)}</span>
+        </div>`;
+      }).join('');
+    } else if (actionsElement) {
+      actionsElement.innerHTML = '<div class="text-gray-500 text-center py-2">No activity yet</div>';
+    }
+    
+    // Update message
+    const messageElement = document.getElementById('isrecMessage');
+    if (messageElement) {
+      messageElement.textContent = data.message;
+    }
+    
+  } catch (error) {
+    console.error('ISRec monitor error:', error);
+  }
+}
+
 // Auto-load products on page load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, auto-loading products...');
@@ -1099,4 +1175,8 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCartDisplay();
     });
   }
+  
+  // Start ISRec monitoring (update every 3 seconds)
+  updateISRecMonitor();
+  setInterval(updateISRecMonitor, 3000);
 });
