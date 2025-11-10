@@ -1179,4 +1179,161 @@ document.addEventListener('DOMContentLoaded', function() {
   // Start ISRec monitoring (update every 3 seconds)
   updateISRecMonitor();
   setInterval(updateISRecMonitor, 3000);
+  
+  // Start Replenishment monitoring (update every 10 seconds)
+  updateReplenishmentPanel();
+  setInterval(updateReplenishmentPanel, 10000);
 });
+
+// ==================== REPLENISHMENT SYSTEM ====================
+
+async function updateReplenishmentPanel() {
+  try {
+    const response = await fetch('/api/replenishment/due-soon?days_ahead=7');
+    const data = await response.json();
+    
+    // Show/hide sections based on data
+    const dueNowSection = document.getElementById('dueNowSection');
+    const dueSoonSection = document.getElementById('dueSoonSection');
+    const upcomingSection = document.getElementById('upcomingSection');
+    const emptyState = document.getElementById('replenishEmpty');
+    const statsSection = document.getElementById('replenishStats');
+    
+    const hasItems = data.due_now.length + data.due_soon.length + data.upcoming.length > 0;
+    
+    if (hasItems) {
+      emptyState.style.display = 'none';
+      statsSection.style.display = 'block';
+      
+      // Update stats
+      const statsText = document.getElementById('replenishStatsText');
+      statsText.textContent = `Tracking ${data.total_active_cycles} product${data.total_active_cycles !== 1 ? 's' : ''} for replenishment`;
+      
+      // Due Now
+      if (data.due_now.length > 0) {
+        dueNowSection.style.display = 'block';
+        const dueNowList = document.getElementById('dueNowList');
+        dueNowList.innerHTML = data.due_now.map(item => renderReplenishmentItem(item, 'red')).join('');
+      } else {
+        dueNowSection.style.display = 'none';
+      }
+      
+      // Due Soon
+      if (data.due_soon.length > 0) {
+        dueSoonSection.style.display = 'block';
+        const dueSoonList = document.getElementById('dueSoonList');
+        dueSoonList.innerHTML = data.due_soon.map(item => renderReplenishmentItem(item, 'orange')).join('');
+      } else {
+        dueSoonSection.style.display = 'none';
+      }
+      
+      // Upcoming
+      if (data.upcoming.length > 0) {
+        upcomingSection.style.display = 'block';
+        const upcomingList = document.getElementById('upcomingList');
+        upcomingList.innerHTML = data.upcoming.map(item => `
+          <div class="flex items-center justify-between py-1">
+            <span class="truncate">${item.title.substring(0, 30)}...</span>
+            <span class="text-gray-400 ml-2">${item.days_until_due}d</span>
+          </div>
+        `).join('');
+      } else {
+        upcomingSection.style.display = 'none';
+      }
+    } else {
+      emptyState.style.display = 'block';
+      statsSection.style.display = 'none';
+      dueNowSection.style.display = 'none';
+      dueSoonSection.style.display = 'none';
+      upcomingSection.style.display = 'none';
+    }
+    
+  } catch (error) {
+    console.error('Replenishment panel error:', error);
+  }
+}
+
+function renderReplenishmentItem(item, urgencyColor) {
+  const urgencyClass = urgencyColor === 'red' ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200';
+  const textClass = urgencyColor === 'red' ? 'text-red-700' : 'text-orange-700';
+  
+  const daysText = item.days_until_due === 0 
+    ? 'TODAY' 
+    : item.days_until_due < 0 
+      ? `${Math.abs(item.days_until_due)}d OVERDUE`
+      : `in ${item.days_until_due}d`;
+  
+  return `
+    <div class="p-3 ${urgencyClass} border rounded-lg">
+      <div class="flex items-start justify-between mb-2">
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-gray-900 truncate">${item.title.substring(0, 40)}</div>
+          <div class="text-xs text-gray-600 mt-1">
+            Usually every ${Math.round(item.interval_days)} days
+          </div>
+        </div>
+        <div class="text-xs font-bold ${textClass} ml-2 whitespace-nowrap">${daysText}</div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-bold text-blue-600">$${item.price.toFixed(2)}</span>
+        <div class="flex space-x-2">
+          <button onclick="quickAddReplenishment(${item.cycle_id})" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition-all">
+            Quick Add
+          </button>
+          <button onclick="skipReplenishment(${item.cycle_id})" class="text-xs bg-gray-300 hover:bg-gray-400 text-gray-700 px-2 py-1 rounded-md transition-all">
+            Skip
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function quickAddReplenishment(cycleId) {
+  try {
+    const response = await fetch('/api/replenishment/quick-add', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({cycle_id: cycleId})
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast(`✓ Added ${result.title} to cart!`, 'success');
+      
+      // Refresh cart from backend
+      const cartResponse = await fetch('/api/cart');
+      const cartData = await cartResponse.json();
+      cart = cartData.items || [];
+      updateCartDisplay();
+    } else {
+      showToast(`Failed to add item: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Quick-add error:', error);
+    showToast('Failed to add item to cart', 'error');
+  }
+}
+
+async function skipReplenishment(cycleId) {
+  try {
+    const response = await fetch('/api/replenishment/skip', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({cycle_id: cycleId, skip_days: 7})
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast('Reminder snoozed for 7 days', 'success');
+      updateReplenishmentPanel();
+    } else {
+      showToast(`Failed to skip: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Skip replenishment error:', error);
+    showToast('Failed to skip reminder', 'error');
+  }
+}

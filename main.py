@@ -31,7 +31,7 @@ db.init_app(app)
 
 # Import and initialize models
 from models import init_models
-Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent = init_models(db)
+Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle = init_models(db)
 
 # Create tables
 with app.app_context():
@@ -795,6 +795,23 @@ def api_checkout():
         # Commit all changes
         db.session.commit()
         
+        # AUTO-UPDATE REPLENISHMENT CYCLES after purchase
+        try:
+            from replenishment_engine import ReplenishmentEngine
+            engine = ReplenishmentEngine(db, PRODUCTS_DF)
+            
+            # Identify replenishable products (quick check)
+            engine.identify_replenishable_products(min_purchases=2, min_users=1)
+            
+            # Update cycles for this user
+            cycles_updated = engine.calculate_user_cycles(user.id)
+            
+            if cycles_updated > 0:
+                print(f"✓ Updated {cycles_updated} replenishment cycles for user {user.id}")
+        except Exception as e:
+            # Don't fail checkout if replenishment update fails
+            print(f"⚠️  Replenishment update warning: {e}")
+        
         return jsonify({
             "success": True,
             "order_id": order.id,
@@ -1050,6 +1067,193 @@ def retrain_model():
         
     except Exception as e:
         print(f"Retrain trigger error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ==================== REPLENISHMENT SYSTEM API ENDPOINTS ====================
+
+from replenishment_engine import ReplenishmentEngine
+
+@app.route("/api/replenishment/due-soon", methods=["GET"])
+def get_replenishment_due_soon():
+    """
+    Get products due for replenishment in the next 7 days
+    Returns: {due_now: [...], due_soon: [...], upcoming: [...]}
+    """
+    try:
+        # Get or create user
+        session_id = session.get('session_id')
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            session['session_id'] = session_id
+        
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            return jsonify({
+                "due_now": [],
+                "due_soon": [],
+                "upcoming": [],
+                "total_active_cycles": 0,
+                "message": "No purchase history yet"
+            })
+        
+        # Initialize replenishment engine
+        engine = ReplenishmentEngine(db, PRODUCTS_DF)
+        
+        # Get due items
+        days_ahead = int(request.args.get('days_ahead', 7))
+        result = engine.get_due_soon(user.id, days_ahead=days_ahead)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Replenishment due-soon error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/replenishment/bundles", methods=["GET"])
+def get_replenishment_bundles():
+    """
+    Get bundled product recommendations for grouped restocking
+    """
+    try:
+        session_id = session.get('session_id')
+        if not session_id:
+            return jsonify({"bundles": []})
+        
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            return jsonify({"bundles": []})
+        
+        # Initialize replenishment engine
+        engine = ReplenishmentEngine(db, PRODUCTS_DF)
+        
+        # Get bundles
+        window_days = int(request.args.get('window_days', 3))
+        bundles = engine.get_bundled_reminders(user.id, window_days=window_days)
+        
+        return jsonify({"bundles": bundles})
+        
+    except Exception as e:
+        print(f"Replenishment bundles error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/replenishment/quick-add", methods=["POST"])
+def quick_add_replenishment():
+    """
+    Quickly add a replenishment item to cart
+    Body: {cycle_id: int}
+    """
+    try:
+        data = request.get_json()
+        cycle_id = data.get('cycle_id')
+        
+        if not cycle_id:
+            return jsonify({"success": False, "error": "cycle_id required"}), 400
+        
+        # Get the cycle
+        cycle = UserReplenishmentCycle.query.get(cycle_id)
+        if not cycle:
+            return jsonify({"success": False, "error": "Cycle not found"}), 404
+        
+        # Get session
+        session_id = session.get('session_id')
+        if not session_id:
+            return jsonify({"success": False, "error": "No session"}), 400
+        
+        # Add to cart (check if already in cart)
+        existing = ShoppingCart.query.filter_by(
+            session_id=session_id,
+            product_id=cycle.product_id
+        ).first()
+        
+        if existing:
+            existing.quantity += 1
+        else:
+            new_item = ShoppingCart(
+                session_id=session_id,
+                product_id=cycle.product_id,
+                quantity=1
+            )
+            db.session.add(new_item)
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "product_id": str(cycle.product_id),
+            "title": cycle.product_title
+        })
+        
+    except Exception as e:
+        print(f"Quick-add error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/replenishment/skip", methods=["POST"])
+def skip_replenishment():
+    """
+    Skip a replenishment reminder for N days
+    Body: {cycle_id: int, skip_days: int}
+    """
+    try:
+        data = request.get_json()
+        cycle_id = data.get('cycle_id')
+        skip_days = data.get('skip_days', 7)
+        
+        if not cycle_id:
+            return jsonify({"success": False, "error": "cycle_id required"}), 400
+        
+        cycle = UserReplenishmentCycle.query.get(cycle_id)
+        if not cycle:
+            return jsonify({"success": False, "error": "Cycle not found"}), 404
+        
+        # Set skip_until_date
+        from datetime import date, timedelta
+        cycle.skip_until_date = date.today() + timedelta(days=skip_days)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "skip_until": cycle.skip_until_date.strftime('%Y-%m-%d')
+        })
+        
+    except Exception as e:
+        print(f"Skip replenishment error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/replenishment/refresh-cycles", methods=["POST"])
+def refresh_replenishment_cycles():
+    """
+    Manually trigger replenishment cycle calculation for current user
+    """
+    try:
+        session_id = session.get('session_id')
+        if not session_id:
+            return jsonify({"success": False, "error": "No session"}), 400
+        
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        
+        # Initialize replenishment engine
+        engine = ReplenishmentEngine(db, PRODUCTS_DF)
+        
+        # Identify replenishable products first
+        engine.identify_replenishable_products(min_purchases=2, min_users=1)
+        
+        # Calculate user-specific cycles
+        cycles_updated = engine.calculate_user_cycles(user.id)
+        
+        return jsonify({
+            "success": True,
+            "cycles_updated": cycles_updated,
+            "message": f"Updated {cycles_updated} replenishment cycles"
+        })
+        
+    except Exception as e:
+        print(f"Refresh cycles error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/static/<path:filename>")

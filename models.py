@@ -170,5 +170,60 @@ def init_models(db):
         
         def __repr__(self):
             return f'<UserEvent {self.id}: {self.event_type} by User {self.user_id}>'
+
+    class ReplenishableProduct(db.Model):
+        """Tracks products identified as replenishable consumables"""
+        __tablename__ = 'replenishable_products'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        product_id = db.Column(db.BigInteger, nullable=False, unique=True, index=True)
+        product_title = db.Column(db.Text, nullable=False)
+        product_subcat = db.Column(db.String(200), nullable=False, index=True)
+        avg_interval_days = db.Column(db.Numeric(10, 2), nullable=True)
+        total_purchases = db.Column(db.Integer, default=0)
+        unique_users = db.Column(db.Integer, default=0)
+        is_consumable = db.Column(db.Boolean, default=True)
+        size_value = db.Column(db.Numeric(10, 2), nullable=True)
+        size_unit = db.Column(db.String(50), nullable=True)
+        last_updated = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+        
+        def __repr__(self):
+            return f'<ReplenishableProduct {self.product_id}: {self.product_title[:30]}... (~{self.avg_interval_days} days)>'
+
+    class UserReplenishmentCycle(db.Model):
+        """Tracks user-specific replenishment patterns for products"""
+        __tablename__ = 'user_replenishment_cycles'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+        product_id = db.Column(db.BigInteger, nullable=False, index=True)
+        product_title = db.Column(db.Text, nullable=False)
+        product_subcat = db.Column(db.String(200), nullable=False)
+        
+        # Purchase pattern tracking
+        first_purchase_date = db.Column(db.DateTime, nullable=False)
+        last_purchase_date = db.Column(db.DateTime, nullable=False, index=True)
+        purchase_count = db.Column(db.Integer, default=1)
+        
+        # Interval calculation
+        median_interval_days = db.Column(db.Numeric(10, 2), nullable=True)
+        last_quantity = db.Column(db.Integer, default=1)
+        
+        # Prediction
+        next_due_date = db.Column(db.Date, nullable=True, index=True)
+        adjusted_interval_days = db.Column(db.Numeric(10, 2), nullable=True)
+        
+        # Status
+        is_active = db.Column(db.Boolean, default=True, index=True)
+        is_gift_flagged = db.Column(db.Boolean, default=False)
+        skip_until_date = db.Column(db.Date, nullable=True)
+        
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+        updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+        
+        def __repr__(self):
+            return f'<ReplenishmentCycle User {self.user_id}: {self.product_title[:30]}... (next: {self.next_due_date})>'
     
-    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent
+    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle
