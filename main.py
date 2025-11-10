@@ -798,7 +798,7 @@ def api_checkout():
         # AUTO-UPDATE REPLENISHMENT CYCLES after purchase
         try:
             from replenishment_engine import ReplenishmentEngine
-            engine = ReplenishmentEngine(db, PRODUCTS_DF)
+            engine = ReplenishmentEngine(db, PRODUCTS_DF, Order, OrderItem, ReplenishableProduct, UserReplenishmentCycle)
             
             # Identify replenishable products (quick check)
             engine.identify_replenishable_products(min_purchases=2, min_users=1)
@@ -1175,7 +1175,7 @@ def get_replenishment_bundles():
             return jsonify({"bundles": []})
         
         # Initialize replenishment engine
-        engine = ReplenishmentEngine(db, PRODUCTS_DF)
+        engine = ReplenishmentEngine(db, PRODUCTS_DF, Order, OrderItem, ReplenishableProduct, UserReplenishmentCycle)
         
         # Get bundles
         window_days = int(request.args.get('window_days', 3))
@@ -1285,7 +1285,7 @@ def refresh_replenishment_cycles():
             return jsonify({"success": False, "error": "User not found"}), 404
         
         # Initialize replenishment engine
-        engine = ReplenishmentEngine(db, PRODUCTS_DF)
+        engine = ReplenishmentEngine(db, PRODUCTS_DF, Order, OrderItem, ReplenishableProduct, UserReplenishmentCycle)
         
         # Identify replenishable products first
         engine.identify_replenishable_products(min_purchases=2, min_users=1)

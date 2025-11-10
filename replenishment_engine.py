@@ -39,16 +39,26 @@ class ReplenishmentEngine:
         (2, 10, 2, 15),    # Valentine's (Feb 10-15)
     ]
     
-    def __init__(self, db, products_df):
+    def __init__(self, db, products_df, Order=None, OrderItem=None, ReplenishableProduct=None, UserReplenishmentCycle=None):
         """
         Initialize replenishment engine
         
         Args:
             db: SQLAlchemy database instance
             products_df: Pandas DataFrame with product catalog (for size normalization)
+            Order: Order model class (optional, will be set by caller)
+            OrderItem: OrderItem model class (optional, will be set by caller)
+            ReplenishableProduct: ReplenishableProduct model class (optional, will be set by caller)
+            UserReplenishmentCycle: UserReplenishmentCycle model class (optional, will be set by caller)
         """
         self.db = db
         self.products_df = products_df
+        
+        # Store model classes
+        self.Order = Order
+        self.OrderItem = OrderItem
+        self.ReplenishableProduct = ReplenishableProduct
+        self.UserReplenishmentCycle = UserReplenishmentCycle
     
     # ==================== STEP 1: AI-Backed Identification ====================
     
@@ -67,20 +77,20 @@ class ReplenishmentEngine:
         
         # Query purchase patterns
         purchase_stats = self.db.session.query(
-            OrderItem.product_id,
-            OrderItem.product_title,
-            OrderItem.product_subcat,
-            func.count(OrderItem.id).label('total_purchases'),
-            func.count(func.distinct(Order.user_id)).label('unique_users')
-        ).join(Order).filter(
-            OrderItem.product_subcat.in_(self.CONSUMABLE_CATEGORIES)
+            self.OrderItem.product_id,
+            self.OrderItem.product_title,
+            self.OrderItem.product_subcat,
+            func.count(self.OrderItem.id).label('total_purchases'),
+            func.count(func.distinct(self.Order.user_id)).label('unique_users')
+        ). join(self.Order).filter(
+            self.OrderItem.product_subcat.in_(self.CONSUMABLE_CATEGORIES)
         ).group_by(
-            OrderItem.product_id,
-            OrderItem.product_title,
-            OrderItem.product_subcat
+            self.OrderItem.product_id,
+            self.OrderItem.product_title,
+            self.OrderItem.product_subcat
         ).having(
-            func.count(OrderItem.id) >= min_purchases,
-            func.count(func.distinct(Order.user_id)) >= min_users
+            func.count(self.OrderItem.id) >= min_purchases,
+            func.count(func.distinct(self.Order.user_id)) >= min_users
         ).all()
         
         replenishable_ids = []
@@ -98,7 +108,7 @@ class ReplenishmentEngine:
                     size_unit = str(row['_size_unit'])
             
             # Upsert to replenishable_products table
-            existing = ReplenishableProduct.query.filter_by(product_id=product_id).first()
+            existing = self.ReplenishableProduct.query.filter_by(product_id=product_id).first()
             
             if existing:
                 existing.total_purchases = stat.total_purchases
@@ -146,14 +156,14 @@ class ReplenishmentEngine:
         
         # Get all replenishable products this user has purchased
         user_purchases = self.db.session.query(
-            OrderItem.product_id,
-            OrderItem.product_title,
-            OrderItem.product_subcat,
-            OrderItem.quantity,
-            Order.created_at
-        ).join(Order).filter(
-            Order.user_id == user_id
-        ).order_by(OrderItem.product_id, Order.created_at).all()
+            self.OrderItem.product_id,
+            self.OrderItem.product_title,
+            self.OrderItem.product_subcat,
+            self.OrderItem.quantity,
+            self.Order.created_at
+        ). join(self.Order).filter(
+            self.Order.user_id == user_id
+        ).order_by(self.OrderItem.product_id, self.Order.created_at).all()
         
         # Group by product
         product_purchases = defaultdict(list)
@@ -173,7 +183,7 @@ class ReplenishmentEngine:
                 continue
             
             # Check if product is replenishable
-            replenishable = ReplenishableProduct.query.filter_by(product_id=product_id).first()
+            replenishable = self.ReplenishableProduct.query.filter_by(product_id=product_id).first()
             if not replenishable:
                 continue
             
@@ -206,7 +216,7 @@ class ReplenishmentEngine:
             next_due = (last_purchase_date + timedelta(days=float(adjusted_interval))).date()
             
             # Upsert cycle
-            existing_cycle = UserReplenishmentCycle.query.filter_by(
+            existing_cycle = self.UserReplenishmentCycle.query.filter_by(
                 user_id=user_id,
                 product_id=product_id
             ).first()
@@ -266,7 +276,7 @@ class ReplenishmentEngine:
             new_quantity: Quantity purchased this time
         """
         
-        cycle = UserReplenishmentCycle.query.filter_by(
+        cycle = self.UserReplenishmentCycle.query.filter_by(
             user_id=user_id,
             product_id=product_id,
             is_active=True
@@ -278,10 +288,10 @@ class ReplenishmentEngine:
         # Calculate historical average quantity
         
         avg_quantity = self.db.session.query(
-            func.avg(OrderItem.quantity)
-        ).join(Order).filter(
-            Order.user_id == user_id,
-            OrderItem.product_id == product_id
+            func.avg(self.OrderItem.quantity)
+        ). join(self.Order).filter(
+            self.Order.user_id == user_id,
+            self.OrderItem.product_id == product_id
         ).scalar() or 1.0
         
         # Adjust interval by quantity ratio
@@ -312,11 +322,11 @@ class ReplenishmentEngine:
         """
         
         # Get all active cycles due soon
-        cycles = UserReplenishmentCycle.query.filter(
-            UserReplenishmentCycle.user_id == user_id,
-            UserReplenishmentCycle.is_active == True,
-            UserReplenishmentCycle.next_due_date != None
-        ).order_by(UserReplenishmentCycle.next_due_date).all()
+        cycles = self.UserReplenishmentCycle.query.filter(
+            self.UserReplenishmentCycle.user_id == user_id,
+            self.UserReplenishmentCycle.is_active == True,
+            self.UserReplenishmentCycle.next_due_date != None
+        ).order_by(self.UserReplenishmentCycle.next_due_date).all()
         
         # Group by date window
         bundles = []
@@ -392,10 +402,10 @@ class ReplenishmentEngine:
         
         # Calculate average quantity for this user+product
         avg_quantity = self.db.session.query(
-            func.avg(OrderItem.quantity)
-        ).join(Order).filter(
-            Order.user_id == user_id,
-            OrderItem.product_id == product_id
+            func.avg(self.OrderItem.quantity)
+        ). join(self.Order).filter(
+            self.Order.user_id == user_id,
+            self.OrderItem.product_id == product_id
         ).scalar()
         
         if not avg_quantity:
@@ -440,16 +450,16 @@ class ReplenishmentEngine:
         
         today = datetime.utcnow().date()
         
-        cycles = UserReplenishmentCycle.query.filter(
-            UserReplenishmentCycle.user_id == user_id,
-            UserReplenishmentCycle.is_active == True,
-            UserReplenishmentCycle.next_due_date != None,
-            UserReplenishmentCycle.next_due_date <= today + timedelta(days=days_ahead)
+        cycles = self.UserReplenishmentCycle.query.filter(
+            self.UserReplenishmentCycle.user_id == user_id,
+            self.UserReplenishmentCycle.is_active == True,
+            self.UserReplenishmentCycle.next_due_date != None,
+            self.UserReplenishmentCycle.next_due_date <= today + timedelta(days=days_ahead)
         ).filter(
             # Respect skip_until_date
-            (UserReplenishmentCycle.skip_until_date == None) |
-            (UserReplenishmentCycle.skip_until_date < today)
-        ).order_by(UserReplenishmentCycle.next_due_date).all()
+            (self.UserReplenishmentCycle.skip_until_date == None) |
+            (self.UserReplenishmentCycle.skip_until_date < today)
+        ).order_by(self.UserReplenishmentCycle.next_due_date).all()
         
         due_now = []
         due_soon = []
