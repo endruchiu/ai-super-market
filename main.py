@@ -1088,7 +1088,9 @@ def get_replenishment_due_soon():
         
         user = User.query.filter_by(session_id=session_id).first()
         if not user:
-            user = User.query.get(2)
+            user = User(session_id=session_id)
+            db.session.add(user)
+            db.session.commit()
         
         if not user:
             return jsonify({
