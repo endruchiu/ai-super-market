@@ -825,6 +825,80 @@ def api_checkout():
         print(f"Checkout error: {e}")
         return jsonify({"success": False, "error": "Checkout failed. Please try again."}), 500
 
+@app.route("/api/user/stats", methods=["POST"])
+def get_user_stats():
+    """
+    Get purchase statistics for the signed-in user
+    Expects: {"email": "user@example.com"}
+    Returns: total_orders, total_spent, total_items, avg_order, recent_orders
+    """
+    try:
+        data = request.get_json(force=True)
+        email = data.get("email")
+        
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        # Find user by email in session_id (email is stored in session_id for demo)
+        user = User.query.filter_by(session_id=email).first()
+        
+        if not user:
+            # New user - return empty stats
+            return jsonify({
+                "success": True,
+                "total_orders": 0,
+                "total_spent": 0.0,
+                "total_items": 0,
+                "avg_order": 0.0,
+                "recent_orders": []
+            })
+        
+        # Query user's orders
+        orders = Order.query.filter_by(user_id=user.id).order_by(Order.created_at.desc()).all()
+        
+        total_orders = len(orders)
+        total_spent = sum(float(order.total_amount) for order in orders)
+        total_items = sum(order.item_count for order in orders)
+        avg_order = total_spent / total_orders if total_orders > 0 else 0.0
+        
+        # Get recent orders (last 5)
+        recent_orders = []
+        for order in orders[:5]:
+            # Get items for this order
+            items = OrderItem.query.filter_by(order_id=order.id).all()
+            order_items = [
+                {
+                    "product_title": item.product_title,
+                    "quantity": item.quantity,
+                    "unit_price": float(item.unit_price),
+                    "line_total": float(item.line_total)
+                }
+                for item in items
+            ]
+            
+            recent_orders.append({
+                "order_id": order.id,
+                "created_at": order.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "total_amount": float(order.total_amount),
+                "item_count": order.item_count,
+                "items": order_items
+            })
+        
+        return jsonify({
+            "success": True,
+            "total_orders": total_orders,
+            "total_spent": round(total_spent, 2),
+            "total_items": total_items,
+            "avg_order": round(avg_order, 2),
+            "recent_orders": recent_orders
+        })
+        
+    except Exception as e:
+        print(f"User stats error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/track-event", methods=["POST"])
 def track_event():
     """
