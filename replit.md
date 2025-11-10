@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Flask web application provides a comprehensive grocery shopping experience with integrated budget tracking. Users can browse products, manage shopping carts, and monitor their spending against set budgets. It features session-based user identification, a robust product catalog loaded from CSV, and an AI-powered recommendation system to help users stay within budget and discover new products. The project aims to deliver a modern, responsive, and intelligent shopping assistant.
+This Flask web application offers a complete grocery shopping experience with integrated budget tracking. It allows users to browse products, manage their shopping carts, and monitor spending against defined budgets. Key features include session-based user identification, a product catalog loaded from CSV, and an AI-powered recommendation system designed to assist users in adhering to their budget and discovering new products. The project's vision is to provide a modern, responsive, and intelligent shopping assistant.
 
 ## User Preferences
 
@@ -14,136 +14,56 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: Flask with SQLAlchemy ORM.
 - **User Management**: Session-based with UUID for anonymous tracking.
 - **Database**: PostgreSQL, managed with SQLAlchemy 2.x DeclarativeBase.
-- **Data Models**: Products, UserBudgets, User, Order, OrderItem, UserEvent for purchase history and recommendations.
-- **Product Identification**: Deterministic `blake2b` hash for stable product IDs, stored as `BigInteger`.
-- **Data Import**: Pandas-based CSV import system with smart parsing for prices and ratings, using batch commits for efficiency.
-- **Performance**: Database connection pooling, in-memory product catalog (Pandas DataFrame) for O(1) lookups, numeric field extraction for efficient calculations.
+- **Data Models**: Products, UserBudgets, User, Order, OrderItem, UserEvent for comprehensive tracking.
+- **Product Identification**: Deterministic `blake2b` hash for stable product IDs.
+- **Data Import**: Pandas-based CSV import system with batch commits.
+- **Performance**: Database connection pooling, in-memory product catalog for efficient lookups.
 
 ### Frontend
-- **Design System**: Modern UI using Tailwind CSS CDN, Inter Font, and a blue/indigo gradient color scheme.
-- **Layout**: Two-column design with store map on left (60%) and shopping cart panel on right (40%).
-- **Store Map**: Visual aisle layout organizing 19 product categories into 6 aisles (A-F):
-  - Aisle A: Meat & Seafood, Seafood, Poultry, Deli, Breakfast, Floral
-  - Aisle B: Snacks (repeated for visual prominence)
-  - Aisle C: Candy, Gift Baskets, Organic, Kirkland Signature Grocery
-  - Aisle D: Pantry & Dry Goods, Coffee
-  - Aisle E: Beverages & Water, Paper & Plastic Products, Household
-  - Aisle F: Bakery & Desserts, Cleaning Supplies, Laundry Detergent & Supplies, Household
-- **Components**: Responsive header, interactive aisle cards with click-to-filter, clean product cards, budget controls, shopping cart display with quantity controls, collapsible product browser, and animated success notifications.
-- **Responsiveness**: Mobile-friendly layout with a flexible grid system.
-- **User Panel & Sign-In**:
-  - **User Panel**: Slide-in panel from the right displaying user profile, purchase history, shopping stats, and preferences.
-  - **Demo Sign-In Flow**: Fake/demo authentication modal triggered by "Sign In / Register" button:
-    - Clean modal form with name and email fields (no password required - demo only).
-    - User data stored in browser localStorage for persistence across sessions.
-    - Dynamic UI updates: displays signed-in user's name/email in user panel when authenticated.
-    - Sign-out functionality to clear user data and return to guest mode.
-    - Animated toast notifications for user feedback (sign-in success, sign-out, etc.).
-    - No backend authentication logic - purely for demonstration and UI/UX purposes.
-- **AI Recommendation UI**:
-    - **Hybrid AI System**: The sole recommendation engine combining 60% Collaborative Filtering + 40% semantic similarity (Emerald/Teal theme).
-    - Recommendations automatically trigger when the cart total exceeds the budget and display in the right sidebar below the cart.
-    - **Aisle Highlighting System**:
-        - **Main Pulsing Highlight**: The most recent recommendation's aisle displays an orange gradient with pulsing glow animation for maximum visibility.
-        - **Green Dot Indicators**: Small green badges appear in the top-right corner of aisles where the Hybrid AI system has product recommendations.
-        - Highlights and dots automatically clear when the cart is within budget or after checkout.
+- **Design System**: Modern UI using Tailwind CSS CDN and Inter Font, with a blue/indigo gradient color scheme.
+- **Layout**: Two-column design (store map 60%, shopping cart 40%).
+- **Store Map**: Visual aisle layout categorizing products into 6 aisles (A-F).
+- **Components**: Responsive header, interactive aisle cards, product cards, budget controls, shopping cart, collapsible product browser, animated notifications.
+- **Responsiveness**: Mobile-friendly layout.
+- **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Demo sign-in with localStorage for persistence, purely for UI/UX demonstration.
+- **AI Recommendation UI**: Recommendations trigger when the cart exceeds budget. Features an aisle highlighting system with pulsing orange gradient for the most recent recommendation and green dots for other recommended aisles.
 
 ### AI & Recommendations
-- **Deep Learning**: TensorFlow/Keras Collaborative Filtering model for personalized recommendations.
-- **Semantic Similarity**: Sentence-transformers (`all-MiniLM-L6-v2`) for budget-saving recommendations.
-- **Hybrid System**: Combines CF and semantic similarity with configurable weights (60% CF + 40% Semantic).
-- **Data Pipeline**: Extracts unified event data from user interactions (purchases, views, cart adds/removes) for CF model training.
-- **Cold Start Handling**: CF model gracefully falls back to general recommendations for new users or those with limited purchase history.
-- **Filtering**: Recommendations are filtered to suggest cheaper alternatives, prioritizing items within the same subcategory.
-- **ISRec Intent Detection System** (✅ ACTIVE - Oct 21, 2025):
-  - **Analysis Window**: Analyzes up to 10 recent actions (max_actions=10) within 10-minute lookback (lookback_minutes=10).
-  - **Quality Signal Rules**:
-    - Premium keywords: 'organic', 'premium', 'grass-fed', 'free-range', 'artisan', 'imported', 'gourmet', 'specialty'
-    - Price thresholds: expensive (>$25), cheap (<$15 for removal scoring)
-    - Scoring: view premium +1.0, view expensive +0.5, cart_add premium +2.0, cart_add expensive +1.0, cart_remove cheap +1.5
-  - **Economy Signal Rules**:
-    - Budget keywords: 'value', 'budget', 'saver', 'basic', 'everyday'
-    - Price thresholds: cheap (<$10), expensive (>$20 for removal scoring)
-    - Scoring: view value/cheap +1.0, cart_add value +2.0, cart_add cheap +1.5, cart_remove expensive +2.0
-  - **Intent Calculation**: intent_score = quality_signals / (quality_signals + economy_signals); returns 0.5 if no signals detected.
-  - **End-to-End Integration Flow** (runtime pipeline):
-    1. `/api/blended/recommendations` endpoint triggered when cart exceeds budget (main.py line 434)
-    2. `IntentDetector.detect_intent(user_id, cart, db.session)` queries UserEvent table for recent actions
-    3. Calculated `current_intent` score [0, 1] added to `session_context` dict (main.py line 444)
-    4. `session_context` passed to `get_blended_recommendations()` which calls LGBMReRanker
-    5. `LGBMReRanker.compute_behavioral_features()` extracts `current_intent` from session_context (lgbm_reranker.py line 204)
-    6. `IntentTracker.update_intent(user_id, current_intent)` applies EMA smoothing with α=0.3, 45s cooldown (line 205)
-    7. Smoothed `intent_ema` value becomes one of 21 features in LightGBM feature vector
-    8. LightGBM model re-ranks recommendations using intent_ema + other behavioral/contextual features
-  - **Dynamic Updates**: Intent recalculated on every recommendation request from fresh database query, capturing current session behavior (not cached historical data).
-  - **Database Integration**: Uses dependency injection pattern to avoid circular imports; queries UserEvent table via db.session parameter.
-  - **Files**: `intent_detector.py` (IntentDetector class with detect_intent, _calculate_quality_signals, _calculate_economy_signals methods).
-- **LightGBM LambdaMART Re-Ranking** (✅ ACTIVE - Oct 21, 2025):
-  - **Behavior-Aware Re-Ranking**: LightGBM LambdaMART model for intelligent re-ranking based on user intent and session context.
-  - **Production Integration**: Session context (cart, budget, budget_pressure, current_intent) automatically passed from `/api/blended/recommendations` endpoint when cart exceeds budget.
-  - **Feature Consistency**: Training features extracted from actual recommendation pipeline (real CF/semantic scores, product metadata).
-  - **Intent Tracking**: EMA smoothing (α=0.3) with 45s cooldown logic processes current_intent from ISRec detector to prevent mode thrashing.
-  - **Guardrail Modes**: Quality (high similarity), Economy (price-focused), Balanced (mix of both).
-  - **System Setup**: GCC installed via Nix packages (`pkgs.gcc`), `LD_LIBRARY_PATH` configured in workflow to provide `libgomp.so.1` OpenMP library.
-  - **Graceful Fallback**: Uses standard 60/40 blending when no trained model available; automatically activates LightGBM re-ranking when model file exists.
-  - **Feature-Rich**: 21 features including CF scores, semantic similarity, price savings, quality tags, diet matching, behavioral context (beta_u, budget_pressure, intent, cart state, temporal).
-  - **Performance**: Uses in-memory PRODUCTS_DF for O(1) product metadata lookup instead of database queries.
-  - **Training**: 289 real samples from 68 user sessions, trained model saved to `models/lgbm_ltr.txt` (3.4 KB).
-  - **Improved Training Parameters**: 300 boost rounds (was 100), min_data_in_leaf=15 (was 50), early_stopping=75 rounds (was 20) for better feature learning.
-  - **Files**: `lgbm_reranker.py` (re-ranker), `prepare_ltr_data.py` (data prep), `train_lgbm_ranker.py` (training), `LGBM_README.md` (documentation).
-- **Online Learning System** (✅ ACTIVE - Oct 21, 2025):
-  - **Real-Time Event Tracking**: Automatically captures all user interactions (view, cart_add, cart_remove, purchase) via `/api/track-event` endpoint.
-  - **Auto-Retrain Pipeline**: After every 5 purchases, system automatically exports fresh training data and retrains the LightGBM model in background thread.
-  - **Model Hot-Reload**: Newly trained models are loaded without restarting Flask via `reload_model()` method in LGBMReRanker.
-  - **User Feedback**: Animated toast notifications ("🎓 Learning from your purchases..." → "✨ AI model updated!") provide transparency.
-  - **Feature Importance Display**: Dynamic UI shows learned weights (CF %, Semantic %, Price %, Budget %) or training stats (samples, sessions, features).
-  - **Complete Learning Cycle**: View events → Cart interactions → Purchase → Data export → Model training → Hot reload → Updated recommendations.
-  - **Non-Blocking**: Background threading ensures retraining doesn't block user experience.
-  - **Demo-Ready**: Perfect for class presentation demonstrating "Scaling Research to Production" with adaptive ML.
-- **Synthetic Training Data Generator** (✅ ACTIVE - Oct 21, 2025):
-  - **Purpose**: Generate training data with clear behavioral patterns that guarantee visible feature importance for class presentations.
-  - **4 User Personas**: Budget Hunters (30%), Quality Seekers (30%), CF Followers (20%), Budget-Pressured (20%).
-  - **Pattern Design**: Each persona has distinct feature preferences (e.g., Budget Hunters: 60% price_saving, Quality Seekers: 50% semantic_sim).
-  - **Output**: 1000 samples from 200 sessions with 47.5% click rate (good label variation).
-  - **Result**: Model learns real feature importance (recency: 432.7, cf_bpr_score: 431.5, price_saving: 359.1, semantic_sim: 308.0).
-  - **API**: `/api/model/feature-importance` returns percentages (CF: 10.3%, Semantic: 7.3%, Price: 8.5%, Budget: 2.2%).
-  - **UI**: Displays "ML-Optimized Weights: CF 10%, Semantic 7%, Price 9%, Budget 2% from 1000 sessions" in recommendation panel.
-  - **Files**: `generate_synthetic_ltr_data.py` (generator), `DEMO_FEATURE_IMPORTANCE.md` (presentation guide), `PRESENTATION_SNAPSHOT.json` (locked demo values).
-  - **Presentation-Ready**: Deterministic UI logic ensures ML weights always display when model is trained (no regression risk).
+- **Hybrid AI System**: Combines 60% Collaborative Filtering (TensorFlow/Keras) and 40% semantic similarity (Sentence-transformers) for personalized and budget-saving recommendations.
+- **Data Pipeline**: Extracts unified event data from user interactions for CF model training.
+- **Cold Start Handling**: Graceful fallback to general recommendations for new users.
+- **Filtering**: Suggestions prioritize cheaper alternatives within the same subcategory.
+- **ISRec Intent Detection System**: Analyzes recent user actions to detect "Quality" or "Economy" intent, influencing recommendations. Uses EMA smoothing for intent tracking.
+- **LightGBM LambdaMART Re-Ranking**: A behavior-aware re-ranking model using 21 features (including intent, budget pressure, CF/semantic scores) to optimize recommendations.
+- **Online Learning System**: Captures user interactions in real-time. Automatically retrains the LightGBM model in a background thread after every 5 purchases, with hot-reloading of new models.
+- **Synthetic Training Data Generator**: Creates tailored training data with distinct behavioral patterns for demonstration purposes, ensuring visible feature importance in the UI.
+- **Replenishment Recommendation System**: An independent, budget-agnostic system predicting when users need to restock consumables based on purchase patterns. It includes an 8-step framework for identifying replenishable products, calculating user-level durations, handling bundles, and filtering. Features a dedicated UI panel for reminders.
 
 ### LLM-as-a-Judge Evaluation System
-- **Methodology**: EvidentlyAI approach for scientific comparison of recommendation systems.
-- **LLM Model**: OpenAI GPT-5 for automated evaluation and scoring.
-- **Evaluation Types**:
-  - **Pairwise Comparisons**: Direct head-to-head comparisons between systems.
-  - **Criteria-Based Scoring**: Evaluates each system on 5 metrics (Relevance, Savings, Diversity, Explanation Quality, Feasibility).
-- **Test Scenarios**: Budget-conscious, health-focused, and new user (cold start) scenarios.
-- **Robustness**: Validates API keys upfront, detects incomplete evaluations, prevents fabricated winners when API calls fail.
-- **Output**: JSON reports with evaluation status, winners, scores, and combined summaries across scenarios.
-- **Files**: `llm_judge_evaluation.py` (core engine), `test_llm_evaluation.py` (test runner with 3 scenarios), `demo_llm_evaluation.py` (system demonstration), `LLM_EVALUATION_README.md` (documentation).
+- **Methodology**: Uses OpenAI GPT-5 for automated evaluation of recommendation systems based on pairwise comparisons and criteria-based scoring across various scenarios.
 
 ## External Dependencies
 
 ### Python Libraries
 - **Flask**: Web framework.
 - **Flask-SQLAlchemy**: ORM integration.
-- **pandas**: Data manipulation for CSV imports.
+- **pandas**: Data manipulation.
 - **SQLAlchemy**: Database ORM.
 - **sentence-transformers**: Semantic similarity.
-- **torch**: PyTorch backend for transformer models.
-- **tensorflow-cpu**: Deep learning framework for CF.
+- **torch**: PyTorch backend.
+- **tensorflow-cpu**: Deep learning framework.
 - **scikit-learn**: Machine learning utilities.
-- **openai**: OpenAI API client for GPT-5 LLM evaluation.
-- **requests**: HTTP client for API calls.
-- **lightgbm**: Gradient boosting framework for LambdaMART re-ranking (optional).
-- **pyarrow**: Parquet file support for training data.
+- **openai**: OpenAI API client.
+- **requests**: HTTP client.
+- **lightgbm**: Gradient boosting framework.
+- **pyarrow**: Parquet file support.
 
 ### Database
-- **PostgreSQL**: Primary data storage, configured via `DATABASE_URL`.
+- **PostgreSQL**: Primary data storage.
 
 ### Data Sources
-- **CSV files**: Product catalog from `attached_assets/GroceryDataset_with_Nutrition_1758836546999.csv`.
+- **CSV files**: Product catalog (e.g., `GroceryDataset_with_Nutrition_1758836546999.csv`).
 
 ### Infrastructure
-- **Environment Variables**: For database connection and Flask secret key.
-- **File System Access**: For CSV data import.
+- **Environment Variables**: For configuration.
+- **File System Access**: For data import.
