@@ -560,6 +560,13 @@ async function checkout() {
       clearRecommendationHighlight();
       clearRecommendationDots();
       
+      // Refresh user stats after purchase
+      const userData = localStorage.getItem('demoUser');
+      if (userData) {
+        const user = JSON.parse(userData);
+        updateUserStats(user.email);
+      }
+      
       // Trigger auto-retrain after purchase
       triggerAutoRetrain();
     } else {
@@ -933,13 +940,79 @@ function updateUserDisplay(userData) {
     displayEmail.textContent = userData.email;
     signInBtn.style.display = 'none';
     signOutBtn.style.display = 'flex';
+    
+    // Fetch and display user stats
+    updateUserStats(userData.email);
   } else {
     // Guest user
     displayName.textContent = 'Guest User';
     displayEmail.textContent = 'Session Active';
     signInBtn.style.display = 'flex';
     signOutBtn.style.display = 'none';
+    
+    // Clear user stats
+    clearUserStats();
   }
+}
+
+async function updateUserStats(email) {
+  try {
+    const response = await fetch('/api/user/stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update stats display
+      document.getElementById('userTotalOrders').textContent = data.total_orders;
+      document.getElementById('userTotalSpent').textContent = `$${data.total_spent.toFixed(2)}`;
+      document.getElementById('userTotalItems').textContent = data.total_items;
+      document.getElementById('userAvgOrder').textContent = `$${data.avg_order.toFixed(2)}`;
+      
+      // Update purchase history
+      const historyContainer = document.getElementById('userPurchaseHistory');
+      if (data.recent_orders.length > 0) {
+        historyContainer.innerHTML = data.recent_orders.map(order => `
+          <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Order #${order.order_id}</div>
+                <div class="text-xs text-gray-500">${order.created_at}</div>
+              </div>
+              <div class="text-sm font-bold text-indigo-600">$${order.total_amount.toFixed(2)}</div>
+            </div>
+            <div class="text-xs text-gray-600">${order.item_count} item${order.item_count !== 1 ? 's' : ''}</div>
+          </div>
+        `).join('');
+      } else {
+        historyContainer.innerHTML = `
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">
+            No purchase history yet. Complete a purchase to see your order history!
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+  }
+}
+
+function clearUserStats() {
+  // Reset stats to 0
+  document.getElementById('userTotalOrders').textContent = '0';
+  document.getElementById('userTotalSpent').textContent = '$0.00';
+  document.getElementById('userTotalItems').textContent = '0';
+  document.getElementById('userAvgOrder').textContent = '$0.00';
+  
+  // Reset purchase history
+  document.getElementById('userPurchaseHistory').innerHTML = `
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">
+      No purchase history yet. Complete a purchase to see your order history!
+    </div>
+  `;
 }
 
 function loadUserData() {
