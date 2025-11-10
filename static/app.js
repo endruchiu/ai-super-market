@@ -1213,7 +1213,7 @@ async function updateReplenishmentPanel() {
       if (data.due_now.length > 0) {
         dueNowSection.style.display = 'block';
         const dueNowList = document.getElementById('dueNowList');
-        dueNowList.innerHTML = data.due_now.map(item => renderReplenishmentItem(item, 'red')).join('');
+        dueNowList.innerHTML = data.due_now.map(item => renderReplenishmentItem(item, 'blue')).join('');
       } else {
         dueNowSection.style.display = 'none';
       }
@@ -1254,13 +1254,13 @@ async function updateReplenishmentPanel() {
 }
 
 function renderReplenishmentItem(item, urgencyColor) {
-  const urgencyClass = urgencyColor === 'red' ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200';
-  const textClass = urgencyColor === 'red' ? 'text-red-700' : 'text-orange-700';
+  const urgencyClass = urgencyColor === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200';
+  const textClass = urgencyColor === 'blue' ? 'text-blue-700' : 'text-orange-700';
   
   const daysText = item.days_until_due === 0 
-    ? 'TODAY' 
+    ? 'Due today' 
     : item.days_until_due < 0 
-      ? `${Math.abs(item.days_until_due)}d OVERDUE`
+      ? `Due ${Math.abs(item.days_until_due)}d ago`
       : `in ${item.days_until_due}d`;
   
   return `
@@ -1272,7 +1272,7 @@ function renderReplenishmentItem(item, urgencyColor) {
             Usually every ${Math.round(item.interval_days)} days
           </div>
         </div>
-        <div class="text-xs font-bold ${textClass} ml-2 whitespace-nowrap">${daysText}</div>
+        <div class="text-xs font-semibold ${textClass} ml-2 whitespace-nowrap">${daysText}</div>
       </div>
       <div class="flex items-center justify-between">
         <span class="text-sm font-bold text-blue-600">$${item.price.toFixed(2)}</span>
