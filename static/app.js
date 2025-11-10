@@ -183,8 +183,8 @@ async function loadProducts(subcat = '') {
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-gray-50 transition-colors';
       
-      // Track view event when product is displayed
-      trackEvent('view', p.id);
+      // Don't auto-track passive views - only track active clicks/adds
+      // trackEvent('view', p.id);
       
       const nutr = p.nutrition ? Object.entries(p.nutrition).slice(0, 3).map(([k, v]) => k + ': ' + v).join(', ') : '';
       
