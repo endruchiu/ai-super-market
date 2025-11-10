@@ -825,6 +825,27 @@ def api_checkout():
         print(f"Checkout error: {e}")
         return jsonify({"success": False, "error": "Checkout failed. Please try again."}), 500
 
+@app.route("/api/user/signin", methods=["POST"])
+def user_signin():
+    """
+    Sign in a user by setting their email as the session_id
+    This allows the backend to track purchases by email
+    """
+    try:
+        data = request.get_json(force=True)
+        email = data.get("email")
+        
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        # Set the session to use email as session_id (for demo purposes)
+        session['user_session'] = email
+        
+        return jsonify({"success": True, "message": "Signed in successfully"})
+    except Exception as e:
+        print(f"Sign-in error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/user/stats", methods=["POST"])
 def get_user_stats():
     """

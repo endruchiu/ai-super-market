@@ -871,7 +871,7 @@ function hideSignInModal() {
   }, 300);
 }
 
-function handleSignIn(event) {
+async function handleSignIn(event) {
   event.preventDefault();
   
   const name = document.getElementById('signInName').value.trim();
@@ -890,6 +890,17 @@ function handleSignIn(event) {
   };
   
   localStorage.setItem('demoUser', JSON.stringify(userData));
+  
+  // Tell the backend about the sign-in so it can track purchases by email
+  try {
+    await fetch('/api/user/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+  } catch (error) {
+    console.error('Backend sign-in failed:', error);
+  }
   
   // Update UI
   updateUserDisplay(userData);
@@ -1015,7 +1026,7 @@ function clearUserStats() {
   `;
 }
 
-function loadUserData() {
+async function loadUserData() {
   // Load user data from localStorage
   const userDataStr = localStorage.getItem('demoUser');
   
@@ -1023,6 +1034,17 @@ function loadUserData() {
     try {
       const userData = JSON.parse(userDataStr);
       updateUserDisplay(userData);
+      
+      // Restore backend session
+      try {
+        await fetch('/api/user/signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userData.email })
+        });
+      } catch (error) {
+        console.error('Backend session restore failed:', error);
+      }
     } catch (e) {
       console.error('Error loading user data:', e);
       localStorage.removeItem('demoUser');
