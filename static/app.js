@@ -1257,11 +1257,20 @@ function renderReplenishmentItem(item, urgencyColor) {
   const urgencyClass = urgencyColor === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200';
   const textClass = urgencyColor === 'blue' ? 'text-blue-700' : 'text-orange-700';
   
-  const daysText = item.days_until_due === 0 
-    ? 'Due today' 
-    : item.days_until_due < 0 
-      ? `Due ${Math.abs(item.days_until_due)}d ago`
-      : `in ${item.days_until_due}d`;
+  // More conversational timing messages
+  let daysText;
+  if (item.days_until_due === 0) {
+    daysText = 'You might run out today';
+  } else if (item.days_until_due < 0) {
+    const daysAgo = Math.abs(item.days_until_due);
+    daysText = daysAgo === 1 
+      ? 'You probably ran out yesterday' 
+      : `You probably ran out ${daysAgo} days ago`;
+  } else {
+    daysText = item.days_until_due === 1 
+      ? 'You might run out tomorrow' 
+      : `You might run out in ${item.days_until_due} days`;
+  }
   
   return `
     <div class="p-3 ${urgencyClass} border rounded-lg">
@@ -1269,11 +1278,11 @@ function renderReplenishmentItem(item, urgencyColor) {
         <div class="flex-1">
           <div class="text-sm font-semibold text-gray-900 truncate">${item.title.substring(0, 40)}</div>
           <div class="text-xs text-gray-600 mt-1">
-            Usually every ${Math.round(item.interval_days)} days
+            Usually restock every ${Math.round(item.interval_days)} days
           </div>
         </div>
-        <div class="text-xs font-semibold ${textClass} ml-2 whitespace-nowrap">${daysText}</div>
       </div>
+      <div class="text-xs ${textClass} mb-2 italic">${daysText}</div>
       <div class="flex items-center justify-between">
         <span class="text-sm font-bold text-blue-600">$${item.price.toFixed(2)}</span>
         <div class="flex space-x-2">
