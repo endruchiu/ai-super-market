@@ -64,8 +64,6 @@ class ReplenishmentEngine:
         Returns:
             List of product IDs identified as replenishable
         """
-        from models import init_models
-        _, _, _, _, Order, OrderItem, _, ReplenishableProduct, _ = init_models(self.db)
         
         # Query purchase patterns
         purchase_stats = self.db.session.query(
@@ -145,8 +143,6 @@ class ReplenishmentEngine:
         Returns:
             Number of active cycles created/updated
         """
-        from models import init_models
-        _, _, _, _, Order, OrderItem, _, ReplenishableProduct, UserReplenishmentCycle = init_models(self.db)
         
         # Get all replenishable products this user has purchased
         user_purchases = self.db.session.query(
@@ -269,8 +265,6 @@ class ReplenishmentEngine:
             product_id: Product ID
             new_quantity: Quantity purchased this time
         """
-        from models import init_models
-        _, _, _, _, _, _, _, _, UserReplenishmentCycle = init_models(self.db)
         
         cycle = UserReplenishmentCycle.query.filter_by(
             user_id=user_id,
@@ -282,8 +276,6 @@ class ReplenishmentEngine:
             return
         
         # Calculate historical average quantity
-        from models import init_models
-        _, _, _, _, Order, OrderItem, _, _, _ = init_models(self.db)
         
         avg_quantity = self.db.session.query(
             func.avg(OrderItem.quantity)
@@ -318,8 +310,6 @@ class ReplenishmentEngine:
         Returns:
             List of bundles: [{'products': [...], 'due_date': date, 'total_price': float}]
         """
-        from models import init_models
-        _, _, _, _, _, _, _, _, UserReplenishmentCycle = init_models(self.db)
         
         # Get all active cycles due soon
         cycles = UserReplenishmentCycle.query.filter(
@@ -399,8 +389,6 @@ class ReplenishmentEngine:
         Returns:
             bool: True if likely gift purchase
         """
-        from models import init_models
-        _, _, _, _, Order, OrderItem, _, _, _ = init_models(self.db)
         
         # Calculate average quantity for this user+product
         avg_quantity = self.db.session.query(
@@ -449,8 +437,6 @@ class ReplenishmentEngine:
                 'upcoming': [...]   # Due in 4-7 days
             }
         """
-        from models import init_models
-        _, _, _, _, _, _, _, _, UserReplenishmentCycle = init_models(self.db)
         
         today = datetime.utcnow().date()
         
