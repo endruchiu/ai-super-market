@@ -1176,10 +1176,10 @@ def get_replenishment_due_soon():
     """
     try:
         # Get or create user
-        session_id = session.get('session_id')
+        session_id = session.get('user_session')
         if not session_id:
             session_id = str(uuid.uuid4())
-            session['session_id'] = session_id
+            session['user_session'] = session_id
         
         user = User.query.filter_by(session_id=session_id).first()
         if not user:
@@ -1261,7 +1261,7 @@ def get_replenishment_bundles():
     Get bundled product recommendations for grouped restocking
     """
     try:
-        session_id = session.get('session_id')
+        session_id = session.get('user_session')
         if not session_id:
             return jsonify({"bundles": []})
         
@@ -1301,7 +1301,7 @@ def quick_add_replenishment():
             return jsonify({"success": False, "error": "Cycle not found"}), 404
         
         # Get session
-        session_id = session.get('session_id')
+        session_id = session.get('user_session')
         if not session_id:
             return jsonify({"success": False, "error": "No session"}), 400
         
@@ -1371,7 +1371,7 @@ def refresh_replenishment_cycles():
     Manually trigger replenishment cycle calculation for current user
     """
     try:
-        session_id = session.get('session_id')
+        session_id = session.get('user_session')
         if not session_id:
             return jsonify({"success": False, "error": "No session"}), 400
         
