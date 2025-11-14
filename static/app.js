@@ -1314,6 +1314,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function updateReplenishmentPanel() {
   try {
+    // Check if user is logged in - only show reminders for logged-in users
+    const userDataStr = localStorage.getItem('demoUser');
+    if (!userDataStr) {
+      // Guest user - show empty state
+      clearReplenishmentPanel();
+      return;
+    }
+    
     const response = await fetch('/api/replenishment/due-soon?days_ahead=7');
     const data = await response.json();
     
