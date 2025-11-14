@@ -954,6 +954,9 @@ function updateUserDisplay(userData) {
     
     // Fetch and display user stats
     updateUserStats(userData.email);
+    
+    // Update replenishment panel for this user
+    updateReplenishmentPanel();
   } else {
     // Guest user
     displayName.textContent = 'Guest User';
@@ -963,6 +966,9 @@ function updateUserDisplay(userData) {
     
     // Clear user stats
     clearUserStats();
+    
+    // Clear replenishment panel
+    clearReplenishmentPanel();
   }
 }
 
@@ -1024,6 +1030,30 @@ function clearUserStats() {
       No purchase history yet. Complete a purchase to see your order history!
     </div>
   `;
+}
+
+function clearReplenishmentPanel() {
+  // Hide all sections and show empty state
+  const dueNowSection = document.getElementById('dueNowSection');
+  const dueSoonSection = document.getElementById('dueSoonSection');
+  const upcomingSection = document.getElementById('upcomingSection');
+  const emptyState = document.getElementById('replenishEmpty');
+  const statsSection = document.getElementById('replenishStats');
+  
+  if (emptyState) emptyState.style.display = 'block';
+  if (statsSection) statsSection.style.display = 'none';
+  if (dueNowSection) dueNowSection.style.display = 'none';
+  if (dueSoonSection) dueSoonSection.style.display = 'none';
+  if (upcomingSection) upcomingSection.style.display = 'none';
+  
+  // Clear the lists
+  const dueNowList = document.getElementById('dueNowList');
+  const dueSoonList = document.getElementById('dueSoonList');
+  const upcomingList = document.getElementById('upcomingList');
+  
+  if (dueNowList) dueNowList.innerHTML = '';
+  if (dueSoonList) dueSoonList.innerHTML = '';
+  if (upcomingList) upcomingList.innerHTML = '';
 }
 
 async function loadUserData() {
