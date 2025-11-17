@@ -915,7 +915,7 @@ async function getBlendedRecommendations() {
             // 1. Price saving percentage badge (downward arrow for price decrease)
             '<div class="bg-green-100 border border-green-300 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
               '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path>' +
               '</svg>' +
               '<span>' + (discountPct > 0 ? discountPct + '% OFF' : 'Save $' + s.expected_saving) + '</span>' +
             '</div>' +
