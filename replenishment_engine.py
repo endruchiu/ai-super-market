@@ -609,9 +609,29 @@ class ReplenishmentEngine:
             similar_user_ids = [idx_to_user_id[int(idx)] for idx in valid_indices if int(idx) in idx_to_user_id]
             
             if not similar_user_ids:
+                print(f"⚠️ CF Fallback: No valid similar users found for product {product_id}")
                 return None
             
-            # Get purchase intervals from these similar users for this product
+            # FIX ISSUE 2: Validate that similar users actually purchased this product (with 2+ purchases)
+            # Get users who have purchased this product at least twice
+            users_with_product = self.db.session.query(
+                self.Order.user_id,
+                func.count(func.distinct(self.Order.created_at)).label('purchase_count')
+            ).join(self.OrderItem).filter(
+                self.OrderItem.product_id == product_id,
+                self.Order.user_id.in_(similar_user_ids)
+            ).group_by(self.Order.user_id).having(
+                func.count(func.distinct(self.Order.created_at)) >= 2
+            ).all()
+            
+            # Filter to only users who have purchased 2+ times
+            validated_user_ids = [row.user_id for row in users_with_product]
+            
+            if not validated_user_ids:
+                print(f"⚠️ CF Fallback: No similar users have 2+ purchases of product {product_id} (falling back to metadata)")
+                return None
+            
+            # Get purchase intervals from validated similar users for this product
             # Use DISTINCT on (user_id, created_at) to avoid duplicate timestamps from multi-item orders
             product_purchases = self.db.session.query(
                 self.Order.user_id,
@@ -621,7 +641,7 @@ class ReplenishmentEngine:
                 self.Order.created_at
             ).join(self.OrderItem).filter(
                 self.OrderItem.product_id == product_id,
-                self.Order.user_id.in_(similar_user_ids)  # Only similar users!
+                self.Order.user_id.in_(validated_user_ids)  # Only validated similar users!
             ).order_by(self.Order.user_id, self.Order.created_at).all()
             
             # Group by user and calculate their intervals
@@ -640,8 +660,10 @@ class ReplenishmentEngine:
                             similar_user_intervals.append(days)
             
             if len(similar_user_intervals) >= 2:
+                print(f"✓ CF Success: Using {len(validated_user_ids)} similar users for product {product_id}")
                 return np.median(similar_user_intervals)
             
+            print(f"⚠️ CF Fallback: Insufficient interval data for product {product_id}")
             return None
             
         except Exception as e:
@@ -730,10 +752,10 @@ class ReplenishmentEngine:
     def get_top_replenishment_opportunities(self, user_id, top_k=10):
         """
         Get top K replenishment opportunities for a user based on urgency.
-        Includes both established cycles (2+ purchases) and first-purchase predictions.
+        Includes ALL products user has purchased (even single purchases), not just catalog items.
         
         Args:
-            user_id: User session ID
+            user_id: User ID (integer)
             top_k: Number of top opportunities to return (default 10)
         
         Returns:
@@ -742,7 +764,8 @@ class ReplenishmentEngine:
         opportunities = []
         today = datetime.utcnow().date()
         
-        # Get all products user has purchased
+        # FIX ISSUE 1: Get ALL products user has purchased (not just CONSUMABLE_CATEGORIES)
+        # This includes single-purchase items that may only exist in OrderItem
         user_purchases = self.db.session.query(
             self.OrderItem.product_id,
             self.OrderItem.product_title,
@@ -751,8 +774,9 @@ class ReplenishmentEngine:
             self.Order.created_at,
             func.count(self.OrderItem.id).over(partition_by=self.OrderItem.product_id).label('purchase_count')
         ).join(self.Order).filter(
-            self.Order.user_id == user_id,
-            self.OrderItem.product_subcat.in_(self.CONSUMABLE_CATEGORIES)
+            self.Order.user_id == user_id
+            # REMOVED: self.OrderItem.product_subcat.in_(self.CONSUMABLE_CATEGORIES)
+            # Now includes ALL purchases for complete first-purchase predictions
         ).order_by(self.OrderItem.product_id, self.Order.created_at.desc()).all()
         
         # Group by product
@@ -760,9 +784,12 @@ class ReplenishmentEngine:
         for purchase in user_purchases:
             pid = purchase.product_id
             if pid not in product_data:
+                # Use subcategory from OrderItem, fallback to catalog if needed
+                subcat = purchase.product_subcat or 'Pantry & Dry Goods'  # Default fallback
+                
                 product_data[pid] = {
                     'title': purchase.product_title,
-                    'subcat': purchase.product_subcat,
+                    'subcat': subcat,
                     'purchase_count': purchase.purchase_count,
                     'last_purchase': purchase.created_at,
                     'all_dates': []
