@@ -1215,42 +1215,80 @@ async function handleEmailRegister() {
   }
 }
 
+// Generate or retrieve device fingerprint for persistent demo user
+function getDeviceFingerprint() {
+  let deviceId = localStorage.getItem('deviceFingerprint');
+  
+  if (!deviceId) {
+    const components = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency || 'unknown'
+    ];
+    
+    const hash = components.join('|').split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    deviceId = 'device_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
+    localStorage.setItem('deviceFingerprint', deviceId);
+  }
+  
+  return deviceId;
+}
+
 // Handle demo login from QR code
 async function handleDemoLogin(token) {
-  // Generate random demo user data
-  const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
-  const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
-  const randomEmail = randomName.toLowerCase().replace(' ', '.') + '@demo.com';
+  const deviceId = getDeviceFingerprint();
   
-  // Store user data in localStorage (demo only)
-  const userData = {
-    name: randomName,
-    email: randomEmail,
-    token: token,
-    signedInAt: new Date().toISOString()
-  };
+  let userData = localStorage.getItem('demoUser');
   
-  localStorage.setItem('demoUser', JSON.stringify(userData));
+  if (userData) {
+    userData = JSON.parse(userData);
+    console.log('Returning demo user:', userData.name);
+  } else {
+    const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
+    
+    const deviceHash = deviceId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    const nameIndex = Math.abs(deviceHash) % demoNames.length;
+    const demoName = demoNames[nameIndex];
+    const demoEmail = deviceId + '@demo.device';
+    
+    userData = {
+      name: demoName,
+      email: demoEmail,
+      deviceId: deviceId,
+      token: token,
+      signedInAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('demoUser', JSON.stringify(userData));
+    console.log('New demo user created:', demoName, 'for device:', deviceId);
+  }
   
-  // Tell the backend about the sign-in so it can track purchases by email
   try {
     await fetch('/api/user/signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email })
+      body: JSON.stringify({ 
+        email: userData.email,
+        name: userData.name,
+        deviceId: deviceId
+      })
     });
   } catch (error) {
     console.error('Backend sign-in failed:', error);
   }
   
-  // Update UI
   updateUserDisplay(userData);
-  
-  // Close modal
   hideSignInModal();
-  
-  // Show success message
-  showNotification('Signed in successfully as ' + name + '!', 'success');
+  showNotification('Signed in successfully as ' + userData.name + '!', 'success');
 }
 
 function signOut() {

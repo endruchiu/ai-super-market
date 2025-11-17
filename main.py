@@ -1694,28 +1694,84 @@ def demo_login():
         </div>
         
         <script>
-            // Auto-login the user
-            const token = '{token}';
-            const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
-            const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
-            const randomEmail = randomName.toLowerCase().replace(' ', '.') + '@demo.com';
+            // Generate or retrieve device fingerprint for persistent demo user
+            function getDeviceFingerprint() {{
+                // Check if device already has a fingerprint stored
+                let deviceId = localStorage.getItem('deviceFingerprint');
+                
+                if (!deviceId) {{
+                    // Create a simple device fingerprint from browser characteristics
+                    const components = [
+                        navigator.userAgent,
+                        navigator.language,
+                        screen.width + 'x' + screen.height,
+                        new Date().getTimezoneOffset(),
+                        navigator.hardwareConcurrency || 'unknown'
+                    ];
+                    
+                    // Simple hash function
+                    const hash = components.join('|').split('').reduce((a, b) => {{
+                        a = ((a << 5) - a) + b.charCodeAt(0);
+                        return a & a;
+                    }}, 0);
+                    
+                    // Generate device ID with timestamp for uniqueness
+                    deviceId = 'device_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
+                    localStorage.setItem('deviceFingerprint', deviceId);
+                }}
+                
+                return deviceId;
+            }}
             
-            const userData = {{
-                name: randomName,
-                email: randomEmail,
-                token: token,
-                signedInAt: new Date().toISOString()
-            }};
+            // Get or create persistent device ID
+            const deviceId = getDeviceFingerprint();
             
-            localStorage.setItem('demoUser', JSON.stringify(userData));
-            document.getElementById('userName').textContent = randomName;
+            // Retrieve existing demo user or create new one
+            let userData = localStorage.getItem('demoUser');
             
-            // Send signin to backend
+            if (userData) {{
+                // Existing user - parse and use
+                userData = JSON.parse(userData);
+                console.log('Returning user:', userData.name);
+            }} else {{
+                // New user - create deterministic demo user based on device ID
+                const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
+                
+                // Use device ID hash to consistently select same name for this device
+                const deviceHash = deviceId.split('').reduce((a, b) => {{
+                    a = ((a << 5) - a) + b.charCodeAt(0);
+                    return a & a;
+                }}, 0);
+                const nameIndex = Math.abs(deviceHash) % demoNames.length;
+                const demoName = demoNames[nameIndex];
+                const demoEmail = deviceId + '@demo.device';  // Use device ID as email
+                
+                userData = {{
+                    name: demoName,
+                    email: demoEmail,
+                    deviceId: deviceId,
+                    token: '{token}',
+                    signedInAt: new Date().toISOString()
+                }};
+                
+                localStorage.setItem('demoUser', JSON.stringify(userData));
+                console.log('New user created:', demoName, 'for device:', deviceId);
+            }}
+            
+            document.getElementById('userName').textContent = userData.name;
+            
+            // Send signin to backend with device ID
             fetch('/api/user/signin', {{
                 method: 'POST',
                 headers: {{ 'Content-Type': 'application/json' }},
-                body: JSON.stringify({{ email: randomEmail, name: randomName }})
-            }});
+                body: JSON.stringify({{ 
+                    email: userData.email,
+                    name: userData.name,
+                    deviceId: deviceId
+                }})
+            }}).then(response => response.json())
+              .then(data => console.log('Backend signin:', data))
+              .catch(err => console.error('Signin error:', err));
         </script>
     </body>
     </html>
