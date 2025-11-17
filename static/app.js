@@ -10,8 +10,207 @@ let RECOMMENDATION_DOTS = {};
 // Store ML-learned feature importance
 let MODEL_FEATURE_IMPORTANCE = null;
 
+// ==================== RECOMMENDATION TRACKING SYSTEM ====================
+// Store active recommendations shown to user with timestamps
+// Format: { recommendationId: { timestamp, originalProduct, recommendedProduct, savings, reason, nutrition } }
+let ACTIVE_RECOMMENDATIONS = {};
+
+// Store which cart items came from AI recommendations
+// Format: { cartItemTitle: { recommendationId, timestamp, originalProduct } }
+let AI_RECOMMENDED_ITEMS = {};
+
+// Track scroll depth on recommendations module
+let MAX_SCROLL_DEPTH = 0;
+let SCROLL_TRACKING_INITIALIZED = false;
+
 function fmt(n) { 
   return (Math.round(n * 100) / 100).toFixed(2); 
+}
+
+// ==================== RECOMMENDATION TRACKING FUNCTIONS ====================
+
+// Generate unique recommendation ID
+function generateRecommendationId(originalProduct, recommendedProduct) {
+  const timestamp = Date.now();
+  const productCombo = `${originalProduct.id || originalProduct.title}_${recommendedProduct.id}`;
+  return `rec_${timestamp}_${productCombo.substring(0, 20)}`;
+}
+
+// Track when recommendations are shown to user
+function trackRecommendationShown(recommendationData) {
+  try {
+    const recId = generateRecommendationId(recommendationData.originalProduct, recommendationData.recommendedProduct);
+    
+    // Extract nutrition data for drift detection
+    const originalNutrition = recommendationData.originalProduct.nutrition || {};
+    const recommendedNutrition = recommendationData.recommendedProduct.nutrition || {};
+    
+    // Store in active recommendations
+    ACTIVE_RECOMMENDATIONS[recId] = {
+      recommendationId: recId,
+      timestamp: Date.now(),
+      shownAt: new Date().toISOString(),
+      originalProduct: {
+        id: recommendationData.originalProduct.id,
+        title: recommendationData.originalProduct.title,
+        price: recommendationData.originalProduct.price,
+        subcat: recommendationData.originalProduct.subcat,
+        nutrition: {
+          protein: originalNutrition.Protein || originalNutrition.protein || 0,
+          sugar: originalNutrition.Sugar || originalNutrition.sugar || 0,
+          calories: originalNutrition.Calories || originalNutrition.calories || 0
+        }
+      },
+      recommendedProduct: {
+        id: recommendationData.recommendedProduct.id,
+        title: recommendationData.recommendedProduct.title,
+        price: recommendationData.recommendedProduct.price,
+        subcat: recommendationData.recommendedProduct.subcat,
+        nutrition: {
+          protein: recommendedNutrition.Protein || recommendedNutrition.protein || 0,
+          sugar: recommendedNutrition.Sugar || recommendedNutrition.sugar || 0,
+          calories: recommendedNutrition.Calories || recommendedNutrition.calories || 0
+        }
+      },
+      expectedSaving: recommendationData.expectedSaving,
+      reason: recommendationData.reason,
+      system: recommendationData.system || 'hybrid'
+    };
+    
+    // Send to backend
+    sendInteractionToBackend({
+      event_type: 'recommendation_shown',
+      recommendation_id: recId,
+      ...ACTIVE_RECOMMENDATIONS[recId]
+    });
+    
+    console.log('✓ Tracked recommendation shown:', recId);
+    return recId;
+  } catch (error) {
+    console.error('Error tracking recommendation shown:', error);
+    return null;
+  }
+}
+
+// Track user action on recommendation (accept/dismiss)
+function trackRecommendationAction(actionType, originalProduct, recommendedProduct, recId) {
+  try {
+    // Find the recommendation in active recommendations
+    const recommendation = ACTIVE_RECOMMENDATIONS[recId];
+    
+    if (!recommendation) {
+      console.warn('Recommendation not found in active tracking:', recId);
+      return;
+    }
+    
+    // Calculate time-to-action
+    const timeToAction = Date.now() - recommendation.timestamp;
+    
+    // Prepare interaction data
+    const interactionData = {
+      event_type: `recommendation_${actionType}`,
+      recommendation_id: recId,
+      action_type: actionType,
+      original_product: recommendation.originalProduct,
+      recommended_product: recommendation.recommendedProduct,
+      expected_saving: recommendation.expectedSaving,
+      reason: recommendation.reason,
+      shown_at: recommendation.shownAt,
+      action_at: new Date().toISOString(),
+      time_to_action_ms: timeToAction,
+      time_to_action_seconds: Math.round(timeToAction / 1000),
+      scroll_depth: MAX_SCROLL_DEPTH,
+      system: recommendation.system
+    };
+    
+    // If accepted, track the item as AI-recommended
+    if (actionType === 'accept') {
+      AI_RECOMMENDED_ITEMS[recommendedProduct.title] = {
+        recommendationId: recId,
+        timestamp: Date.now(),
+        originalProduct: originalProduct.title,
+        addedAt: new Date().toISOString()
+      };
+    }
+    
+    // Send to backend
+    sendInteractionToBackend(interactionData);
+    
+    // Remove from active recommendations
+    delete ACTIVE_RECOMMENDATIONS[recId];
+    
+    console.log(`✓ Tracked recommendation ${actionType}:`, recId, `(${timeToAction}ms)`);
+  } catch (error) {
+    console.error('Error tracking recommendation action:', error);
+  }
+}
+
+// Monitor scroll depth on recommendations module
+function trackScrollDepth() {
+  const recommendationsModule = document.getElementById('recommendationsModule');
+  if (!recommendationsModule || recommendationsModule.style.display === 'none') {
+    return;
+  }
+  
+  try {
+    const moduleRect = recommendationsModule.getBoundingClientRect();
+    const moduleHeight = moduleRect.height;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate visible portion of module
+    const visibleTop = Math.max(0, -moduleRect.top);
+    const visibleBottom = Math.min(moduleHeight, viewportHeight - moduleRect.top);
+    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+    
+    // Calculate scroll depth percentage
+    const scrollDepth = moduleHeight > 0 ? (visibleHeight / moduleHeight) * 100 : 0;
+    
+    // Update max scroll depth
+    if (scrollDepth > MAX_SCROLL_DEPTH) {
+      MAX_SCROLL_DEPTH = Math.round(scrollDepth);
+    }
+  } catch (error) {
+    console.error('Error tracking scroll depth:', error);
+  }
+}
+
+// Initialize scroll tracking for recommendations module
+function initializeScrollTracking() {
+  if (SCROLL_TRACKING_INITIALIZED) {
+    return;
+  }
+  
+  // Add scroll listener
+  window.addEventListener('scroll', trackScrollDepth, { passive: true });
+  
+  // Add resize listener (affects scroll depth calculation)
+  window.addEventListener('resize', trackScrollDepth, { passive: true });
+  
+  SCROLL_TRACKING_INITIALIZED = true;
+  console.log('✓ Scroll tracking initialized for recommendations');
+}
+
+// Send interaction data to backend
+async function sendInteractionToBackend(interactionData) {
+  try {
+    const response = await fetch('/api/analytics/track-interaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(interactionData)
+    });
+    
+    if (response.ok) {
+      console.log('✓ Interaction tracked:', interactionData.event_type);
+    } else if (response.status === 404) {
+      // Endpoint not implemented yet - silently ignore
+      console.log('ℹ Analytics endpoint not available yet');
+    } else {
+      console.warn('Failed to track interaction:', response.status);
+    }
+  } catch (error) {
+    // Don't break app if tracking fails
+    console.warn('Tracking error (non-critical):', error.message);
+  }
 }
 
 function highlightAisleForRecommendation(subcategory) {
@@ -430,6 +629,33 @@ function decQty(i) {
 
 function removeItem(i) {
   const item = CART[i];
+  
+  // Check if this was an AI-recommended item
+  const aiRecommendation = AI_RECOMMENDED_ITEMS[item.title];
+  
+  if (aiRecommendation) {
+    // Track removal of AI-recommended item
+    sendInteractionToBackend({
+      event_type: 'ai_recommendation_removed',
+      recommendation_id: aiRecommendation.recommendationId,
+      removed_product: {
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        subcat: item.subcat
+      },
+      original_product_title: aiRecommendation.originalProduct,
+      added_at: aiRecommendation.addedAt,
+      removed_at: new Date().toISOString(),
+      time_in_cart_ms: Date.now() - aiRecommendation.timestamp
+    });
+    
+    console.log('✓ Tracked removal of AI-recommended item:', item.title);
+    
+    // Remove from AI recommendations tracking
+    delete AI_RECOMMENDED_ITEMS[item.title];
+  }
+  
   CART.splice(i, 1);
   updateCartDisplay();
   updateBadge();
@@ -440,7 +666,12 @@ function removeItem(i) {
   }
 }
 
-function dismissRecommendation(card) {
+function dismissRecommendation(card, recId, originalProduct, recommendedProduct) {
+  // Track the dismiss action before removing
+  if (recId && originalProduct && recommendedProduct) {
+    trackRecommendationAction('dismiss', originalProduct, recommendedProduct, recId);
+  }
+  
   // Smooth fade-out animation
   card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
   card.style.opacity = '0';
@@ -495,13 +726,21 @@ function showToast(message, type = 'success') {
   }, 2500);
 }
 
-function applyReplacement(originalTitle, replacementProduct) {
+function applyReplacement(originalTitle, replacementProduct, recId) {
   console.log('Applying replacement:', originalTitle, '->', replacementProduct.title);
   
   const idx = CART.findIndex(x => x.title === originalTitle);
   if (idx === -1) {
     alert('Original item not found in cart. It may have been removed.');
     return;
+  }
+  
+  // Get original product before removing from cart
+  const originalProduct = CART[idx];
+  
+  // Track the accept action before applying
+  if (recId) {
+    trackRecommendationAction('accept', originalProduct, replacementProduct, recId);
   }
   
   CART.splice(idx, 1);
@@ -873,6 +1112,24 @@ async function getBlendedRecommendations() {
           addRecommendationDot(s.replacement_product.subcat, 'hybrid');
         }
         
+        // Find original product in cart for tracking
+        const originalProduct = CART.find(item => item.title === s.replace) || {
+          id: null,
+          title: s.replace,
+          price: 0,
+          subcat: '',
+          nutrition: {}
+        };
+        
+        // Track recommendation shown
+        const recId = trackRecommendationShown({
+          originalProduct: originalProduct,
+          recommendedProduct: s.replacement_product,
+          expectedSaving: s.expected_saving,
+          reason: s.reason,
+          system: 'hybrid'
+        });
+        
         // Calculate percentage savings
         const originalPrice = parseFloat(s.replace.match(/\$[\d,.]+/)?.[0]?.replace('$', '').replace(',', '') || 0);
         const replacementPrice = s.replacement_product.price || 0;
@@ -1006,12 +1263,15 @@ async function getBlendedRecommendations() {
             '</button>' +
           '</div>';
         
-        // Add click handlers to buttons
+        // Add click handlers to buttons with tracking
         const acceptBtn = card.querySelector('button[class*="bg-gradient-to-r"]');
-        acceptBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
+        acceptBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product, recId); };
         
         const maybeLaterBtn = card.querySelector('button[class*="border-gray-300"]');
-        maybeLaterBtn.onclick = function() { dismissRecommendation(card); };
+        maybeLaterBtn.onclick = function() { dismissRecommendation(card, recId, originalProduct, s.replacement_product); };
+        
+        // Store recommendation ID with card for later reference
+        card.dataset.recommendationId = recId;
         
         contentDiv.appendChild(card);
       });
@@ -1022,11 +1282,20 @@ async function getBlendedRecommendations() {
     document.getElementById('blendedRecommendations').style.display = 'block';
     updateRecommendationsModule();
     
+    // Initialize scroll tracking for recommendations module
+    initializeScrollTracking();
+    
+    // Reset scroll depth tracking for new recommendations
+    MAX_SCROLL_DEPTH = 0;
+    
     // Scroll recommendation module into view
     const recommendationsModule = document.getElementById('recommendationsModule');
     if (recommendationsModule && recommendationsModule.style.display === 'block') {
       console.log('✅ Hybrid AI recommendations displayed!');
       recommendationsModule.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      // Track initial scroll depth
+      setTimeout(() => trackScrollDepth(), 100);
     }
   } catch (error) {
     console.error('Error fetching blended recommendations:', error);
