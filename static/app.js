@@ -1132,7 +1132,7 @@ function updateUserDisplay(userData) {
 
 function signOut() {
   // Clear user data
-  localStorage.removeItem('demoUser');
+  localStorage.removeItem('currentUser');
   
   // Reset UI to guest user
   updateUserDisplay(null);
@@ -1144,7 +1144,7 @@ function signOut() {
 function clearSessionData() {
   if (confirm('This will clear your cart, purchase history, and sign-in data. Continue?')) {
     // Clear localStorage
-    localStorage.removeItem('demoUser');
+    localStorage.removeItem('currentUser');
     
     // Clear cart
     CART = [];
@@ -1276,7 +1276,7 @@ function clearReplenishmentPanel() {
 
 async function loadUserData() {
   // Load user data from localStorage
-  const userDataStr = localStorage.getItem('demoUser');
+  const userDataStr = localStorage.getItem('currentUser');
   
   if (userDataStr) {
     try {
@@ -1288,14 +1288,14 @@ async function loadUserData() {
         await fetch('/api/user/signin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: userData.email })
+          body: JSON.stringify({ name: userData.name, email: userData.email })
         });
       } catch (error) {
         console.error('Backend session restore failed:', error);
       }
     } catch (e) {
       console.error('Error loading user data:', e);
-      localStorage.removeItem('demoUser');
+      localStorage.removeItem('currentUser');
     }
   }
 }
@@ -1540,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function updateReplenishmentPanel() {
   try {
     // Check if user is logged in - only show reminders for logged-in users
-    const userDataStr = localStorage.getItem('demoUser');
+    const userDataStr = localStorage.getItem('currentUser');
     if (!userDataStr) {
       // Guest user - show empty state
       clearReplenishmentPanel();
