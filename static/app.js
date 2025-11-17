@@ -1323,6 +1323,26 @@ function toggleUserPanel() {
   }
 }
 
+// Open Sign In Modal
+function openSignInModal() {
+  const modal = document.getElementById('signInModal');
+  const overlay = document.getElementById('signInModalOverlay');
+  
+  modal.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+// Close Sign In Modal
+function closeSignInModal() {
+  const modal = document.getElementById('signInModal');
+  const overlay = document.getElementById('signInModalOverlay');
+  
+  modal.classList.add('hidden');
+  overlay.classList.add('hidden');
+  document.body.style.overflow = ''; // Restore scrolling
+}
+
 // Handle name/email login
 async function handleEmailLogin(event) {
   event.preventDefault();
@@ -1372,6 +1392,9 @@ async function handleEmailLogin(event) {
       await loadUserGoals();
       
       showNotification(`Welcome back, ${userData.name}!`, 'success');
+      
+      // Close the sign-in modal
+      closeSignInModal();
       
       // Clear form
       document.getElementById('loginForm').reset();
