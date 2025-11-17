@@ -3,7 +3,7 @@ modules = ["python-3.11", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["arrow-cpp", "cargo", "glibcLocales", "libiconv", "libxcrypt", "ocl-icd", "opencl-headers", "openssl", "pkg-config", "rustc", "xsimd", "gcc"]
+packages = ["arrow-cpp", "cargo", "freetype", "gcc", "glibcLocales", "lcms2", "libiconv", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "ocl-icd", "opencl-headers", "openjpeg", "openssl", "pkg-config", "rustc", "tcl", "tk", "xsimd", "zlib"]
 
 [unitTest]
 language = "python3"

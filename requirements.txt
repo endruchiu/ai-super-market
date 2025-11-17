@@ -19,3 +19,5 @@ openai
 requests
 lightgbm
 pyarrow
+pillow
+qrcode
