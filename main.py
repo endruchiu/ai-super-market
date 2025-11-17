@@ -431,7 +431,67 @@ def api_blended_recommendations():
         suggestions = []
         
         # Detect user intent from recent session behavior
-        current_intent = intent_detector.detect_intent(user_id, cart, db.session)
+        # Use the SAME calculation as the UI panel (without EMA smoothing) for consistency
+        user = User.query.filter_by(session_id=user_id).first()
+        if not user:
+            current_intent = 0.5
+        else:
+            from datetime import datetime, timedelta
+            cutoff = datetime.utcnow() - timedelta(minutes=10)
+            recent_events = UserEvent.query.filter(
+                UserEvent.user_id == user.id,
+                UserEvent.created_at >= cutoff
+            ).order_by(UserEvent.created_at.desc()).limit(10).all()
+            
+            # Calculate raw intent (same logic as /api/isrec/intent endpoint)
+            quality_score = 0.0
+            economy_score = 0.0
+            
+            premium_keywords = ['organic', 'premium', 'grass-fed', 'free-range', 'artisan', 'imported', 'gourmet', 'specialty']
+            budget_keywords = ['value', 'budget', 'saver', 'basic', 'everyday']
+            
+            for event in recent_events:
+                product_id = event.product_id
+                if product_id in PRODUCTS_DF.index:
+                    row = PRODUCTS_DF.loc[product_id]
+                    price = float(row.get("_price_final", 0))
+                    title_lower = str(row['Title']).lower()
+                    
+                    # Quality signals
+                    is_premium = any(kw in title_lower for kw in premium_keywords)
+                    is_expensive = price > 25
+                    
+                    if event.event_type == 'view':
+                        if is_premium:
+                            quality_score += 1.0
+                        if is_expensive:
+                            quality_score += 0.5
+                    elif event.event_type == 'cart_add':
+                        if is_premium:
+                            quality_score += 2.0
+                        if is_expensive:
+                            quality_score += 1.0
+                    elif event.event_type == 'cart_remove' and price < 15:
+                        quality_score += 1.5
+                    
+                    # Economy signals
+                    is_value = any(kw in title_lower for kw in budget_keywords)
+                    is_cheap = price < 10
+                    
+                    if event.event_type == 'view':
+                        if is_value or is_cheap:
+                            economy_score += 1.0
+                    elif event.event_type == 'cart_add':
+                        if is_value:
+                            economy_score += 2.0
+                        if is_cheap:
+                            economy_score += 1.5
+                    elif event.event_type == 'cart_remove' and price > 20:
+                        economy_score += 2.0
+            
+            # Calculate intent score (same as UI panel)
+            total = quality_score + economy_score
+            current_intent = quality_score / total if total > 0 else 0.5
         
         # Map ISRec intent to guardrail mode
         if current_intent >= 0.6:
