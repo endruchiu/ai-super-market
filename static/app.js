@@ -839,14 +839,19 @@ async function getBlendedRecommendations() {
         };
         const aisle = aisleMap[s.replacement_product.subcat] || 'A';
         
-        // Generate mode-based badge label from the reason text
-        // Extract mode context from the LLM-generated reason
-        let modeBadge = 'Best Value';
-        if (s.reason.toLowerCase().includes('premium') || s.reason.toLowerCase().includes('quality')) {
+        // Generate mode-based badge label from ISRec intent score
+        // Use actual intent score from backend instead of keyword matching
+        const intentScore = s.intent_score || 0.5;  // Default to balanced if missing
+        let modeBadge = '✨ Best Value';
+        
+        if (intentScore >= 0.6) {
+          // Quality mode: User prefers premium/organic products
           modeBadge = '⭐ Top Tier';
-        } else if (s.reason.toLowerCase().includes('save') || s.reason.toLowerCase().includes('savings') || s.reason.toLowerCase().includes('deal')) {
+        } else if (intentScore <= 0.4) {
+          // Economy mode: User is budget-conscious
           modeBadge = '🔥 Best Deal';
         } else {
+          // Balanced mode: User wants value (quality + savings)
           modeBadge = '✨ Best Value';
         }
         

@@ -507,6 +507,7 @@ def api_blended_recommendations():
                                 "expected_saving": f"{saving:.2f}",
                                 "similarity": "Great match",  # Human-friendly, no numbers
                                 "reason": reason,
+                                "intent_score": current_intent,  # Pass ISRec intent score to frontend
                                 "replacement_product": {
                                     "id": str(product_id),
                                     "title": rec_title,
@@ -550,6 +551,7 @@ def api_blended_recommendations():
                                     "expected_saving": f"{saving:.2f}",
                                     "similarity": "Good alternative",  # Human-friendly, no numbers
                                     "reason": reason,
+                                    "intent_score": current_intent,  # Pass ISRec intent score to frontend
                                     "replacement_product": {
                                         "id": str(product_id),
                                         "title": rec_title,
