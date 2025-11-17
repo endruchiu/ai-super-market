@@ -67,6 +67,48 @@
     .rec-dot-green {
       background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
     }
+    
+    /* Budget Slider Styling */
+    input[type="range"].slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    
+    /* Slider Thumb - Chrome, Safari, Edge */
+    input[type="range"].slider-thumb::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s;
+    }
+    
+    input[type="range"].slider-thumb::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+    }
+    
+    /* Slider Thumb - Firefox */
+    input[type="range"].slider-thumb::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s;
+    }
+    
+    input[type="range"].slider-thumb::-moz-range-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -354,20 +396,34 @@
         
         <!-- MODULE 1: Shopping Cart -->
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <!-- Cart Icon and Budget -->
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center space-x-2">
-              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              <h2 class="text-xl font-bold text-gray-900">Shopping Cart</h2>
+          <!-- Cart Icon and Title -->
+          <div class="flex items-center space-x-2 mb-4">
+            <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            <h2 class="text-xl font-bold text-gray-900">Shopping Cart</h2>
+          </div>
+          
+          <!-- Budget Slider Control -->
+          <div class="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-sm font-semibold text-gray-700">Budget</label>
+              <span id="budgetValue" class="text-lg font-bold text-indigo-600">$40</span>
             </div>
-            <div class="flex items-center space-x-2">
-              <label class="text-sm font-medium text-gray-600">Budget:</label>
-              <div class="relative">
-                <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
-                <input id="budget" type="number" min="0" step="1" value="40" 
-                       class="w-20 pl-6 pr-2 py-1 border-2 border-gray-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 transition-all font-semibold text-sm">
+            
+            <!-- Slider -->
+            <input id="budget" type="range" min="0" max="200" step="5" value="40" 
+                   class="w-full h-2 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full appearance-none cursor-pointer slider-thumb"
+                   style="outline: none;">
+            
+            <!-- Progress Bar -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between text-xs font-medium mb-1">
+                <span id="spentLabel" class="text-gray-600">$0 / $40</span>
+                <span id="remainingLabel" class="text-green-600">$40 left</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div id="spendingProgress" class="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-300" style="width: 0%"></div>
               </div>
             </div>
           </div>

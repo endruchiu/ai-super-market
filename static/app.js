@@ -302,6 +302,14 @@ function updateCartDisplay() {
     
     // Update budget warning
     updateBudgetWarning(sum, budget);
+    
+    // Update spending progress bar
+    updateSpendingProgress(sum, budget);
+  }
+  
+  // Also update progress bar when cart is empty
+  if (CART.length === 0) {
+    updateSpendingProgress(0, budget);
   }
   
   // Auto-show all recommendation systems if over budget
@@ -359,6 +367,44 @@ function updateBudgetWarning(cartTotal, budget) {
   } else {
     // GREEN - Within budget (< 80%)
     warningDiv.style.display = 'none';
+  }
+}
+
+function updateSpendingProgress(spent, budget) {
+  const spentLabel = document.getElementById('spentLabel');
+  const remainingLabel = document.getElementById('remainingLabel');
+  const progressBar = document.getElementById('spendingProgress');
+  
+  if (!spentLabel || !remainingLabel || !progressBar) return;
+  
+  const remaining = budget - spent;
+  const percentSpent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+  
+  // Update labels
+  spentLabel.textContent = `$${fmt(spent)} / $${fmt(budget)}`;
+  
+  // Update remaining label with color coding
+  if (remaining >= 0) {
+    remainingLabel.textContent = `$${fmt(remaining)} left`;
+    remainingLabel.className = 'text-green-600 font-semibold';
+  } else {
+    remainingLabel.textContent = `$${fmt(Math.abs(remaining))} over`;
+    remainingLabel.className = 'text-red-600 font-semibold';
+  }
+  
+  // Update progress bar
+  progressBar.style.width = percentSpent + '%';
+  
+  // Change color based on spending
+  if (percentSpent < 75) {
+    // Under 75% - green
+    progressBar.className = 'h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-300';
+  } else if (percentSpent < 100) {
+    // 75-100% - yellow warning
+    progressBar.className = 'h-full bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full transition-all duration-300';
+  } else {
+    // Over budget - red
+    progressBar.className = 'h-full bg-gradient-to-r from-red-400 to-red-500 rounded-full transition-all duration-300';
   }
 }
 
@@ -1290,10 +1336,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load user data
   loadUserData();
   
-  // Add budget input change listener
+  // Add budget slider change listener
   const budgetInput = document.getElementById('budget');
   if (budgetInput) {
     budgetInput.addEventListener('input', function() {
+      // Update budget value display
+      const budgetValue = document.getElementById('budgetValue');
+      if (budgetValue) {
+        budgetValue.textContent = '$' + budgetInput.value;
+      }
+      
+      // Update cart display and progress bar
       updateCartDisplay();
     });
   }
