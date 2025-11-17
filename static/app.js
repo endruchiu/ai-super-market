@@ -1508,32 +1508,144 @@ async function updateUserStats(email) {
       document.getElementById('userAvgOrder').textContent = `$${data.avg_order.toFixed(2)}`;
       
       // Update purchase history
-      const historyContainer = document.getElementById('userPurchaseHistory');
-      if (data.recent_orders.length > 0) {
-        historyContainer.innerHTML = data.recent_orders.map(order => `
-          <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <div class="text-sm font-semibold text-gray-900">Order #${order.order_id}</div>
-                <div class="text-xs text-gray-500">${order.created_at}</div>
-              </div>
-              <div class="text-sm font-bold text-indigo-600">$${order.total_amount.toFixed(2)}</div>
-            </div>
-            <div class="text-xs text-gray-600">${order.item_count} item${order.item_count !== 1 ? 's' : ''}</div>
-          </div>
-        `).join('');
-      } else {
-        historyContainer.innerHTML = `
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">
-            No purchase history yet. Complete a purchase to see your order history!
-          </div>
-        `;
-      }
+      displayPurchaseHistory(data.recent_orders);
     }
   } catch (error) {
     console.error('Error fetching user stats:', error);
   }
 }
+
+// Global variable to store purchase history
+let ALL_PURCHASE_HISTORY = [];
+let PURCHASE_HISTORY_EXPANDED = false;
+
+// Display purchase history with show more/less functionality
+function displayPurchaseHistory(orders) {
+  ALL_PURCHASE_HISTORY = orders;
+  const historyContainer = document.getElementById('userPurchaseHistory');
+  
+  if (orders.length === 0) {
+    historyContainer.innerHTML = `
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">
+        No purchase history yet. Complete a purchase to see your order history!
+      </div>
+    `;
+    return;
+  }
+  
+  // Show only first 3 by default, or all if expanded
+  const displayOrders = PURCHASE_HISTORY_EXPANDED ? orders : orders.slice(0, 3);
+  
+  historyContainer.innerHTML = `
+    <div class="space-y-3">
+      ${displayOrders.map((order, index) => `
+        <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-gray-900">Order #${order.order_id}</div>
+              <div class="text-xs text-gray-500">${order.created_at}</div>
+            </div>
+            <div class="text-sm font-bold text-indigo-600">$${order.total_amount.toFixed(2)}</div>
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="text-xs text-gray-600">${order.item_count} item${order.item_count !== 1 ? 's' : ''}</div>
+            <button onclick="showOrderDetails(${index})" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline">
+              Details
+            </button>
+          </div>
+        </div>
+      `).join('')}
+      
+      ${orders.length > 3 ? `
+        <button onclick="togglePurchaseHistory()" class="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-semibold py-2">
+          ${PURCHASE_HISTORY_EXPANDED ? '▲ View less' : '▼ View all (' + orders.length + ' orders)'}
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
+// Toggle between showing 3 or all purchase history items
+function togglePurchaseHistory() {
+  PURCHASE_HISTORY_EXPANDED = !PURCHASE_HISTORY_EXPANDED;
+  displayPurchaseHistory(ALL_PURCHASE_HISTORY);
+}
+
+// Show order details modal
+function showOrderDetails(orderIndex) {
+  const order = ALL_PURCHASE_HISTORY[orderIndex];
+  displayOrderDetailsModal(order);
+}
+
+// Display order details in a modal
+function displayOrderDetailsModal(order) {
+  const modal = document.getElementById('orderDetailsModal');
+  const modalContent = document.getElementById('orderDetailsContent');
+  
+  modalContent.innerHTML = `
+    <div class="space-y-4">
+      <!-- Order Header -->
+      <div class="border-b border-gray-200 pb-4">
+        <h3 class="text-xl font-bold text-gray-900">Order #${order.order_id}</h3>
+        <p class="text-sm text-gray-500">${order.created_at}</p>
+        <p class="text-xs text-gray-500 mt-1">📍 AI Supermarket - Virtual Store</p>
+      </div>
+      
+      <!-- Order Items -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-3">Items (${order.items.length})</h4>
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+          ${order.items.map(item => `
+            <div class="flex justify-between items-start bg-gray-50 rounded-lg p-3">
+              <div class="flex-1">
+                <div class="text-sm font-medium text-gray-900">${item.product_title}</div>
+                <div class="text-xs text-gray-500">Qty: ${item.quantity} × $${item.unit_price.toFixed(2)}</div>
+              </div>
+              <div class="text-sm font-semibold text-gray-900">$${item.line_total.toFixed(2)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      
+      <!-- Order Summary -->
+      <div class="border-t border-gray-200 pt-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">Subtotal</span>
+          <span class="font-medium">$${order.total_amount.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">Tax</span>
+          <span class="font-medium">$0.00</span>
+        </div>
+        <div class="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-2 mt-2">
+          <span>Total</span>
+          <span>$${order.total_amount.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Show modal
+  modal.classList.remove('hidden');
+  document.getElementById('orderDetailsOverlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+// Close order details modal
+function closeOrderDetailsModal() {
+  document.getElementById('orderDetailsModal').classList.add('hidden');
+  document.getElementById('orderDetailsOverlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('orderDetailsModal');
+    if (modal && !modal.classList.contains('hidden')) {
+      closeOrderDetailsModal();
+    }
+  }
+});
 
 function clearUserStats() {
   // Reset stats to 0
@@ -1543,6 +1655,8 @@ function clearUserStats() {
   document.getElementById('userAvgOrder').textContent = '$0.00';
   
   // Reset purchase history
+  ALL_PURCHASE_HISTORY = [];
+  PURCHASE_HISTORY_EXPANDED = false;
   document.getElementById('userPurchaseHistory').innerHTML = `
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500 text-sm">
       No purchase history yet. Complete a purchase to see your order history!

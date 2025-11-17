@@ -26,6 +26,12 @@ Preferred communication style: Simple, everyday language.
 - **Components**: Responsive header, interactive aisle cards, product cards, budget controls, shopping cart, collapsible product browser, animated notifications.
 - **Responsiveness**: Mobile-friendly layout.
 - **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Simplified sign-in form (name + email only, no password) with localStorage for persistence. Designed for easy demo access.
+- **Purchase History UI**: Enhanced purchase history display with smart pagination:
+  - Shows 3 most recent orders by default with compact card design
+  - "View all" / "View less" toggle for expanding to see all order history
+  - Individual "Details" button per order opening receipt modal
+  - Order details modal displays: order number, timestamp, itemized list with quantities/prices, subtotal, tax, and total
+  - Clean, responsive design with smooth modal transitions
 - **AI Recommendation UI**: Recommendations trigger when the cart exceeds budget. Features an aisle highlighting system with pulsing orange gradient for the most recent recommendation and green dots for other recommended aisles.
 
 ### AI & Recommendations
