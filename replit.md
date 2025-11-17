@@ -47,22 +47,20 @@ Preferred communication style: Simple, everyday language.
   - **Login-Aware**: Only displays reminders for logged-in users, clears panel for guests
   - **Complete Coverage**: Includes ALL user purchases (not limited to catalog items), ensuring single-purchase products are eligible for predictions
 
-### LLM-as-a-Judge Evaluation System
-- **Methodology**: Uses OpenAI GPT-5 for automated evaluation of recommendation systems based on pairwise comparisons and criteria-based scoring across various scenarios.
-
 ### Behavioral Analytics System
 - **Frontend Tracking**: Comprehensive JavaScript tracking captures all recommendation interactions:
-  - Recommendation shown events with timestamps
+  - Recommendation shown events with timestamps and nutrition data
   - User actions (Accept Swap, Maybe Later)
   - Scroll depth monitoring on recommendation panels
   - Time-to-action calculation (milliseconds precision)
   - Cart removal tracking for AI-recommended items
+  - Real nutrition attribute extraction (protein, sugar, calories, sodium) from product catalog
 - **Database Models**:
-  - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories), savings, explanations, timestamps, scroll depth, and removal flags
+  - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories, sodium), savings, explanations, timestamps, scroll depth, goal alignment flag, and removal flags
   - **UserGoal**: Tracks user health/nutrition goals (goal_type, goal_direction, target_value, priority)
 - **Analytics Endpoints**:
-  - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend
-  - **GET /api/analytics/metrics**: Computes 7 behavioral metrics:
+  - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend with goal alignment checking
+  - **GET /api/analytics/metrics**: Computes 10 behavioral metrics:
     1. RAR (Replace Action Rate): % of recommendations accepted
     2. ACR (Action to Cart Rate): % of recommendations added to cart
     3. Time-to-Accept: Average time from shown to accept (seconds)
@@ -70,9 +68,28 @@ Preferred communication style: Simple, everyday language.
     5. BCR (Basket Change Rate): % of AI items later removed from cart
     6. Dismiss Rate: % of recommendations dismissed
     7. Removal Rate: % of accepted items removed from cart
+    8. BDS (Behavioral Drift Score): Detects preference shifts over time (protein, sugar, calories, price)
+    9. EAS (Explanation Acceptance Score): Measures effectiveness of AI explanations on acceptance rates
+    10. HGAB (Health Goal Alignment Behavior): % of goal-aligned recommendations accepted
+  - **POST /api/user/goals**: Saves user health/nutrition goals
+  - **GET /api/user/goals**: Retrieves active user goals
+  - **GET /api/analytics/llm-insights**: AI-powered insights using GPT-4o-mini to analyze all metrics and provide recommendations
   - Supports user-specific filtering and time period filtering (7d, 30d, all)
-- **Drift Detection**: Tracks product attribute changes (protein, sugar, price, calories) over time to detect behavioral shifts
-- **Explanation Tracking**: Captures whether recommendations include AI explanations for acceptance rate analysis
+- **Health Goal System**: User interface in User Panel for setting nutrition goals (increase/decrease protein, sugar, calories, sodium) with target values and priorities
+- **Analytics Dashboard**: Dedicated /analytics route with comprehensive visualizations:
+  - Overview metrics: RAR, ACR, Time-to-Accept, Scroll Depth
+  - Cart behavior: BCR, Dismiss Rate, Removal Rate
+  - Advanced analytics: BDS with drift detection alerts, EAS with lift comparisons
+  - Health goal alignment: HGAB score with alignment breakdown
+  - AI-powered insights: GPT-4o-mini analysis with strengths, weaknesses, recommendations, and performance score
+  - Time period and user filtering with real-time updates
+  - Color-coded badges, progress bars, and responsive grid layout
+- **LLM Evaluation Engine**: Uses OpenAI GPT-4o-mini for automated analysis of recommendation system performance:
+  - Comprehensive prompt engineering with industry benchmarks
+  - Structured JSON responses with actionable insights
+  - 5-minute caching to prevent redundant API calls
+  - Priority-based recommendations (High/Medium/Low)
+  - Overall performance scoring (1-10 scale)
 
 ## External Dependencies
 
