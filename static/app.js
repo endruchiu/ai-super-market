@@ -903,10 +903,19 @@ function showSignInModal() {
   modal.classList.add('scale-100');
   overlay.classList.remove('hidden');
   
-  // Focus on name input
-  setTimeout(() => {
-    document.getElementById('signInName').focus();
-  }, 100);
+  // Generate unique demo token
+  const demoToken = 'demo_' + Math.random().toString(36).substring(2, 15);
+  
+  // Create demo login URL
+  const baseUrl = window.location.origin;
+  const demoUrl = `${baseUrl}/demo-login?token=${demoToken}`;
+  
+  // Generate QR code using QuickChart API
+  const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(demoUrl)}&size=300&margin=1`;
+  
+  // Update QR code image and URL display
+  document.getElementById('qrCodeImage').src = qrCodeUrl;
+  document.getElementById('demoUrl').textContent = demoUrl;
 }
 
 function hideSignInModal() {
@@ -921,21 +930,18 @@ function hideSignInModal() {
   }, 300);
 }
 
-async function handleSignIn(event) {
-  event.preventDefault();
-  
-  const name = document.getElementById('signInName').value.trim();
-  const email = document.getElementById('signInEmail').value.trim();
-  
-  if (!name || !email) {
-    alert('Please enter both name and email.');
-    return;
-  }
+// Handle demo login from QR code
+async function handleDemoLogin(token) {
+  // Generate random demo user data
+  const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
+  const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
+  const randomEmail = randomName.toLowerCase().replace(' ', '.') + '@demo.com';
   
   // Store user data in localStorage (demo only)
   const userData = {
-    name: name,
-    email: email,
+    name: randomName,
+    email: randomEmail,
+    token: token,
     signedInAt: new Date().toISOString()
   };
   

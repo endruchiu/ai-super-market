@@ -1483,6 +1483,85 @@ def refresh_replenishment_cycles():
 def static_files(filename):
     return send_from_directory('static', filename)
 
+@app.route("/demo-login")
+def demo_login():
+    """
+    QR code demo login endpoint.
+    Generates a confirmation page that auto-logs in the user.
+    """
+    token = request.args.get('token', 'demo_unknown')
+    
+    # Return a simple confirmation page with auto-login script
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Demo Login - AI Supermarket</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            body {{ font-family: 'Inter', system-ui, sans-serif; }}
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+            <!-- Success Icon -->
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+                    <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">You're Signed In!</h1>
+            <p class="text-gray-600 mb-6">Welcome to the AI Supermarket demo</p>
+            
+            <!-- User Info -->
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 mb-6">
+                <p class="text-sm text-gray-600 mb-1">Signed in as</p>
+                <p id="userName" class="text-lg font-bold text-indigo-600">Demo User</p>
+            </div>
+            
+            <!-- Button -->
+            <a href="/" class="inline-block w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg">
+                Open on Tablet
+            </a>
+            
+            <p class="text-xs text-gray-500 mt-6">This is a demo session for presentation purposes only</p>
+        </div>
+        
+        <script>
+            // Auto-login the user
+            const token = '{token}';
+            const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
+            const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
+            const randomEmail = randomName.toLowerCase().replace(' ', '.') + '@demo.com';
+            
+            const userData = {{
+                name: randomName,
+                email: randomEmail,
+                token: token,
+                signedInAt: new Date().toISOString()
+            }};
+            
+            localStorage.setItem('demoUser', JSON.stringify(userData));
+            document.getElementById('userName').textContent = randomName;
+            
+            // Send signin to backend
+            fetch('/api/user/signin', {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                body: JSON.stringify({{ email: randomEmail, name: randomName }})
+            }});
+        </script>
+    </body>
+    </html>
+    """
+
 @app.route("/")
 def index():
     return render_template("index.html")
