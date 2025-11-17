@@ -110,6 +110,8 @@ def init_models(db):
         
         id = db.Column(db.Integer, primary_key=True)
         session_id = db.Column(db.String(255), nullable=False, unique=True, index=True)
+        name = db.Column(db.String(255), nullable=True)  # User's display name
+        password_hash = db.Column(db.String(255), nullable=True)  # Hashed password for email/password login
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
         last_active = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
         

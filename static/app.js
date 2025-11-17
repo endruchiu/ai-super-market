@@ -1088,6 +1088,133 @@ function hideSignInModal() {
   }, 300);
 }
 
+// Handle email/password login
+async function handleEmailLogin(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    showNotification('Please enter both email and password', 'error');
+    return;
+  }
+  
+  try {
+    // Call backend to authenticate user
+    const response = await fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Store user data in localStorage
+      const userData = {
+        name: data.user.name || email.split('@')[0],
+        email: data.user.email,
+        userId: data.user.id,
+        signedInAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      
+      // Update session ID globally
+      SESSION_ID = email;
+      
+      // Update UI
+      updateUserDisplay(userData);
+      
+      // Hide login section, show user info
+      document.getElementById('loginSection').style.display = 'none';
+      
+      // Reload cart and user data
+      await loadUserData();
+      
+      showNotification(`Welcome back, ${userData.name}!`, 'success');
+      
+      // Clear form
+      document.getElementById('loginForm').reset();
+    } else {
+      showNotification(data.message || 'Login failed. Please check your credentials.', 'error');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showNotification('Login failed. Please try again.', 'error');
+  }
+}
+
+// Handle new user registration
+async function handleEmailRegister() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    showNotification('Please enter both email and password to register', 'error');
+    return;
+  }
+  
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showNotification('Please enter a valid email address', 'error');
+    return;
+  }
+  
+  // Password validation
+  if (password.length < 6) {
+    showNotification('Password must be at least 6 characters long', 'error');
+    return;
+  }
+  
+  try {
+    // Call backend to create new user
+    const response = await fetch('/api/user/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Auto-login after registration
+      const userData = {
+        name: data.user.name || email.split('@')[0],
+        email: data.user.email,
+        userId: data.user.id,
+        signedInAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      
+      // Update session ID globally
+      SESSION_ID = email;
+      
+      // Update UI
+      updateUserDisplay(userData);
+      
+      // Hide login section
+      document.getElementById('loginSection').style.display = 'none';
+      
+      // Reload user data
+      await loadUserData();
+      
+      showNotification(`Account created! Welcome, ${userData.name}!`, 'success');
+      
+      // Clear form
+      document.getElementById('loginForm').reset();
+    } else {
+      showNotification(data.message || 'Registration failed. Email may already be in use.', 'error');
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    showNotification('Registration failed. Please try again.', 'error');
+  }
+}
+
 // Handle demo login from QR code
 async function handleDemoLogin(token) {
   // Generate random demo user data
