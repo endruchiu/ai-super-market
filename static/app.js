@@ -1052,6 +1052,23 @@ function toggleUserPanel() {
   }
 }
 
+// Open User Panel directly to the login form
+function openUserPanelToLogin() {
+  const panel = document.getElementById('userPanel');
+  const overlay = document.getElementById('userPanelOverlay');
+  const loginSection = document.getElementById('loginSection');
+  
+  // Show login section
+  if (loginSection) {
+    loginSection.style.display = 'block';
+  }
+  
+  // Open panel
+  panel.classList.remove('translate-x-full');
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
 // Sign-In Modal Functions
 function showSignInModal() {
   const modal = document.getElementById('signInModal');
@@ -1323,6 +1340,9 @@ function updateUserDisplay(userData) {
   const displayEmail = document.getElementById('userDisplayEmail');
   const signInBtn = document.getElementById('signInBtn');
   const signOutBtn = document.getElementById('signOutBtn');
+  const headerSignInBtn = document.getElementById('headerSignInBtn');
+  const userPanelToggle = document.getElementById('userPanelToggle');
+  const loginSection = document.getElementById('loginSection');
   
   if (userData) {
     // Signed in
@@ -1330,6 +1350,11 @@ function updateUserDisplay(userData) {
     displayEmail.textContent = userData.email;
     signInBtn.style.display = 'none';
     signOutBtn.style.display = 'flex';
+    
+    // Show user icon button, hide sign-in button in header
+    if (headerSignInBtn) headerSignInBtn.style.display = 'none';
+    if (userPanelToggle) userPanelToggle.style.display = 'block';
+    if (loginSection) loginSection.style.display = 'none';
     
     // Fetch and display user stats
     updateUserStats(userData.email);
@@ -1342,6 +1367,11 @@ function updateUserDisplay(userData) {
     displayEmail.textContent = 'Session Active';
     signInBtn.style.display = 'flex';
     signOutBtn.style.display = 'none';
+    
+    // Show sign-in button, hide user icon button in header
+    if (headerSignInBtn) headerSignInBtn.style.display = 'flex';
+    if (userPanelToggle) userPanelToggle.style.display = 'none';
+    if (loginSection) loginSection.style.display = 'block';
     
     // Clear user stats
     clearUserStats();
