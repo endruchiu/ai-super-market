@@ -829,104 +829,104 @@ async function getBlendedRecommendations() {
         const aisle = aisleMap[s.replacement_product.subcat] || 'A';
         
         const card = document.createElement('div');
-        card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300';
+        card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300';
         
         card.innerHTML = 
-          // Header with icon and title
-          '<div class="flex items-start justify-between mb-4">' +
-            '<div class="flex items-center space-x-3">' +
-              '<div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl shadow-lg">' +
-                '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          // Header with icon and title (more compact)
+          '<div class="flex items-start justify-between mb-3">' +
+            '<div class="flex items-center space-x-2">' +
+              '<div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-lg shadow-md">' +
+                '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                   '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
                 '</svg>' +
               '</div>' +
               '<div>' +
-                '<h3 class="text-xl font-bold text-gray-900">AI Recommendation</h3>' +
-                '<p class="text-sm text-gray-600">Smart substitution available</p>' +
+                '<h3 class="text-base font-bold text-gray-900">AI Recommendation</h3>' +
+                '<p class="text-xs text-gray-600">Smart substitution available</p>' +
               '</div>' +
             '</div>' +
             '<button onclick="this.closest(\'.bg-gradient-to-br\').remove()" class="text-gray-400 hover:text-gray-600 transition-colors">' +
-              '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>' +
               '</svg>' +
             '</button>' +
           '</div>' +
           
-          // Product comparison block with image
-          '<div class="bg-white rounded-xl p-5 mb-4 shadow-md">' +
-            '<div class="flex items-center justify-between">' +
-              '<div class="flex items-center space-x-4 flex-1">' +
-                // Product image placeholder
-                '<div class="w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center shadow-sm">' +
-                  '<svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          // Product comparison block (more compact)
+          '<div class="bg-white rounded-lg p-3 mb-3 shadow-sm">' +
+            '<div class="flex items-center justify-between gap-2">' +
+              '<div class="flex items-center space-x-2 flex-1 min-w-0">' +
+                // Smaller product image
+                '<div class="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">' +
+                  '<svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                     '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>' +
                   '</svg>' +
                 '</div>' +
-                '<div class="flex-1">' +
-                  '<p class="text-xs text-gray-500 mb-1">Replace</p>' +
-                  '<p class="text-sm text-gray-500 line-through">' + s.replace.substring(0, 45) + (s.replace.length > 45 ? '...' : '') + '</p>' +
-                  '<p class="text-lg font-bold text-gray-900 mt-2">' + s.with.substring(0, 45) + (s.with.length > 45 ? '...' : '') + '</p>' +
+                '<div class="flex-1 min-w-0">' +
+                  '<p class="text-xs text-gray-500">Replace</p>' +
+                  '<p class="text-xs text-gray-500 line-through truncate">' + s.replace.substring(0, 35) + (s.replace.length > 35 ? '...' : '') + '</p>' +
+                  '<p class="text-sm font-bold text-gray-900 mt-1 truncate">' + s.with.substring(0, 35) + (s.with.length > 35 ? '...' : '') + '</p>' +
                 '</div>' +
               '</div>' +
-              '<div class="text-right ml-4">' +
-                '<div class="flex items-center space-x-2 mb-2">' +
-                  '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<div class="text-right flex-shrink-0">' +
+                '<div class="flex items-center justify-end space-x-1 mb-1">' +
+                  '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                     '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
                   '</svg>' +
-                  '<span class="text-sm font-semibold text-green-600">−$' + s.expected_saving + '</span>' +
+                  '<span class="text-xs font-semibold text-green-600">−$' + s.expected_saving + '</span>' +
                 '</div>' +
-                '<div class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-md">$' + 
+                '<div class="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-sm">$' + 
                   (s.replacement_product.price ? s.replacement_product.price.toFixed(2) : '0.00') + 
                 '</div>' +
               '</div>' +
             '</div>' +
           '</div>' +
           
-          // Evaluation badges
-          '<div class="flex flex-wrap gap-2 mb-4">' +
-            '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          // Evaluation badges (more compact)
+          '<div class="flex flex-wrap gap-1.5 mb-3">' +
+            '<div class="bg-green-100 border border-green-300 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
+              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
               '</svg>' +
               '<span>Price Saving</span>' +
             '</div>' +
-            '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+            '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
+              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
               '</svg>' +
               '<span>' + similarityPct + '% Similar</span>' +
             '</div>' +
-            '<div class="bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+            '<div class="bg-purple-100 border border-purple-300 text-purple-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
+              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
               '</svg>' +
               '<span>Intent Match</span>' +
             '</div>' +
           '</div>' +
           
-          // Location indicator
-          '<div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-3 mb-4 shadow-sm">' +
-            '<div class="flex items-center space-x-2">' +
-              '<svg class="w-5 h-5 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          // Location indicator (more compact)
+          '<div class="bg-yellow-50 border border-yellow-300 rounded-lg p-2 mb-3">' +
+            '<div class="flex items-center space-x-1.5">' +
+              '<svg class="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>' +
               '</svg>' +
-              '<span class="text-sm font-semibold text-yellow-900">📍 Located in Aisle ' + aisle + '</span>' +
+              '<span class="text-xs font-semibold text-yellow-900">📍 Located in Aisle ' + aisle + '</span>' +
             '</div>' +
           '</div>' +
           
-          // Reason text (subtle)
-          '<div class="text-sm text-gray-600 italic mb-4 px-2">' +
+          // Reason text (more compact)
+          '<div class="text-xs text-gray-600 italic mb-3 px-1">' +
             s.reason +
           '</div>' +
           
-          // Action buttons
-          '<div class="flex space-x-3">' +
-            '<button class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm">' +
+          // Action buttons (more compact)
+          '<div class="flex space-x-2">' +
+            '<button class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all text-sm">' +
               'Maybe Later' +
             '</button>' +
-            '<button class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">' +
-              '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+            '<button class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition-all transform hover:scale-105 shadow-md flex items-center justify-center space-x-1.5 text-sm">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
               '</svg>' +
               '<span>Accept Swap</span>' +
