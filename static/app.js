@@ -967,7 +967,7 @@ async function getBlendedRecommendations() {
               '<div class="text-right flex-shrink-0">' +
                 '<div class="flex items-center justify-end space-x-1 mb-1">' +
                   '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>' +
                   '</svg>' +
                   '<span class="text-xs font-semibold text-green-600">−$' + s.expected_saving + '</span>' +
                 '</div>' +
