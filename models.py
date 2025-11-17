@@ -230,5 +230,72 @@ def init_models(db):
         
         def __repr__(self):
             return f'<ReplenishmentCycle User {self.user_id}: {self.product_title[:30]}... (next: {self.next_due_date})>'
+
+    class RecommendationInteraction(db.Model):
+        """Tracks user interactions with AI recommendations for behavioral analytics"""
+        __tablename__ = 'recommendation_interactions'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+        
+        # Recommendation details
+        recommendation_id = db.Column(db.String(100), nullable=False, index=True)
+        original_product_id = db.Column(db.BigInteger, nullable=False, index=True)
+        recommended_product_id = db.Column(db.BigInteger, nullable=False, index=True)
+        original_product_title = db.Column(db.Text, nullable=False)
+        recommended_product_title = db.Column(db.Text, nullable=False)
+        expected_saving = db.Column(db.Numeric(10, 2), nullable=True)
+        recommendation_reason = db.Column(db.Text, nullable=True)
+        has_explanation = db.Column(db.Boolean, default=True)
+        
+        # Interaction tracking
+        action_type = db.Column(db.String(50), nullable=False, index=True)
+        shown_at = db.Column(db.DateTime, default=db.func.current_timestamp(), index=True)
+        action_at = db.Column(db.DateTime, nullable=True)
+        time_to_action_seconds = db.Column(db.Integer, nullable=True)
+        scroll_depth_percent = db.Column(db.Integer, nullable=True)
+        
+        # Product attributes at time of recommendation (for drift detection)
+        original_price = db.Column(db.Numeric(10, 2), nullable=True)
+        recommended_price = db.Column(db.Numeric(10, 2), nullable=True)
+        original_protein = db.Column(db.Numeric(5, 1), nullable=True)
+        recommended_protein = db.Column(db.Numeric(5, 1), nullable=True)
+        original_sugar = db.Column(db.Numeric(5, 1), nullable=True)
+        recommended_sugar = db.Column(db.Numeric(5, 1), nullable=True)
+        original_calories = db.Column(db.Integer, nullable=True)
+        recommended_calories = db.Column(db.Integer, nullable=True)
+        
+        # Removal tracking (for BCR)
+        removed_from_cart_at = db.Column(db.DateTime, nullable=True)
+        was_removed = db.Column(db.Boolean, default=False)
+        
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+        
+        def __repr__(self):
+            return f'<RecommendationInteraction {self.id}: {self.action_type} by User {self.user_id}>'
+
+    class UserGoal(db.Model):
+        """User health and nutrition goals for goal alignment tracking"""
+        __tablename__ = 'user_goals'
+        __table_args__ = {'extend_existing': True}
+        
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+        
+        # Goal configuration
+        goal_type = db.Column(db.String(50), nullable=False, index=True)
+        goal_direction = db.Column(db.String(20), nullable=False)
+        target_value = db.Column(db.Numeric(10, 2), nullable=True)
+        
+        # Status
+        is_active = db.Column(db.Boolean, default=True, index=True)
+        priority = db.Column(db.Integer, default=1)
+        
+        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+        updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+        
+        def __repr__(self):
+            return f'<UserGoal {self.id}: User {self.user_id} - {self.goal_direction} {self.goal_type}>'
     
-    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle
+    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction, UserGoal

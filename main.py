@@ -31,7 +31,7 @@ db.init_app(app)
 
 # Import and initialize models
 from models import init_models
-Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle = init_models(db)
+Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction, UserGoal = init_models(db)
 
 # Create tables
 with app.app_context():
