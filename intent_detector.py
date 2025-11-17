@@ -134,15 +134,8 @@ class IntentDetector:
             is_top_tier = price_percentile >= 75  # Top 25% most expensive in category
             is_upper_tier = price_percentile >= 60  # Top 40%
             
-            if action['event_type'] == 'view':
-                if is_top_tier:
-                    signals += 2.0  # Viewing expensive items in category
-                elif is_upper_tier:
-                    signals += 1.0
-                elif is_premium_keyword:
-                    signals += 0.5
-            
-            elif action['event_type'] == 'cart_add':
+            # Only count CART ACTIONS (view means nothing in real shopping)
+            if action['event_type'] == 'cart_add':
                 if is_top_tier:
                     signals += 3.0  # Adding expensive items = strong signal
                 elif is_upper_tier:
@@ -191,15 +184,8 @@ class IntentDetector:
             is_bottom_tier = price_percentile <= 25  # Bottom 25% cheapest in category
             is_lower_tier = price_percentile <= 40   # Bottom 40%
             
-            if action['event_type'] == 'view':
-                if is_bottom_tier:
-                    signals += 2.0  # Viewing cheap items in category
-                elif is_lower_tier:
-                    signals += 1.0
-                elif is_value_keyword:
-                    signals += 0.5
-            
-            elif action['event_type'] == 'cart_add':
+            # Only count CART ACTIONS (view means nothing in real shopping)
+            if action['event_type'] == 'cart_add':
                 if is_bottom_tier:
                     signals += 3.0  # Adding cheap items = strong signal
                 elif is_lower_tier:
