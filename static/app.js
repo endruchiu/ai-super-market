@@ -440,6 +440,61 @@ function removeItem(i) {
   }
 }
 
+function dismissRecommendation(card) {
+  // Smooth fade-out animation
+  card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+  card.style.opacity = '0';
+  card.style.transform = 'scale(0.95)';
+  
+  // Remove card after animation
+  setTimeout(() => {
+    card.remove();
+    
+    // Check if there are any remaining recommendations
+    const contentDiv = document.getElementById('blendedRecsContent');
+    const remainingCards = contentDiv.querySelectorAll('.bg-gradient-to-br');
+    
+    if (remainingCards.length === 0) {
+      // No more recommendations, hide the panel
+      document.getElementById('blendedRecommendations').style.display = 'none';
+      showToast('All recommendations dismissed', 'info');
+    } else {
+      showToast('Recommendation dismissed', 'success');
+    }
+  }, 300);
+}
+
+function showToast(message, type = 'success') {
+  // Create toast notification
+  const toast = document.createElement('div');
+  const bgColor = type === 'success' ? 'bg-green-500' : type === 'info' ? 'bg-blue-500' : 'bg-gray-500';
+  
+  toast.className = `fixed bottom-6 right-6 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 z-50 transition-all duration-300`;
+  toast.style.opacity = '0';
+  toast.style.transform = 'translateY(20px)';
+  
+  toast.innerHTML = 
+    '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+    '</svg>' +
+    '<span class="font-medium">' + message + '</span>';
+  
+  document.body.appendChild(toast);
+  
+  // Fade in
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Fade out and remove after 2.5 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
 function applyReplacement(originalTitle, replacementProduct) {
   console.log('Applying replacement:', originalTitle, '->', replacementProduct.title);
   
@@ -971,9 +1026,12 @@ async function getBlendedRecommendations() {
             '</button>' +
           '</div>';
         
-        // Add click handler to "Accept Swap" button
+        // Add click handlers to buttons
         const acceptBtn = card.querySelector('button[class*="bg-gradient-to-r"]');
         acceptBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
+        
+        const maybeLaterBtn = card.querySelector('button[class*="border-gray-300"]');
+        maybeLaterBtn.onclick = function() { dismissRecommendation(card); };
         
         contentDiv.appendChild(card);
       });
