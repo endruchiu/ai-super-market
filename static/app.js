@@ -1052,43 +1052,7 @@ function toggleUserPanel() {
   }
 }
 
-// Sign-In Modal Functions
-function showSignInModal() {
-  const modal = document.getElementById('signInModal');
-  const overlay = document.getElementById('signInModalOverlay');
-  
-  modal.classList.remove('hidden', 'scale-95');
-  modal.classList.add('scale-100');
-  overlay.classList.remove('hidden');
-  
-  // Generate unique demo token
-  const demoToken = 'demo_' + Math.random().toString(36).substring(2, 15);
-  
-  // Create demo login URL
-  const baseUrl = window.location.origin;
-  const demoUrl = `${baseUrl}/demo-login?token=${demoToken}`;
-  
-  // Generate QR code using QuickChart API
-  const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(demoUrl)}&size=300&margin=1`;
-  
-  // Update QR code image and URL display
-  document.getElementById('qrCodeImage').src = qrCodeUrl;
-  document.getElementById('demoUrl').textContent = demoUrl;
-}
-
-function hideSignInModal() {
-  const modal = document.getElementById('signInModal');
-  const overlay = document.getElementById('signInModalOverlay');
-  
-  modal.classList.add('scale-95');
-  overlay.classList.add('hidden');
-  
-  setTimeout(() => {
-    modal.classList.add('hidden');
-  }, 300);
-}
-
-// Handle email/password login
+// Handle name/email login
 async function handleEmailLogin(event) {
   event.preventDefault();
   

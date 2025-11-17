@@ -35,20 +35,20 @@ args = "flask-app"
 name = "flask-app"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export LD_LIBRARY_PATH=$(gcc -print-file-name=libgomp.so | xargs dirname):$LD_LIBRARY_PATH && python main.py"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 42105
+localPort = 33575
 externalPort = 3000
 
 [[ports]]
