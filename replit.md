@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend
 - **Framework**: Flask with SQLAlchemy ORM.
-- **User Management**: Session-based with UUID for anonymous tracking.
+- **User Management**: Simplified name+email authentication for demo purposes (no password required). Session-based with email as session identifier. Creates or updates user account automatically on sign-in.
 - **Database**: PostgreSQL, managed with SQLAlchemy 2.x DeclarativeBase.
 - **Data Models**: Products, UserBudgets, User, Order, OrderItem, UserEvent for comprehensive tracking.
 - **Product Identification**: Deterministic `blake2b` hash for stable product IDs.
@@ -25,7 +25,7 @@ Preferred communication style: Simple, everyday language.
 - **Store Map**: Visual aisle layout categorizing products into 6 aisles (A-F).
 - **Components**: Responsive header, interactive aisle cards, product cards, budget controls, shopping cart, collapsible product browser, animated notifications.
 - **Responsiveness**: Mobile-friendly layout.
-- **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Demo sign-in with localStorage for persistence, purely for UI/UX demonstration.
+- **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Simplified sign-in form (name + email only, no password) with localStorage for persistence. Designed for easy demo access.
 - **AI Recommendation UI**: Recommendations trigger when the cart exceeds budget. Features an aisle highlighting system with pulsing orange gradient for the most recent recommendation and green dots for other recommended aisles.
 
 ### AI & Recommendations
