@@ -832,10 +832,23 @@ async function getBlendedRecommendations() {
           }
         }
         
-        // Determine aisle from subcategory
+        // Determine aisle from subcategory (matches Store Map layout exactly)
         const aisleMap = {
-          'Coffee': 'A', 'Beverages & Water': 'B', 'Candy': 'C', 
-          'Snacks': 'D', 'Cleaning Supplies': 'E', 'Household': 'F'
+          // Aisle A
+          'Meat & Seafood': 'A', 'Seafood': 'A', 'Poultry': 'A', 
+          'Deli': 'A', 'Breakfast': 'A', 'Floral': 'A',
+          // Aisle B
+          'Snacks': 'B',
+          // Aisle C
+          'Candy': 'C', 'Gift Baskets': 'C', 'Organic': 'C', 
+          'Kirkland Signature Grocery': 'C',
+          // Aisle D
+          'Pantry & Dry Goods': 'D', 'Coffee': 'D',
+          // Aisle E
+          'Beverages & Water': 'E', 'Paper & Plastic Products': 'E', 'Household': 'E',
+          // Aisle F
+          'Bakery & Desserts': 'F', 'Cleaning Supplies': 'F', 
+          'Laundry Detergent & Supplies': 'F'
         };
         const aisle = aisleMap[s.replacement_product.subcat] || 'A';
         
