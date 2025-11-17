@@ -899,118 +899,52 @@ def api_checkout():
 @app.route("/api/user/signin", methods=["POST"])
 def user_signin():
     """
-    Sign in a user by setting their email as the session_id
+    Sign in a user with email and name (no password required)
     This allows the backend to track purchases by email
     """
     try:
         data = request.get_json(force=True)
         email = data.get("email")
+        name = data.get("name")
         
-        if not email:
-            return jsonify({"success": False, "error": "Email required"}), 400
+        if not email or not name:
+            return jsonify({"success": False, "error": "Email and name required"}), 400
         
-        # Set the session to use email as session_id (for demo purposes)
+        # Set the session to use email as session_id
         session['user_session'] = email
         
-        return jsonify({"success": True, "message": "Signed in successfully"})
-    except Exception as e:
-        print(f"Sign-in error: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/api/user/register", methods=["POST"])
-def user_register():
-    """
-    Register a new user with email and password
-    """
-    try:
-        from werkzeug.security import generate_password_hash
+        # Find or create user
+        user = User.query.filter_by(session_id=email).first()
         
-        data = request.get_json(force=True)
-        email = data.get("email")
-        password = data.get("password")
-        
-        if not email or not password:
-            return jsonify({"success": False, "message": "Email and password required"}), 400
-        
-        # Check if user already exists
-        existing_user = User.query.filter_by(session_id=email).first()
-        if existing_user:
-            return jsonify({"success": False, "message": "Email already registered"}), 400
-        
-        # Create new user
-        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(
-            session_id=email,
-            name=email.split('@')[0],  # Default name from email
-            password_hash=password_hash,
-            intent_ema=0.5
-        )
-        
-        db.session.add(new_user)
-        db.session.commit()
+        if not user:
+            # Create new user
+            user = User(
+                session_id=email,
+                name=name,
+                intent_ema=0.5
+            )
+            db.session.add(user)
+            db.session.commit()
+        else:
+            # Update name if changed
+            if user.name != name:
+                user.name = name
+                db.session.commit()
         
         return jsonify({
-            "success": True,
-            "message": "Account created successfully",
+            "success": True, 
+            "message": "Signed in successfully",
             "user": {
-                "id": new_user.id,
-                "email": new_user.session_id,
-                "name": new_user.name
+                "id": user.id,
+                "email": user.session_id,
+                "name": user.name
             }
         })
     except Exception as e:
         db.session.rollback()
-        print(f"Registration error: {e}")
-        return jsonify({"success": False, "message": "Registration failed. Please try again."}), 500
+        print(f"Sign-in error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/user/login", methods=["POST"])
-def user_login():
-    """
-    Login user with email and password
-    """
-    try:
-        from werkzeug.security import check_password_hash
-        
-        data = request.get_json(force=True)
-        email = data.get("email")
-        password = data.get("password")
-        
-        if not email or not password:
-            return jsonify({"success": False, "message": "Email and password required"}), 400
-        
-        # Find user by email
-        user = User.query.filter_by(session_id=email).first()
-        
-        if not user:
-            return jsonify({"success": False, "message": "Invalid email or password"}), 401
-        
-        # Check if user has password (might be QR code user without password)
-        if not user.password_hash:
-            return jsonify({"success": False, "message": "This account was created with QR code. Please use QR code login."}), 401
-        
-        # Verify password
-        if not check_password_hash(user.password_hash, password):
-            return jsonify({"success": False, "message": "Invalid email or password"}), 401
-        
-        # Update last active
-        user.last_active = db.func.current_timestamp()
-        db.session.commit()
-        
-        # Set session
-        session['user_session'] = email
-        
-        return jsonify({
-            "success": True,
-            "message": "Login successful",
-            "user": {
-                "id": user.id,
-                "email": user.session_id,
-                "name": user.name or email.split('@')[0]
-            }
-        })
-    except Exception as e:
-        print(f"Login error: {e}")
-        return jsonify({"success": False, "message": "Login failed. Please try again."}), 500
 
 @app.route("/api/user/stats", methods=["POST"])
 def get_user_stats():
