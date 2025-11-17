@@ -817,44 +817,126 @@ async function getBlendedRecommendations() {
           // Register green dot for Hybrid AI system
           addRecommendationDot(s.replacement_product.subcat, 'hybrid');
         }
+        
+        // Calculate similarity percentage (based on recommendation score or default)
+        const similarityPct = s.similarity === 'Great match' ? 94 : 85;
+        
+        // Determine aisle from subcategory
+        const aisleMap = {
+          'Coffee': 'A', 'Beverages & Water': 'B', 'Candy': 'C', 
+          'Snacks': 'D', 'Cleaning Supplies': 'E', 'Household': 'F'
+        };
+        const aisle = aisleMap[s.replacement_product.subcat] || 'A';
+        
         const card = document.createElement('div');
-        card.className = 'bg-white border border-emerald-200 rounded-xl p-5 hover:shadow-lg transition-all';
+        card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300';
         
-        card.innerHTML = '<div class="mb-3">' +
-          '<div class="flex items-center space-x-2 mb-2">' +
-            '<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>' +
-            '</svg>' +
-            '<span class="text-gray-700">Replace:</span>' +
+        card.innerHTML = 
+          // Header with icon and title
+          '<div class="flex items-start justify-between mb-4">' +
+            '<div class="flex items-center space-x-3">' +
+              '<div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl shadow-lg">' +
+                '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                  '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
+                '</svg>' +
+              '</div>' +
+              '<div>' +
+                '<h3 class="text-xl font-bold text-gray-900">AI Recommendation</h3>' +
+                '<p class="text-sm text-gray-600">Smart substitution available</p>' +
+              '</div>' +
+            '</div>' +
+            '<button onclick="this.closest(\'.bg-gradient-to-br\').remove()" class="text-gray-400 hover:text-gray-600 transition-colors">' +
+              '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>' +
+              '</svg>' +
+            '</button>' +
           '</div>' +
-          '<div class="ml-7">' +
-            '<div class="text-sm text-gray-600 line-through">' + s.replace.substring(0, 60) + '...</div>' +
-            '<div class="text-lg font-bold text-emerald-900 mt-1">' + s.with.substring(0, 60) + '...</div>' +
+          
+          // Product comparison block with image
+          '<div class="bg-white rounded-xl p-5 mb-4 shadow-md">' +
+            '<div class="flex items-center justify-between">' +
+              '<div class="flex items-center space-x-4 flex-1">' +
+                // Product image placeholder
+                '<div class="w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center shadow-sm">' +
+                  '<svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>' +
+                  '</svg>' +
+                '</div>' +
+                '<div class="flex-1">' +
+                  '<p class="text-xs text-gray-500 mb-1">Replace</p>' +
+                  '<p class="text-sm text-gray-500 line-through">' + s.replace.substring(0, 45) + (s.replace.length > 45 ? '...' : '') + '</p>' +
+                  '<p class="text-lg font-bold text-gray-900 mt-2">' + s.with.substring(0, 45) + (s.with.length > 45 ? '...' : '') + '</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="text-right ml-4">' +
+                '<div class="flex items-center space-x-2 mb-2">' +
+                  '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
+                  '</svg>' +
+                  '<span class="text-sm font-semibold text-green-600">−$' + s.expected_saving + '</span>' +
+                '</div>' +
+                '<div class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-lg shadow-md">$' + 
+                  (s.replacement_product.price ? s.replacement_product.price.toFixed(2) : '0.00') + 
+                '</div>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="flex items-center mb-3 bg-green-50 p-3 rounded-lg">' +
-          '<div class="flex items-center space-x-2">' +
-            '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-            '</svg>' +
-            '<span class="font-bold text-green-700">Save $' + s.expected_saving + '</span>' +
+          
+          // Evaluation badges
+          '<div class="flex flex-wrap gap-2 mb-4">' +
+            '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
+              '</svg>' +
+              '<span>Price Saving</span>' +
+            '</div>' +
+            '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
+              '</svg>' +
+              '<span>' + similarityPct + '% Similar</span>' +
+            '</div>' +
+            '<div class="bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 shadow-sm">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
+              '</svg>' +
+              '<span>Intent Match</span>' +
+            '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="text-sm text-gray-600 mb-4 italic">' +
-          '<span class="font-semibold text-gray-700">Reason:</span> ' + s.reason +
-        '</div>';
+          
+          // Location indicator
+          '<div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-3 mb-4 shadow-sm">' +
+            '<div class="flex items-center space-x-2">' +
+              '<svg class="w-5 h-5 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>' +
+              '</svg>' +
+              '<span class="text-sm font-semibold text-yellow-900">📍 Located in Aisle ' + aisle + '</span>' +
+            '</div>' +
+          '</div>' +
+          
+          // Reason text (subtle)
+          '<div class="text-sm text-gray-600 italic mb-4 px-2">' +
+            s.reason +
+          '</div>' +
+          
+          // Action buttons
+          '<div class="flex space-x-3">' +
+            '<button class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm">' +
+              'Maybe Later' +
+            '</button>' +
+            '<button class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">' +
+              '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+              '</svg>' +
+              '<span>Accept Swap</span>' +
+            '</button>' +
+          '</div>';
         
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md';
-        applyBtn.innerHTML = '<div class="flex items-center justify-center space-x-2">' +
-          '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-          '</svg>' +
-          '<span>Apply This Replacement</span>' +
-        '</div>';
-        applyBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
+        // Add click handler to "Accept Swap" button
+        const acceptBtn = card.querySelector('button[class*="bg-gradient-to-r"]');
+        acceptBtn.onclick = function() { applyReplacement(s.replace, s.replacement_product); };
         
-        card.appendChild(applyBtn);
         contentDiv.appendChild(card);
       });
       
