@@ -475,18 +475,36 @@ def api_blended_recommendations():
                             saving = (item_price - rec_price) * item_qty
                             discount_pct = int((1 - rec_price / item_price) * 100)
                             
-                            # Convert blended score to user-friendly confidence phrase
+                            # Convert blended score + ISRec intent to user-friendly confidence phrase
                             score = float(rec.get('blended_score', 0))
-                            if score >= 0.7:
-                                confidence = "Perfect match for you"
-                            elif score >= 0.5:
-                                confidence = "Great choice based on AI analysis"
-                            elif score >= 0.3:
-                                confidence = "Smart recommendation"
-                            else:
-                                confidence = "AI-powered suggestion"
                             
-                            # Create compelling hybrid recommendation reason
+                            # Intent-aware messaging: current_intent [0=economy, 1=quality]
+                            if current_intent >= 0.6:
+                                # Quality mode - emphasize quality match
+                                if score >= 0.7:
+                                    confidence = "Quality pick for you (ISRec: Quality mode)"
+                                elif score >= 0.5:
+                                    confidence = "Great quality match (ISRec detected)"
+                                else:
+                                    confidence = "Quality-focused suggestion"
+                            elif current_intent <= 0.4:
+                                # Economy mode - emphasize savings
+                                if score >= 0.7:
+                                    confidence = "Budget-friendly match (ISRec: Economy mode)"
+                                elif score >= 0.5:
+                                    confidence = "Smart savings (ISRec detected)"
+                                else:
+                                    confidence = "Economy-focused suggestion"
+                            else:
+                                # Balanced mode
+                                if score >= 0.7:
+                                    confidence = "Perfect match for you"
+                                elif score >= 0.5:
+                                    confidence = "Great choice based on AI analysis"
+                                else:
+                                    confidence = "Smart recommendation"
+                            
+                            # Create compelling hybrid recommendation reason with intent context
                             reason = f"{confidence}: {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
                             
                             cheaper_alts.append({
@@ -521,16 +539,34 @@ def api_blended_recommendations():
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
-                                # Convert blended score to user-friendly confidence phrase
+                                # Convert blended score + ISRec intent to user-friendly confidence phrase
                                 score = float(rec.get('blended_score', 0))
-                                if score >= 0.7:
-                                    confidence = "AI highly recommends"
-                                elif score >= 0.5:
-                                    confidence = "AI suggests"
-                                elif score >= 0.3:
-                                    confidence = "Worth considering"
+                                
+                                # Intent-aware messaging: current_intent [0=economy, 1=quality]
+                                if current_intent >= 0.6:
+                                    # Quality mode
+                                    if score >= 0.7:
+                                        confidence = "AI highly recommends (Quality mode)"
+                                    elif score >= 0.5:
+                                        confidence = "AI suggests (Quality match)"
+                                    else:
+                                        confidence = "Worth considering (Quality)"
+                                elif current_intent <= 0.4:
+                                    # Economy mode
+                                    if score >= 0.7:
+                                        confidence = "AI highly recommends (Economy mode)"
+                                    elif score >= 0.5:
+                                        confidence = "AI suggests (Budget match)"
+                                    else:
+                                        confidence = "Worth considering (Economy)"
                                 else:
-                                    confidence = "Alternative option"
+                                    # Balanced mode
+                                    if score >= 0.7:
+                                        confidence = "AI highly recommends"
+                                    elif score >= 0.5:
+                                        confidence = "AI suggests"
+                                    else:
+                                        confidence = "Worth considering"
                                 
                                 # Create compelling cross-category hybrid reason
                                 reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
