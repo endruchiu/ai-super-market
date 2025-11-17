@@ -1195,19 +1195,22 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         discount_pct: Percentage cheaper
     
     Returns:
-        Natural, human-friendly message from AI
+        Natural, human-friendly message from AI (max 10 words)
     """
     try:
-        # Determine user's shopping style from ISRec
+        # Determine user's shopping style from ISRec and set focus
         if intent_score >= 0.6:
-            user_style = "values quality and premium products"
-            focus = "similar quality at a better price"
+            # Quality mode - emphasize maintaining quality while saving
+            system_prompt = "You're a grocery assistant helping quality-focused shoppers. Generate a 10-word (maximum) recommendation emphasizing similar quality/premium while saving money. Be warm and conversational."
+            focus = "Emphasize: same quality, just better price"
         elif intent_score <= 0.4:
-            user_style = "is budget-conscious and looking for great deals"
-            focus = "the best value"
+            # Economy mode - emphasize maximum savings
+            system_prompt = "You're a grocery assistant helping budget-conscious shoppers. Generate a 10-word (maximum) recommendation emphasizing great savings and value. Be warm and conversational."
+            focus = "Emphasize: big savings, great deal"
         else:
-            user_style = "balances quality and value"
-            focus = "a great balance of quality and price"
+            # Balanced mode
+            system_prompt = "You're a grocery assistant. Generate a 10-word (maximum) recommendation balancing quality and price. Be warm and conversational."
+            focus = "Emphasize: good balance of quality and savings"
         
         # Use GPT to generate natural message
         response = openai.chat.completions.create(
@@ -1215,15 +1218,15 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
             messages=[
                 {
                     "role": "system",
-                    "content": f"You're a friendly grocery shopping assistant. Based on the customer's shopping behavior, they {user_style}. Generate a brief, warm recommendation (max 15 words) suggesting a product swap. Be conversational and natural - no corporate jargon."
+                    "content": system_prompt
                 },
                 {
                     "role": "user",
-                    "content": f"Suggest swapping '{original_product}' with '{product_name}' (saves ${savings:.2f}, {discount_pct}% cheaper). Focus on {focus}."
+                    "content": f"Recommend '{product_name}' instead of '{original_product}'. Saves ${savings:.2f}. {focus}. Max 10 words!"
                 }
             ],
             temperature=0.7,
-            max_tokens=50
+            max_tokens=30
         )
         
         return response.choices[0].message.content.strip()
@@ -1232,11 +1235,11 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         # Fallback to simple template if LLM fails
         print(f"LLM generation failed: {e}")
         if intent_score >= 0.6:
-            return f"Try {product_name} - similar quality, better value"
+            return f"Same quality, saves ${savings:.2f}"
         elif intent_score <= 0.4:
-            return f"{product_name} saves you ${savings:.2f}"
+            return f"Big savings: ${savings:.2f} off!"
         else:
-            return f"Consider {product_name} instead"
+            return f"Good value, saves ${savings:.2f}"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
