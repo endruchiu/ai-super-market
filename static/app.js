@@ -1343,6 +1343,20 @@ function closeSignInModal() {
   document.body.style.overflow = ''; // Restore scrolling
 }
 
+// Handle Unified Auth Button Click
+function handleAuthButtonClick() {
+  // Check if user is logged in
+  const userDataStr = localStorage.getItem('currentUser');
+  
+  if (userDataStr) {
+    // User is logged in - sign them out
+    signOut();
+  } else {
+    // User is not logged in - open sign-in modal
+    openSignInModal();
+  }
+}
+
 // Handle name/email login
 async function handleEmailLogin(event) {
   event.preventDefault();
@@ -1382,9 +1396,6 @@ async function handleEmailLogin(event) {
       // Update UI
       updateUserDisplay(userData);
       
-      // Hide login section, show user info
-      document.getElementById('loginSection').style.display = 'none';
-      
       // Reload cart and user data
       await loadUserData();
       
@@ -1411,19 +1422,44 @@ async function handleEmailLogin(event) {
 function updateUserDisplay(userData) {
   const userDisplayName = document.getElementById('userDisplayName');
   const userDisplayEmail = document.getElementById('userDisplayEmail');
-  const signInBtn = document.getElementById('signInBtn');
-  const signOutBtn = document.getElementById('signOutBtn');
+  const authButton = document.getElementById('authButton');
+  const authButtonText = document.getElementById('authButtonText');
+  const authButtonIcon = document.getElementById('authButtonIcon');
   
   if (userData) {
+    // User is signed in
     userDisplayName.textContent = userData.name;
     userDisplayEmail.textContent = userData.email;
-    signInBtn.style.display = 'none';
-    signOutBtn.style.display = 'flex';
+    
+    // Update unified button to "Sign Out" state
+    authButtonText.textContent = `Sign Out (${userData.name})`;
+    authButton.className = 'w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2';
+    
+    // Update icon to sign-out icon
+    authButtonIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>';
+    
+    // Fetch and display user stats
+    updateUserStats(userData.email);
+    
+    // Update replenishment panel for this user
+    updateReplenishmentPanel();
   } else {
+    // Guest user
     userDisplayName.textContent = 'Guest User';
     userDisplayEmail.textContent = 'Session Active';
-    signInBtn.style.display = 'block';
-    signOutBtn.style.display = 'none';
+    
+    // Update unified button to "Sign In" state
+    authButtonText.textContent = 'Sign In';
+    authButton.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2';
+    
+    // Update icon to sign-in icon
+    authButtonIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>';
+    
+    // Clear user stats
+    clearUserStats();
+    
+    // Clear replenishment panel
+    clearReplenishmentPanel();
   }
 }
 
@@ -1451,39 +1487,6 @@ function clearSessionData() {
     updateUserDisplay(null);
     
     showNotification('Session data cleared', 'info');
-  }
-}
-
-function updateUserDisplay(userData) {
-  const displayName = document.getElementById('userDisplayName');
-  const displayEmail = document.getElementById('userDisplayEmail');
-  const signInBtn = document.getElementById('signInBtn');
-  const signOutBtn = document.getElementById('signOutBtn');
-  
-  if (userData) {
-    // Signed in
-    displayName.textContent = userData.name;
-    displayEmail.textContent = userData.email;
-    signInBtn.style.display = 'none';
-    signOutBtn.style.display = 'flex';
-    
-    // Fetch and display user stats
-    updateUserStats(userData.email);
-    
-    // Update replenishment panel for this user
-    updateReplenishmentPanel();
-  } else {
-    // Guest user
-    displayName.textContent = 'Guest User';
-    displayEmail.textContent = 'Session Active';
-    signInBtn.style.display = 'flex';
-    signOutBtn.style.display = 'none';
-    
-    // Clear user stats
-    clearUserStats();
-    
-    // Clear replenishment panel
-    clearReplenishmentPanel();
   }
 }
 
