@@ -1234,9 +1234,12 @@ def get_replenishment_due_soon():
             }
             
             # Categorize based on days until due
-            if item["days_until_due"] <= 0:
+            # Due Now: 0-3 days (overdue or due very soon)
+            # Due Soon: 4-7 days  
+            # Upcoming: 7+ days
+            if item["days_until_due"] <= 3:
                 due_now.append(item)
-            elif item["days_until_due"] <= 3:
+            elif item["days_until_due"] <= 7:
                 due_soon.append(item)
             else:
                 upcoming.append(item)

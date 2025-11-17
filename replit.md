@@ -37,7 +37,15 @@ Preferred communication style: Simple, everyday language.
 - **LightGBM LambdaMART Re-Ranking**: A behavior-aware re-ranking model using 21 features (including intent, budget pressure, CF/semantic scores) to optimize recommendations.
 - **Online Learning System**: Captures user interactions in real-time. Automatically retrains the LightGBM model in a background thread after every 5 purchases, with hot-reloading of new models.
 - **Synthetic Training Data Generator**: Creates tailored training data with distinct behavioral patterns for demonstration purposes, ensuring visible feature importance in the UI.
-- **Replenishment Recommendation System**: An independent, budget-agnostic system predicting when users need to restock consumables based on purchase patterns. It includes an 8-step framework for identifying replenishable products, calculating user-level durations, handling bundles, and filtering. Features a dedicated UI panel for reminders.
+- **Replenishment Recommendation System**: A comprehensive, budget-agnostic system predicting when users need to restock ALL products based on purchase patterns. Features:
+  - **Dual-Mode Predictions**: (1) Personalized cycles for 2+ purchases using median intervals, (2) First-purchase predictions using CF-based similar user analysis (60%) blended with product metadata (40%)
+  - **CF Validation**: Top-10 most similar users (via embedding cosine similarity) are validated to ensure they actually purchased the product 2+ times before contributing interval data
+  - **Urgency-Based Ranking**: Combines days overdue, purchase frequency, category importance, and CF confidence to rank top 10 most critical items
+  - **Time Buckets**: Due Now (0-3 days), Due Soon (4-7 days), Upcoming (7+ days)
+  - **Conversational UI**: Natural language messages like "You probably ran out 2 days ago"
+  - **Auto-Detection**: Automatically runs after every purchase to update cycles
+  - **Login-Aware**: Only displays reminders for logged-in users, clears panel for guests
+  - **Complete Coverage**: Includes ALL user purchases (not limited to catalog items), ensuring single-purchase products are eligible for predictions
 
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: Uses OpenAI GPT-5 for automated evaluation of recommendation systems based on pairwise comparisons and criteria-based scoring across various scenarios.
