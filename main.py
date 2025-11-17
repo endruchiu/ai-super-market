@@ -496,13 +496,14 @@ def api_blended_recommendations():
                                 else:
                                     confidence = "Economy-focused suggestion"
                             else:
-                                # Balanced mode
+                                # Balanced mode - still show ISRec is working
+                                intent_pct = int(current_intent * 100)
                                 if score >= 0.7:
-                                    confidence = "Perfect match for you"
+                                    confidence = f"Perfect match (ISRec: {intent_pct}% quality intent)"
                                 elif score >= 0.5:
-                                    confidence = "Great choice based on AI analysis"
+                                    confidence = f"Great choice (ISRec balanced: {intent_pct}%)"
                                 else:
-                                    confidence = "Smart recommendation"
+                                    confidence = f"Smart recommendation (ISRec: {intent_pct}% intent)"
                             
                             # Create compelling hybrid recommendation reason with intent context
                             reason = f"{confidence}: {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
@@ -560,13 +561,14 @@ def api_blended_recommendations():
                                     else:
                                         confidence = "Worth considering (Economy)"
                                 else:
-                                    # Balanced mode
+                                    # Balanced mode - show ISRec intent
+                                    intent_pct = int(current_intent * 100)
                                     if score >= 0.7:
-                                        confidence = "AI highly recommends"
+                                        confidence = f"AI highly recommends (ISRec: {intent_pct}%)"
                                     elif score >= 0.5:
-                                        confidence = "AI suggests"
+                                        confidence = f"AI suggests (ISRec: {intent_pct}% intent)"
                                     else:
-                                        confidence = "Worth considering"
+                                        confidence = f"Worth considering (ISRec balanced)"
                                 
                                 # Create compelling cross-category hybrid reason
                                 reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
