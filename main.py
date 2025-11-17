@@ -433,6 +433,20 @@ def api_blended_recommendations():
         # Detect user intent from recent session behavior
         current_intent = intent_detector.detect_intent(user_id, cart, db.session)
         
+        # Map ISRec intent to guardrail mode
+        if current_intent >= 0.6:
+            guardrail_mode = 'quality'
+            mode_label = "Quality mode"
+        elif current_intent <= 0.4:
+            guardrail_mode = 'economy'
+            mode_label = "Economy mode"
+        else:
+            guardrail_mode = 'balanced'
+            mode_label = "Balanced mode"
+        
+        # DEBUG: Log intent detection for recommendations
+        print(f"🎯 ISRec Intent: {current_intent:.2f} → Guardrail Mode: {guardrail_mode} ({mode_label})")
+        
         # Build session context for LightGBM re-ranking
         session_context = {
             'session_id': user_id,
@@ -450,7 +464,8 @@ def api_blended_recommendations():
             cf_weight=0.6,      # ← Change this (Collaborative Filtering weight)
             semantic_weight=0.4, # ← Change this (Semantic similarity weight)
             session_context=session_context,
-            use_lgbm=True
+            use_lgbm=True,
+            guardrail_mode=guardrail_mode  # ← Use ISRec intent to filter products!
         )
         
         # Only generate suggestions if user has purchase history
