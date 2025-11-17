@@ -836,6 +836,41 @@
         </button>
       </div>
 
+      <!-- QR Code Login Section -->
+      <div class="mb-6 text-center">
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">Quick Sign In with QR Code</h3>
+          <p class="text-xs text-gray-500 mb-4">Scan to log in instantly on your phone</p>
+          
+          <!-- QR Code Image -->
+          <div class="bg-white rounded-lg p-4 inline-block shadow-sm">
+            <img 
+              src="/api/qr-code" 
+              alt="QR Code Login" 
+              class="w-48 h-48 mx-auto"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            >
+            <div style="display: none;" class="text-red-500 text-xs">
+              Failed to load QR code
+            </div>
+          </div>
+          
+          <p class="text-xs text-gray-400 mt-3">
+            First scan creates your account • Same device = same account
+          </p>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="relative mb-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-white text-gray-500 font-medium">OR</span>
+        </div>
+      </div>
+
       <!-- Sign In Form -->
       <form id="loginForm" onsubmit="handleEmailLogin(event)">
         <!-- Name Input -->
