@@ -818,8 +818,19 @@ async function getBlendedRecommendations() {
           addRecommendationDot(s.replacement_product.subcat, 'hybrid');
         }
         
-        // Calculate similarity percentage (based on recommendation score or default)
-        const similarityPct = s.similarity === 'Great match' ? 94 : 85;
+        // Calculate percentage savings
+        const originalPrice = parseFloat(s.replace.match(/\$[\d,.]+/)?.[0]?.replace('$', '').replace(',', '') || 0);
+        const replacementPrice = s.replacement_product.price || 0;
+        const savingsAmount = parseFloat(s.expected_saving);
+        
+        // Calculate discount percentage from the cart item price
+        let discountPct = 0;
+        if (CART && CART.length > 0) {
+          const cartItem = CART.find(item => item.title === s.replace);
+          if (cartItem && cartItem.price > 0) {
+            discountPct = Math.round((savingsAmount / cartItem.price) * 100);
+          }
+        }
         
         // Determine aisle from subcategory
         const aisleMap = {
@@ -827,6 +838,17 @@ async function getBlendedRecommendations() {
           'Snacks': 'D', 'Cleaning Supplies': 'E', 'Household': 'F'
         };
         const aisle = aisleMap[s.replacement_product.subcat] || 'A';
+        
+        // Generate mode-based badge label from the reason text
+        // Extract mode context from the LLM-generated reason
+        let modeBadge = 'Smart Choice';
+        if (s.reason.toLowerCase().includes('premium') || s.reason.toLowerCase().includes('quality')) {
+          modeBadge = 'Premium Choice';
+        } else if (s.reason.toLowerCase().includes('save') || s.reason.toLowerCase().includes('savings') || s.reason.toLowerCase().includes('deal')) {
+          modeBadge = 'Budget Smart';
+        } else {
+          modeBadge = 'Balanced Pick';
+        }
         
         const card = document.createElement('div');
         card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300';
@@ -882,25 +904,22 @@ async function getBlendedRecommendations() {
             '</div>' +
           '</div>' +
           
-          // Evaluation badges (more compact)
+          // Evaluation badges (more compact) - Updated per user request
           '<div class="flex flex-wrap gap-1.5 mb-3">' +
+            // 1. Price saving percentage badge
             '<div class="bg-green-100 border border-green-300 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
               '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
               '</svg>' +
-              '<span>Price Saving</span>' +
+              '<span>' + (discountPct > 0 ? discountPct + '% OFF' : 'Save $' + s.expected_saving) + '</span>' +
             '</div>' +
-            '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
-              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-              '</svg>' +
-              '<span>' + similarityPct + '% Similar</span>' +
-            '</div>' +
+            // 2. Similarity badge removed per user request
+            // 3. Mode-based badge (replaces "Intent Match") - uses LLM-generated context
             '<div class="bg-purple-100 border border-purple-300 text-purple-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
               '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
               '</svg>' +
-              '<span>Intent Match</span>' +
+              '<span>' + modeBadge + '</span>' +
             '</div>' +
           '</div>' +
           
