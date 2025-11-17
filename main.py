@@ -501,7 +501,7 @@ def api_blended_recommendations():
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
-                                "similarity": confidence,
+                                "similarity": f"{int(score * 100)}% match",  # Simple score, no duplication
                                 "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
@@ -540,7 +540,7 @@ def api_blended_recommendations():
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
-                                    "similarity": confidence,
+                                    "similarity": f"{int(score * 100)}% match",  # Simple score, no duplication
                                     "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
