@@ -1343,6 +1343,25 @@ function closeSignInModal() {
   document.body.style.overflow = ''; // Restore scrolling
 }
 
+// Open QR Code Popup
+function openQRPopup() {
+  const popup = document.getElementById('qrPopup');
+  const overlay = document.getElementById('qrPopupOverlay');
+  
+  popup.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+  // Note: Don't prevent scrolling since body is already prevented by Sign In modal
+}
+
+// Close QR Code Popup
+function closeQRPopup() {
+  const popup = document.getElementById('qrPopup');
+  const overlay = document.getElementById('qrPopupOverlay');
+  
+  popup.classList.add('hidden');
+  overlay.classList.add('hidden');
+}
+
 // Handle Unified Auth Button Click
 function handleAuthButtonClick() {
   // Check if user is logged in
@@ -1640,9 +1659,24 @@ function closeOrderDetailsModal() {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    const modal = document.getElementById('orderDetailsModal');
-    if (modal && !modal.classList.contains('hidden')) {
+    // Check QR popup first (higher priority)
+    const qrPopup = document.getElementById('qrPopup');
+    if (qrPopup && !qrPopup.classList.contains('hidden')) {
+      closeQRPopup();
+      return;
+    }
+    
+    // Then check order details modal
+    const orderModal = document.getElementById('orderDetailsModal');
+    if (orderModal && !orderModal.classList.contains('hidden')) {
       closeOrderDetailsModal();
+      return;
+    }
+    
+    // Finally check sign-in modal
+    const signInModal = document.getElementById('signInModal');
+    if (signInModal && !signInModal.classList.contains('hidden')) {
+      closeSignInModal();
     }
   }
 });
