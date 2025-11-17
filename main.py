@@ -490,37 +490,11 @@ def api_blended_recommendations():
                             saving = (item_price - rec_price) * item_qty
                             discount_pct = int((1 - rec_price / item_price) * 100)
                             
-                            # Convert blended score + ISRec intent to user-friendly confidence phrase
+                            # Use human-friendly messaging (no technical jargon)
                             score = float(rec.get('blended_score', 0))
+                            confidence = format_intent_message(current_intent, score)
                             
-                            # Intent-aware messaging: current_intent [0=economy, 1=quality]
-                            if current_intent >= 0.6:
-                                # Quality mode - emphasize quality match
-                                if score >= 0.7:
-                                    confidence = "Quality pick for you (ISRec: Quality mode)"
-                                elif score >= 0.5:
-                                    confidence = "Great quality match (ISRec detected)"
-                                else:
-                                    confidence = "Quality-focused suggestion"
-                            elif current_intent <= 0.4:
-                                # Economy mode - emphasize savings
-                                if score >= 0.7:
-                                    confidence = "Budget-friendly match (ISRec: Economy mode)"
-                                elif score >= 0.5:
-                                    confidence = "Smart savings (ISRec detected)"
-                                else:
-                                    confidence = "Economy-focused suggestion"
-                            else:
-                                # Balanced mode - still show ISRec is working
-                                intent_pct = int(current_intent * 100)
-                                if score >= 0.7:
-                                    confidence = f"Perfect match (ISRec: {intent_pct}% quality intent)"
-                                elif score >= 0.5:
-                                    confidence = f"Great choice (ISRec balanced: {intent_pct}%)"
-                                else:
-                                    confidence = f"Smart recommendation (ISRec: {intent_pct}% intent)"
-                            
-                            # Create compelling hybrid recommendation reason with intent context
+                            # Create compelling recommendation reason
                             reason = f"{confidence}: {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
                             
                             cheaper_alts.append({
@@ -555,37 +529,11 @@ def api_blended_recommendations():
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
-                                # Convert blended score + ISRec intent to user-friendly confidence phrase
+                                # Use human-friendly messaging (no technical jargon)
                                 score = float(rec.get('blended_score', 0))
+                                confidence = format_intent_message(current_intent, score)
                                 
-                                # Intent-aware messaging: current_intent [0=economy, 1=quality]
-                                if current_intent >= 0.6:
-                                    # Quality mode
-                                    if score >= 0.7:
-                                        confidence = "AI highly recommends (Quality mode)"
-                                    elif score >= 0.5:
-                                        confidence = "AI suggests (Quality match)"
-                                    else:
-                                        confidence = "Worth considering (Quality)"
-                                elif current_intent <= 0.4:
-                                    # Economy mode
-                                    if score >= 0.7:
-                                        confidence = "AI highly recommends (Economy mode)"
-                                    elif score >= 0.5:
-                                        confidence = "AI suggests (Budget match)"
-                                    else:
-                                        confidence = "Worth considering (Economy)"
-                                else:
-                                    # Balanced mode - show ISRec intent
-                                    intent_pct = int(current_intent * 100)
-                                    if score >= 0.7:
-                                        confidence = f"AI highly recommends (ISRec: {intent_pct}%)"
-                                    elif score >= 0.5:
-                                        confidence = f"AI suggests (ISRec: {intent_pct}% intent)"
-                                    else:
-                                        confidence = f"Worth considering (ISRec balanced)"
-                                
-                                # Create compelling cross-category hybrid reason
+                                # Create compelling cross-category recommendation
                                 reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
                                 
                                 cheaper_alts.append({
@@ -1220,6 +1168,43 @@ def retrain_model():
 # ==================== REPLENISHMENT SYSTEM API ENDPOINTS ====================
 
 from replenishment_engine import ReplenishmentEngine
+
+def format_intent_message(intent_score: float, blended_score: float) -> str:
+    """
+    Convert technical intent score to human-friendly message.
+    No mention of ISRec, intent, or technical jargon - just natural language.
+    
+    Args:
+        intent_score: 0.0-1.0 (0=economy, 1=quality)
+        blended_score: Recommendation confidence score
+    
+    Returns:
+        Human-friendly confidence message
+    """
+    if intent_score >= 0.6:
+        # Quality mode - user prefers premium/quality
+        if blended_score >= 0.7:
+            return "Premium pick based on your taste"
+        elif blended_score >= 0.5:
+            return "Quality match for you"
+        else:
+            return "You might like this quality option"
+    elif intent_score <= 0.4:
+        # Economy mode - user prefers savings
+        if blended_score >= 0.7:
+            return "Smart budget choice"
+        elif blended_score >= 0.5:
+            return "Great value for your money"
+        else:
+            return "Budget-friendly option"
+    else:
+        # Balanced mode - neutral recommendations
+        if blended_score >= 0.7:
+            return "Perfect match for you"
+        elif blended_score >= 0.5:
+            return "Great choice"
+        else:
+            return "Smart recommendation"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
