@@ -36,7 +36,7 @@ class IntentDetector:
     
     def detect_intent(self, user_id: str, current_cart: List[Dict] = None, db_session=None) -> float:
         """
-        Analyze recent user actions to detect current intent.
+        Analyze recent user actions to detect current intent with EMA smoothing.
         
         Args:
             user_id: User session ID
@@ -44,27 +44,32 @@ class IntentDetector:
             db_session: Database session (required for querying events)
             
         Returns:
-            Intent score [0, 1] where 0=economy, 1=quality
+            Smoothed intent score [0, 1] where 0=economy, 1=quality
         """
         # Get recent user events
         recent_actions = self._get_recent_actions(user_id, db_session)
         
+        # Calculate raw intent from recent actions
         if len(recent_actions) == 0:
-            return 0.5  # Default: balanced mode
+            current_intent = 0.5  # Default: balanced mode
+        else:
+            # Calculate signals
+            quality_signals = self._calculate_quality_signals(recent_actions, current_cart)
+            economy_signals = self._calculate_economy_signals(recent_actions, current_cart)
+            
+            total_signals = quality_signals + economy_signals
+            
+            if total_signals == 0:
+                current_intent = 0.5  # No strong signals, balanced
+            else:
+                # Convert to intent score [0, 1]
+                current_intent = quality_signals / total_signals
         
-        # Calculate signals
-        quality_signals = self._calculate_quality_signals(recent_actions, current_cart)
-        economy_signals = self._calculate_economy_signals(recent_actions, current_cart)
+        # Apply EMA smoothing for stability
+        # Formula: intent_ema = 0.3 × current_intent + 0.7 × previous_ema
+        smoothed_intent = self._apply_ema_smoothing(user_id, current_intent, db_session)
         
-        total_signals = quality_signals + economy_signals
-        
-        if total_signals == 0:
-            return 0.5  # No strong signals, balanced
-        
-        # Convert to intent score [0, 1]
-        quality_ratio = quality_signals / total_signals
-        
-        return quality_ratio
+        return smoothed_intent
     
     def _get_recent_actions(self, user_id: str, db_session=None) -> List[Dict]:
         """Get recent user events from database"""
@@ -237,6 +242,49 @@ class IntentDetector:
             
         except Exception:
             return 50  # Default to middle if calculation fails
+    
+    def _apply_ema_smoothing(self, user_id: str, current_intent: float, db_session=None) -> float:
+        """
+        Apply Exponential Moving Average (EMA) smoothing to intent score.
+        
+        Formula: intent_ema = 0.3 × current_intent + 0.7 × previous_ema
+        
+        Args:
+            user_id: User session ID
+            current_intent: Raw intent score from current actions [0, 1]
+            db_session: Database session
+            
+        Returns:
+            Smoothed intent score [0, 1]
+        """
+        if db_session is None:
+            return current_intent  # No smoothing without database
+        
+        try:
+            from models import User
+            
+            # Get user's previous EMA value
+            user = db_session.query(User).filter(User.session_id == user_id).first()
+            
+            if user is None:
+                # New user, no previous EMA
+                return current_intent
+            
+            previous_ema = float(user.intent_ema) if user.intent_ema is not None else 0.5
+            
+            # Apply EMA: 30% current, 70% previous
+            smoothed = 0.3 * current_intent + 0.7 * previous_ema
+            
+            # Update user's EMA in database
+            user.intent_ema = smoothed
+            db_session.commit()
+            
+            return smoothed
+            
+        except Exception as e:
+            # Fallback: return current intent without smoothing
+            print(f"⚠️ EMA smoothing failed: {e}")
+            return current_intent
     
     def get_intent_description(self, intent_score: float) -> str:
         """Convert intent score to human-readable description"""

@@ -113,6 +113,9 @@ def init_models(db):
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
         last_active = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
         
+        # ISRec intent tracking with EMA smoothing
+        intent_ema = db.Column(db.Numeric(5, 4), default=0.5, nullable=False)  # Smoothed intent score [0, 1]
+        
         # Relationships
         orders = db.relationship('Order', backref='user', lazy='dynamic', cascade='all, delete-orphan')
         events = db.relationship('UserEvent', backref='user', lazy='dynamic', cascade='all, delete-orphan')
