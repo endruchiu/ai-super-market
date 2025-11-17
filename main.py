@@ -493,11 +493,11 @@ def api_blended_recommendations():
             total = quality_score + economy_score
             current_intent = quality_score / total if total > 0 else 0.5
         
-        # Map ISRec intent to guardrail mode
-        if current_intent >= 0.6:
+        # Map ISRec intent to guardrail mode (stricter thresholds for instant responsiveness)
+        if current_intent > 0.65:
             guardrail_mode = 'quality'
             mode_label = "Quality mode"
-        elif current_intent <= 0.4:
+        elif current_intent < 0.35:
             guardrail_mode = 'economy'
             mode_label = "Economy mode"
         else:
@@ -1128,10 +1128,10 @@ def get_isrec_intent():
         total = quality_score + economy_score
         intent_score = quality_score / total if total > 0 else 0.5
         
-        # Determine mode
-        if intent_score > 0.7:
+        # Determine mode (stricter thresholds for instant responsiveness)
+        if intent_score > 0.65:
             mode = "quality"
-        elif intent_score < 0.3:
+        elif intent_score < 0.35:
             mode = "economy"
         else:
             mode = "balanced"
