@@ -661,7 +661,7 @@ async function checkout() {
       clearRecommendationDots();
       
       // Refresh user stats after purchase
-      const userData = localStorage.getItem('demoUser');
+      const userData = localStorage.getItem('currentUser');
       if (userData) {
         const user = JSON.parse(userData);
         updateUserStats(user.email);
