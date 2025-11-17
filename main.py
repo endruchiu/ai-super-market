@@ -490,18 +490,22 @@ def api_blended_recommendations():
                             saving = (item_price - rec_price) * item_qty
                             discount_pct = int((1 - rec_price / item_price) * 100)
                             
-                            # Use human-friendly messaging (no technical jargon)
+                            # Use LLM to generate natural, conversational message
+                            # This connects ISRec intent with the recommendation
                             score = float(rec.get('blended_score', 0))
-                            confidence = format_intent_message(current_intent, score)
-                            
-                            # Create compelling recommendation reason
-                            reason = f"{confidence}: {rec_title} — similar product, {discount_pct}% cheaper (save ${saving:.2f})"
+                            reason = generate_llm_recommendation_message(
+                                intent_score=current_intent,
+                                product_name=rec_title,
+                                original_product=item_title,
+                                savings=saving,
+                                discount_pct=discount_pct
+                            )
                             
                             cheaper_alts.append({
                                 "replace": item_title,
                                 "with": rec_title,
                                 "expected_saving": f"{saving:.2f}",
-                                "similarity": f"{int(score * 100)}% match",  # Simple score, no duplication
+                                "similarity": "Great match",  # Human-friendly, no numbers
                                 "reason": reason,
                                 "replacement_product": {
                                     "id": str(product_id),
@@ -529,18 +533,22 @@ def api_blended_recommendations():
                                 saving = (item_price - rec_price) * item_qty
                                 discount_pct = int((1 - rec_price / item_price) * 100)
                                 
-                                # Use human-friendly messaging (no technical jargon)
+                                # Use LLM to generate natural, conversational message
+                                # This connects ISRec intent with cross-category recommendation
                                 score = float(rec.get('blended_score', 0))
-                                confidence = format_intent_message(current_intent, score)
-                                
-                                # Create compelling cross-category recommendation
-                                reason = f"{confidence}: {rec_title} — {discount_pct}% cheaper (save ${saving:.2f})"
+                                reason = generate_llm_recommendation_message(
+                                    intent_score=current_intent,
+                                    product_name=rec_title,
+                                    original_product=item_title,
+                                    savings=saving,
+                                    discount_pct=discount_pct
+                                )
                                 
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
                                     "expected_saving": f"{saving:.2f}",
-                                    "similarity": f"{int(score * 100)}% match",  # Simple score, no duplication
+                                    "similarity": "Good alternative",  # Human-friendly, no numbers
                                     "reason": reason,
                                     "replacement_product": {
                                         "id": str(product_id),
@@ -1168,43 +1176,67 @@ def retrain_model():
 # ==================== REPLENISHMENT SYSTEM API ENDPOINTS ====================
 
 from replenishment_engine import ReplenishmentEngine
+import openai
+import os
 
-def format_intent_message(intent_score: float, blended_score: float) -> str:
+# Initialize OpenAI for LLM-powered recommendation messages
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+def generate_llm_recommendation_message(intent_score: float, product_name: str, original_product: str, savings: float, discount_pct: int) -> str:
     """
-    Convert technical intent score to human-friendly message.
-    No mention of ISRec, intent, or technical jargon - just natural language.
+    Use LLM to generate natural, conversational recommendation message.
+    Connects ISRec intent detection with product recommendations using AI.
     
     Args:
-        intent_score: 0.0-1.0 (0=economy, 1=quality)
-        blended_score: Recommendation confidence score
+        intent_score: 0.0-1.0 (0=economy-focused, 1=quality-focused)
+        product_name: Recommended product
+        original_product: Original product being replaced
+        savings: Dollar amount saved
+        discount_pct: Percentage cheaper
     
     Returns:
-        Human-friendly confidence message
+        Natural, human-friendly message from AI
     """
-    if intent_score >= 0.6:
-        # Quality mode - user prefers premium/quality
-        if blended_score >= 0.7:
-            return "Premium pick based on your taste"
-        elif blended_score >= 0.5:
-            return "Quality match for you"
+    try:
+        # Determine user's shopping style from ISRec
+        if intent_score >= 0.6:
+            user_style = "values quality and premium products"
+            focus = "similar quality at a better price"
+        elif intent_score <= 0.4:
+            user_style = "is budget-conscious and looking for great deals"
+            focus = "the best value"
         else:
-            return "You might like this quality option"
-    elif intent_score <= 0.4:
-        # Economy mode - user prefers savings
-        if blended_score >= 0.7:
-            return "Smart budget choice"
-        elif blended_score >= 0.5:
-            return "Great value for your money"
+            user_style = "balances quality and value"
+            focus = "a great balance of quality and price"
+        
+        # Use GPT to generate natural message
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You're a friendly grocery shopping assistant. Based on the customer's shopping behavior, they {user_style}. Generate a brief, warm recommendation (max 15 words) suggesting a product swap. Be conversational and natural - no corporate jargon."
+                },
+                {
+                    "role": "user",
+                    "content": f"Suggest swapping '{original_product}' with '{product_name}' (saves ${savings:.2f}, {discount_pct}% cheaper). Focus on {focus}."
+                }
+            ],
+            temperature=0.7,
+            max_tokens=50
+        )
+        
+        return response.choices[0].message.content.strip()
+    
+    except Exception as e:
+        # Fallback to simple template if LLM fails
+        print(f"LLM generation failed: {e}")
+        if intent_score >= 0.6:
+            return f"Try {product_name} - similar quality, better value"
+        elif intent_score <= 0.4:
+            return f"{product_name} saves you ${savings:.2f}"
         else:
-            return "Budget-friendly option"
-    else:
-        # Balanced mode - neutral recommendations
-        if blended_score >= 0.7:
-            return "Perfect match for you"
-        elif blended_score >= 0.5:
-            return "Great choice"
-        else:
-            return "Smart recommendation"
+            return f"Consider {product_name} instead"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
