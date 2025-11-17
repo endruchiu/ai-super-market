@@ -2194,6 +2194,11 @@ def static_files(filename):
 def index():
     return render_template("index.html")
 
+@app.route("/analytics")
+def analytics():
+    """Analytics dashboard to visualize all behavioral metrics"""
+    return render_template("analytics.html")
+
 if __name__ == "__main__":
     # For Replit, host=0.0.0.0 is typical
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)

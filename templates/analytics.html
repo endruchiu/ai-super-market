@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Behavioral Analytics Dashboard - AI Supermarket</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    
+    .metric-card {
+      transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
+    }
+    
+    .progress-bar-container {
+      background: #e5e7eb;
+      border-radius: 9999px;
+      overflow: hidden;
+      height: 12px;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      transition: width 0.8s ease-out;
+      background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+    }
+    
+    .progress-bar.green {
+      background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);
+    }
+    
+    .progress-bar.yellow {
+      background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%);
+    }
+    
+    .progress-bar.red {
+      background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .badge-green {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .badge-yellow {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .badge-blue {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .badge-purple {
+      background: #e9d5ff;
+      color: #6b21a8;
+    }
+    
+    .loading-spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #6366f1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .mini-progress {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+    
+    .mini-progress-bar {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+    
+    .pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  
+  <!-- Header -->
+  <div class="bg-white shadow-md border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-indigo-600 p-2.5 rounded-lg">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Behavioral Analytics Dashboard</h1>
+            <p class="text-sm text-gray-600">Comprehensive metrics for AI recommendation system</p>
+          </div>
+        </div>
+        <a href="/" class="flex items-center space-x-2 px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span>Back to Store</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    
+    <!-- Controls -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+      <div class="flex flex-wrap gap-4 items-end">
+        
+        <!-- Time Period Filter -->
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Time Period</label>
+          <div class="flex gap-2">
+            <button onclick="setPeriod('7d')" id="period-7d" class="px-4 py-2 bg-gray-100 hover:bg-indigo-100 text-gray-700 rounded-lg font-medium transition-all">
+              Last 7 Days
+            </button>
+            <button onclick="setPeriod('30d')" id="period-30d" class="px-4 py-2 bg-gray-100 hover:bg-indigo-100 text-gray-700 rounded-lg font-medium transition-all">
+              Last 30 Days
+            </button>
+            <button onclick="setPeriod('all')" id="period-all" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium transition-all">
+              All Time
+            </button>
+          </div>
+        </div>
+        
+        <!-- User Filter -->
+        <div class="flex-1 min-w-[250px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Filter by User ID (Optional)</label>
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="userIdInput" 
+              placeholder="Enter session ID..." 
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            >
+            <button onclick="applyUserFilter()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all">
+              Apply
+            </button>
+            <button onclick="clearUserFilter()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all">
+              Clear
+            </button>
+          </div>
+        </div>
+        
+        <!-- Refresh Button -->
+        <div>
+          <button onclick="refreshData()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center space-x-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Refresh Data</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Current Filters Display -->
+      <div id="currentFilters" class="mt-4 text-sm text-gray-600"></div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="flex flex-col items-center justify-center py-20">
+      <div class="loading-spinner"></div>
+      <p class="mt-4 text-gray-600 font-medium">Loading analytics data...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+      <div class="flex items-start space-x-3">
+        <svg class="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+          <h3 class="text-lg font-semibold text-red-900">Error Loading Analytics</h3>
+          <p id="errorMessage" class="text-red-700 mt-1"></p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-8 mb-6 text-center">
+      <svg class="w-16 h-16 text-blue-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+      </svg>
+      <h3 class="text-xl font-bold text-gray-900 mb-2">No Analytics Data Yet</h3>
+      <p class="text-gray-600 mb-4">Start shopping and interacting with recommendations to see analytics here.</p>
+      <a href="/" class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all">
+        Go Shopping
+      </a>
+    </div>
+    
+    <!-- Dashboard Content -->
+    <div id="dashboardContent" class="hidden space-y-6">
+      
+      <!-- Overview Card -->
+      <div class="metric-card bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">📊 Overview Metrics</h2>
+          <span class="badge badge-blue">Top Performance Indicators</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- RAR -->
+          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">RAR</p>
+                <p class="text-xs text-gray-500">Replace Action Rate</p>
+              </div>
+              <div id="rarBadge" class="badge badge-blue">-</div>
+            </div>
+            <p id="rarValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="rarProgress" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Percentage of recommendations accepted</p>
+          </div>
+          
+          <!-- ACR -->
+          <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-100">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">ACR</p>
+                <p class="text-xs text-gray-500">Action to Cart Rate</p>
+              </div>
+            </div>
+            <p id="acrValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="acrProgress" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Recommendations added to cart</p>
+          </div>
+          
+          <!-- Time to Accept -->
+          <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Time to Accept</p>
+                <p class="text-xs text-gray-500">Average Decision Time</p>
+              </div>
+            </div>
+            <p id="timeToAcceptValue" class="text-4xl font-bold text-gray-900 mb-2">0s</p>
+            <div class="flex items-center space-x-2 mt-2">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p class="text-xs text-gray-500">Lower is better</p>
+            </div>
+          </div>
+          
+          <!-- Scroll Depth -->
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-100">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Avg Scroll Depth</p>
+                <p class="text-xs text-gray-500">User Engagement</p>
+              </div>
+            </div>
+            <p id="scrollDepthValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="scrollDepthProgress" class="progress-bar yellow" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">How far users scroll through recs</p>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Cart Behavior Card -->
+      <div class="metric-card bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">🛒 Cart Behavior Metrics</h2>
+          <span class="badge badge-purple">User Actions</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- BCR -->
+          <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-100">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="bg-purple-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-600">BCR</p>
+                <p class="text-xs text-gray-500">Basket Change Rate</p>
+              </div>
+            </div>
+            <p id="bcrValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="bcrProgress" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Items removed after adding</p>
+          </div>
+          
+          <!-- Dismiss Rate -->
+          <div class="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-5 border border-red-100">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="bg-red-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Dismiss Rate</p>
+                <p class="text-xs text-gray-500">Rejection Rate</p>
+              </div>
+            </div>
+            <p id="dismissRateValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="dismissRateProgress" class="progress-bar red" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Recommendations dismissed</p>
+          </div>
+          
+          <!-- Removal Rate -->
+          <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-5 border border-orange-100">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="bg-orange-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Removal Rate</p>
+                <p class="text-xs text-gray-500">Cart Deletions</p>
+              </div>
+            </div>
+            <p id="removalRateValue" class="text-4xl font-bold text-gray-900 mb-2">0%</p>
+            <div class="progress-bar-container">
+              <div id="removalRateProgress" class="progress-bar yellow" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Items removed from cart</p>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Advanced Analytics Card -->
+      <div class="metric-card bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">🧠 Advanced Analytics</h2>
+          <span class="badge badge-purple">AI Insights</span>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- BDS -->
+          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-5 border border-indigo-100">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-lg font-bold text-gray-900">BDS - Behavioral Drift Score</p>
+                <p class="text-sm text-gray-600">Tracks changes in user preferences over time</p>
+              </div>
+              <div id="bdsBadge" class="badge badge-blue">Low drift</div>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-5xl font-bold text-gray-900 mb-2" id="bdsScore">0.00</p>
+              <p class="text-sm text-gray-500">Lower values indicate stable preferences</p>
+            </div>
+            
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-600">Protein Drift</span>
+                  <span id="proteinDriftValue" class="font-semibold text-gray-900">0.00</span>
+                </div>
+                <div class="mini-progress">
+                  <div id="proteinDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-600">Sugar Drift</span>
+                  <span id="sugarDriftValue" class="font-semibold text-gray-900">0.00</span>
+                </div>
+                <div class="mini-progress">
+                  <div id="sugarDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%);"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-600">Calories Drift</span>
+                  <span id="caloriesDriftValue" class="font-semibold text-gray-900">0.00</span>
+                </div>
+                <div class="mini-progress">
+                  <div id="caloriesDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-600">Price Drift</span>
+                  <span id="priceDriftValue" class="font-semibold text-gray-900">0.00</span>
+                </div>
+                <div class="mini-progress">
+                  <div id="priceDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);"></div>
+                </div>
+              </div>
+            </div>
+            
+            <p class="text-xs text-gray-500 mt-4" id="bdsSampleSize">Sample size: 0 accepted recommendations</p>
+          </div>
+          
+          <!-- EAS -->
+          <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
+            <div class="mb-4">
+              <p class="text-lg font-bold text-gray-900">EAS - Explanation Acceptance Score</p>
+              <p class="text-sm text-gray-600">Impact of explanations on user acceptance</p>
+            </div>
+            
+            <div class="mb-6">
+              <p class="text-sm font-semibold text-gray-700 mb-2">Explanation Lift</p>
+              <p id="easLiftValue" class="text-5xl font-bold text-gray-900 mb-1">+0%</p>
+              <p class="text-sm text-gray-500">Higher acceptance with explanations</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="bg-white rounded-lg p-4 border border-green-200">
+                <p class="text-xs font-semibold text-gray-600 mb-1">With Explanation</p>
+                <p id="easWithValue" class="text-3xl font-bold text-green-600">0%</p>
+                <p class="text-xs text-gray-500 mt-1" id="easWithCount">0 shown</p>
+              </div>
+              
+              <div class="bg-white rounded-lg p-4 border border-gray-200">
+                <p class="text-xs font-semibold text-gray-600 mb-1">Without Explanation</p>
+                <p id="easWithoutValue" class="text-3xl font-bold text-gray-600">0%</p>
+                <p class="text-xs text-gray-500 mt-1" id="easWithoutCount">0 shown</p>
+              </div>
+            </div>
+            
+            <div class="bg-green-100 rounded-lg p-3 border border-green-200">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-xs text-green-800">Explanations help users make informed decisions and increase acceptance rates.</p>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Health Goal Alignment Card -->
+      <div class="metric-card bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">❤️ Health Goal Alignment</h2>
+          <span id="hgabBadge" class="badge badge-green">On Track</span>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <div class="lg:col-span-1">
+            <div class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-lg p-6 border border-rose-100 h-full flex flex-col justify-center items-center text-center">
+              <p class="text-sm font-semibold text-gray-600 mb-2">HGAB Score</p>
+              <p id="hgabValue" class="text-6xl font-bold text-gray-900 mb-2">0%</p>
+              <p class="text-sm text-gray-500">Goal-aligned acceptance rate</p>
+              
+              <div class="mt-4 w-full">
+                <div class="progress-bar-container">
+                  <div id="hgabProgress" class="progress-bar green" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lg:col-span-2">
+            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-6 border border-blue-100 h-full">
+              <p class="text-lg font-bold text-gray-900 mb-4">Goal Alignment Details</p>
+              
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white rounded-lg p-4 border border-blue-200">
+                  <p class="text-xs font-semibold text-gray-600 mb-1">Goal-Aligned Shown</p>
+                  <p id="hgabShownValue" class="text-3xl font-bold text-blue-600">0</p>
+                  <p class="text-xs text-gray-500 mt-1">Recommendations shown</p>
+                </div>
+                
+                <div class="bg-white rounded-lg p-4 border border-green-200">
+                  <p class="text-xs font-semibold text-gray-600 mb-1">Goal-Aligned Accepts</p>
+                  <p id="hgabAcceptsValue" class="text-3xl font-bold text-green-600">0</p>
+                  <p class="text-xs text-gray-500 mt-1">Recommendations accepted</p>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg p-4 border border-blue-200">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Active User Goals</p>
+                <p id="hgabDetails" class="text-sm text-gray-600">No goals set</p>
+              </div>
+              
+              <div class="mt-4 bg-blue-100 rounded-lg p-3 border border-blue-200">
+                <div class="flex items-start space-x-2">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p class="text-xs text-blue-800">Higher HGAB scores indicate recommendations are well-aligned with user health goals.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Statistics Summary -->
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">📈 Interaction Statistics</h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-gray-900" id="statTotal">0</p>
+            <p class="text-xs text-gray-600 mt-1">Total Interactions</p>
+          </div>
+          
+          <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600" id="statShown">0</p>
+            <p class="text-xs text-gray-600 mt-1">Shown</p>
+          </div>
+          
+          <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-green-600" id="statAccepted">0</p>
+            <p class="text-xs text-gray-600 mt-1">Accepted</p>
+          </div>
+          
+          <div class="bg-red-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-red-600" id="statDismissed">0</p>
+            <p class="text-xs text-gray-600 mt-1">Dismissed</p>
+          </div>
+          
+          <div class="bg-orange-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-orange-600" id="statRemoved">0</p>
+            <p class="text-xs text-gray-600 mt-1">Removed</p>
+          </div>
+          
+          <div class="bg-purple-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-purple-600" id="statRemovedAfterAccept">0</p>
+            <p class="text-xs text-gray-600 mt-1">Removed After Accept</p>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+
+  <script>
+    let currentPeriod = 'all';
+    let currentUserId = null;
+    
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadAnalytics();
+    });
+    
+    function setPeriod(period) {
+      currentPeriod = period;
+      
+      // Update button styles
+      document.querySelectorAll('[id^="period-"]').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
+      });
+      
+      const selectedBtn = document.getElementById(`period-${period}`);
+      selectedBtn.classList.remove('bg-gray-100', 'text-gray-700');
+      selectedBtn.classList.add('bg-indigo-600', 'text-white');
+      
+      loadAnalytics();
+    }
+    
+    function applyUserFilter() {
+      const input = document.getElementById('userIdInput');
+      currentUserId = input.value.trim() || null;
+      loadAnalytics();
+    }
+    
+    function clearUserFilter() {
+      currentUserId = null;
+      document.getElementById('userIdInput').value = '';
+      loadAnalytics();
+    }
+    
+    function refreshData() {
+      loadAnalytics();
+    }
+    
+    function updateCurrentFilters() {
+      const filtersDiv = document.getElementById('currentFilters');
+      let filterText = `Showing: <strong>${currentPeriod === '7d' ? 'Last 7 Days' : currentPeriod === '30d' ? 'Last 30 Days' : 'All Time'}</strong>`;
+      
+      if (currentUserId) {
+        filterText += ` | User: <strong>${currentUserId}</strong>`;
+      } else {
+        filterText += ` | <strong>All Users</strong>`;
+      }
+      
+      filtersDiv.innerHTML = filterText;
+    }
+    
+    async function loadAnalytics() {
+      const loadingState = document.getElementById('loadingState');
+      const errorState = document.getElementById('errorState');
+      const emptyState = document.getElementById('emptyState');
+      const dashboardContent = document.getElementById('dashboardContent');
+      
+      // Show loading
+      loadingState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      emptyState.classList.add('hidden');
+      dashboardContent.classList.add('hidden');
+      
+      updateCurrentFilters();
+      
+      try {
+        // Build query parameters
+        const params = new URLSearchParams();
+        params.append('period', currentPeriod);
+        if (currentUserId) {
+          params.append('user_id', currentUserId);
+        }
+        
+        const response = await fetch(`/api/analytics/metrics?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Unknown error');
+        }
+        
+        // Check if we have any data
+        if (data.counts.total_interactions === 0) {
+          loadingState.classList.add('hidden');
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        
+        // Update dashboard with data
+        updateDashboard(data);
+        
+        // Show dashboard
+        loadingState.classList.add('hidden');
+        dashboardContent.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        loadingState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        document.getElementById('errorMessage').textContent = error.message;
+      }
+    }
+    
+    function updateDashboard(data) {
+      const metrics = data.metrics;
+      const counts = data.counts;
+      
+      // Overview Metrics
+      updateMetric('rar', metrics.rar);
+      updateMetric('acr', metrics.acr);
+      updateMetric('timeToAccept', metrics.time_to_accept_seconds);
+      updateMetric('scrollDepth', metrics.avg_scroll_depth_percent);
+      
+      // Cart Behavior Metrics
+      updateMetric('bcr', metrics.bcr);
+      updateMetric('dismissRate', metrics.dismiss_rate);
+      updateMetric('removalRate', metrics.removal_rate);
+      
+      // BDS
+      updateBDS(metrics.bds);
+      
+      // EAS
+      updateEAS(metrics.eas);
+      
+      // HGAB
+      updateHGAB(metrics.hgab);
+      
+      // Statistics
+      updateStatistics(counts);
+    }
+    
+    function updateMetric(metricName, value) {
+      if (metricName === 'rar') {
+        document.getElementById('rarValue').textContent = `${value.toFixed(1)}%`;
+        document.getElementById('rarProgress').style.width = `${Math.min(value, 100)}%`;
+        
+        // Color coding
+        const badge = document.getElementById('rarBadge');
+        const progress = document.getElementById('rarProgress');
+        
+        if (value >= 20) {
+          badge.className = 'badge badge-green';
+          badge.textContent = 'Excellent';
+          progress.classList.add('green');
+          progress.classList.remove('yellow', 'red');
+        } else if (value >= 10) {
+          badge.className = 'badge badge-yellow';
+          badge.textContent = 'Good';
+          progress.classList.add('yellow');
+          progress.classList.remove('green', 'red');
+        } else {
+          badge.className = 'badge badge-red';
+          badge.textContent = 'Needs Work';
+          progress.classList.add('red');
+          progress.classList.remove('green', 'yellow');
+        }
+      } else if (metricName === 'acr') {
+        document.getElementById('acrValue').textContent = `${value.toFixed(1)}%`;
+        document.getElementById('acrProgress').style.width = `${Math.min(value, 100)}%`;
+      } else if (metricName === 'timeToAccept') {
+        document.getElementById('timeToAcceptValue').textContent = `${value.toFixed(1)}s`;
+      } else if (metricName === 'scrollDepth') {
+        document.getElementById('scrollDepthValue').textContent = `${value.toFixed(0)}%`;
+        document.getElementById('scrollDepthProgress').style.width = `${Math.min(value, 100)}%`;
+      } else if (metricName === 'bcr') {
+        document.getElementById('bcrValue').textContent = `${value.toFixed(1)}%`;
+        document.getElementById('bcrProgress').style.width = `${Math.min(value, 100)}%`;
+      } else if (metricName === 'dismissRate') {
+        document.getElementById('dismissRateValue').textContent = `${value.toFixed(1)}%`;
+        document.getElementById('dismissRateProgress').style.width = `${Math.min(value, 100)}%`;
+      } else if (metricName === 'removalRate') {
+        document.getElementById('removalRateValue').textContent = `${value.toFixed(1)}%`;
+        document.getElementById('removalRateProgress').style.width = `${Math.min(value, 100)}%`;
+      }
+    }
+    
+    function updateBDS(bds) {
+      document.getElementById('bdsScore').textContent = bds.drift_score.toFixed(4);
+      document.getElementById('bdsSampleSize').textContent = `Sample size: ${bds.sample_size} accepted recommendations`;
+      
+      const badge = document.getElementById('bdsBadge');
+      badge.textContent = bds.drift_level;
+      
+      if (bds.drift_level === 'High drift') {
+        badge.className = 'badge badge-red';
+      } else if (bds.drift_level === 'Moderate drift') {
+        badge.className = 'badge badge-yellow';
+      } else {
+        badge.className = 'badge badge-green';
+      }
+      
+      // Update attribute drifts
+      const drifts = bds.attribute_drifts;
+      
+      updateDriftBar('protein', drifts.protein_drift);
+      updateDriftBar('sugar', drifts.sugar_drift);
+      updateDriftBar('calories', drifts.calories_drift);
+      updateDriftBar('price', drifts.price_drift);
+    }
+    
+    function updateDriftBar(attribute, value) {
+      const valueEl = document.getElementById(`${attribute}DriftValue`);
+      const barEl = document.getElementById(`${attribute}DriftBar`);
+      
+      valueEl.textContent = value.toFixed(4);
+      
+      // Scale for visualization (normalize to 0-100 range, assuming max drift of 0.5)
+      const percentage = Math.min(Math.abs(value) / 0.5 * 100, 100);
+      barEl.style.width = `${percentage}%`;
+    }
+    
+    function updateEAS(eas) {
+      const lift = eas.explanation_lift_percent;
+      document.getElementById('easLiftValue').textContent = `${lift >= 0 ? '+' : ''}${lift.toFixed(1)}%`;
+      
+      document.getElementById('easWithValue').textContent = `${eas.acceptance_with_explanation.toFixed(1)}%`;
+      document.getElementById('easWithoutValue').textContent = `${eas.acceptance_without_explanation.toFixed(1)}%`;
+      
+      document.getElementById('easWithCount').textContent = `${eas.with_explanation_count} shown`;
+      document.getElementById('easWithoutCount').textContent = `${eas.without_explanation_count} shown`;
+    }
+    
+    function updateHGAB(hgab) {
+      const score = hgab.hgab_score;
+      document.getElementById('hgabValue').textContent = `${score.toFixed(0)}%`;
+      document.getElementById('hgabProgress').style.width = `${Math.min(score, 100)}%`;
+      
+      document.getElementById('hgabShownValue').textContent = hgab.goal_aligned_shown;
+      document.getElementById('hgabAcceptsValue').textContent = hgab.goal_aligned_accepts;
+      document.getElementById('hgabDetails').textContent = hgab.alignment_details;
+      
+      const badge = document.getElementById('hgabBadge');
+      if (score >= 70) {
+        badge.className = 'badge badge-green';
+        badge.textContent = 'Excellent Alignment';
+      } else if (score >= 40) {
+        badge.className = 'badge badge-yellow';
+        badge.textContent = 'Good Alignment';
+      } else if (score > 0) {
+        badge.className = 'badge badge-red';
+        badge.textContent = 'Needs Improvement';
+      } else {
+        badge.className = 'badge badge-blue';
+        badge.textContent = 'No Data';
+      }
+    }
+    
+    function updateStatistics(counts) {
+      document.getElementById('statTotal').textContent = counts.total_interactions;
+      document.getElementById('statShown').textContent = counts.shown;
+      document.getElementById('statAccepted').textContent = counts.accepted;
+      document.getElementById('statDismissed').textContent = counts.dismissed;
+      document.getElementById('statRemoved').textContent = counts.removed;
+      document.getElementById('statRemovedAfterAccept').textContent = counts.removed_after_accept;
+    }
+  </script>
+
+</body>
+</html>
