@@ -1200,17 +1200,17 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
     try:
         # Determine user's shopping style from ISRec and set focus
         if intent_score >= 0.6:
-            # Quality mode - emphasize maintaining quality while saving
-            system_prompt = "You're a grocery assistant helping quality-focused shoppers. Generate a 10-word (maximum) recommendation emphasizing similar quality/premium while saving money. Be warm and conversational."
-            focus = "Emphasize: same quality, just better price"
+            # Quality mode - emphasize maintaining quality/premium ONLY
+            system_prompt = "You're a grocery assistant for premium shoppers. Generate a 10-word (maximum) message emphasizing QUALITY, PREMIUM, or STANDARDS maintained. Never mention savings/money. Be conversational."
+            focus = "Focus ONLY on quality/premium aspect. NO money talk."
         elif intent_score <= 0.4:
-            # Economy mode - emphasize maximum savings
-            system_prompt = "You're a grocery assistant helping budget-conscious shoppers. Generate a 10-word (maximum) recommendation emphasizing great savings and value. Be warm and conversational."
-            focus = "Emphasize: big savings, great deal"
+            # Economy mode - emphasize savings/deals ONLY
+            system_prompt = "You're a grocery assistant for budget shoppers. Generate a 10-word (maximum) message emphasizing SAVINGS, DEALS, or DISCOUNTS. Never mention quality. Be conversational."
+            focus = "Focus ONLY on savings/deals. NO quality talk."
         else:
             # Balanced mode
             system_prompt = "You're a grocery assistant. Generate a 10-word (maximum) recommendation balancing quality and price. Be warm and conversational."
-            focus = "Emphasize: good balance of quality and savings"
+            focus = "Mention both quality AND savings"
         
         # Use GPT to generate natural message
         response = openai.chat.completions.create(
@@ -1235,11 +1235,11 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         # Fallback to simple template if LLM fails
         print(f"LLM generation failed: {e}")
         if intent_score >= 0.6:
-            return f"Same quality, saves ${savings:.2f}"
+            return f"Premium quality maintained at better price"
         elif intent_score <= 0.4:
-            return f"Big savings: ${savings:.2f} off!"
+            return f"Huge deal: ${savings:.2f} off!"
         else:
-            return f"Good value, saves ${savings:.2f}"
+            return f"Smart choice balancing quality and savings"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
