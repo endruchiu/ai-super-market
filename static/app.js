@@ -841,13 +841,13 @@ async function getBlendedRecommendations() {
         
         // Generate mode-based badge label from the reason text
         // Extract mode context from the LLM-generated reason
-        let modeBadge = 'Smart Choice';
+        let modeBadge = 'Best Value';
         if (s.reason.toLowerCase().includes('premium') || s.reason.toLowerCase().includes('quality')) {
-          modeBadge = 'Premium Choice';
+          modeBadge = '⭐ Top Tier';
         } else if (s.reason.toLowerCase().includes('save') || s.reason.toLowerCase().includes('savings') || s.reason.toLowerCase().includes('deal')) {
-          modeBadge = 'Budget Smart';
+          modeBadge = '🔥 Best Deal';
         } else {
-          modeBadge = 'Balanced Pick';
+          modeBadge = '✨ Best Value';
         }
         
         const card = document.createElement('div');
