@@ -1390,6 +1390,15 @@ function renderReplenishmentItem(item, urgencyColor) {
   const urgencyClass = urgencyColor === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200';
   const textClass = urgencyColor === 'blue' ? 'text-blue-700' : 'text-orange-700';
   
+  // Prediction type badge
+  const isPredicted = item.prediction_type === 'predicted';
+  const badgeClass = isPredicted 
+    ? 'bg-purple-100 text-purple-700' 
+    : 'bg-green-100 text-green-700';
+  const badgeText = isPredicted 
+    ? `🔮 Predicted (${Math.round((item.cf_confidence || 0.3) * 100)}% confidence)` 
+    : '✓ Personalized';
+  
   // More conversational timing messages
   let daysText;
   if (item.days_until_due === 0) {
@@ -1405,11 +1414,33 @@ function renderReplenishmentItem(item, urgencyColor) {
       : `You might run out in ${item.days_until_due} days`;
   }
   
+  // Urgency indicator
+  const urgencyScore = item.urgency_score || 0;
+  let urgencyLabel = '';
+  let urgencyBadge = '';
+  
+  if (item.days_until_due < 0) {
+    urgencyLabel = `⚠️ OVERDUE (${Math.abs(item.days_until_due)}d ago)`;
+    urgencyBadge = 'bg-red-500 text-white';
+  } else if (item.days_until_due <= 3) {
+    urgencyLabel = `⏰ DUE SOON (${item.days_until_due}d)`;
+    urgencyBadge = 'bg-orange-500 text-white';
+  } else if (item.days_until_due <= 7) {
+    urgencyLabel = `📅 UPCOMING (${item.days_until_due}d)`;
+    urgencyBadge = 'bg-blue-500 text-white';
+  }
+  
   return `
     <div class="p-3 ${urgencyClass} border rounded-lg">
       <div class="flex items-start justify-between mb-2">
         <div class="flex-1">
-          <div class="text-sm font-semibold text-gray-900 truncate">${item.title.substring(0, 40)}</div>
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-semibold text-gray-900 truncate">${item.title.substring(0, 35)}</div>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1">
+            <span class="text-xs px-2 py-0.5 rounded ${badgeClass}">${badgeText}</span>
+            ${urgencyLabel ? `<span class="text-xs px-2 py-0.5 rounded font-bold ${urgencyBadge}">${urgencyLabel}</span>` : ''}
+          </div>
           <div class="text-xs text-gray-600 mt-1">
             Usually restock every ${Math.round(item.interval_days)} days
           </div>
@@ -1419,11 +1450,8 @@ function renderReplenishmentItem(item, urgencyColor) {
       <div class="flex items-center justify-between">
         <span class="text-sm font-bold text-blue-600">$${item.price.toFixed(2)}</span>
         <div class="flex space-x-2">
-          <button onclick="quickAddReplenishment(${item.cycle_id})" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition-all">
+          <button onclick="quickAddReplenishment('${item.product_id}')" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition-all">
             Quick Add
-          </button>
-          <button onclick="skipReplenishment(${item.cycle_id})" class="text-xs bg-gray-300 hover:bg-gray-400 text-gray-700 px-2 py-1 rounded-md transition-all">
-            Skip
           </button>
         </div>
       </div>
@@ -1431,27 +1459,23 @@ function renderReplenishmentItem(item, urgencyColor) {
   `;
 }
 
-async function quickAddReplenishment(cycleId) {
+async function quickAddReplenishment(productId) {
   try {
-    const response = await fetch('/api/replenishment/quick-add', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({cycle_id: cycleId})
-    });
+    // Find product in PRODUCTS array
+    const product = PRODUCTS.find(p => p.id === productId);
     
-    const result = await response.json();
-    
-    if (result.success) {
-      showToast(`✓ Added ${result.title} to cart!`, 'success');
-      
-      // Refresh cart from backend
-      const cartResponse = await fetch('/api/cart');
-      const cartData = await cartResponse.json();
-      cart = cartData.items || [];
-      updateCartDisplay();
-    } else {
-      showToast(`Failed to add item: ${result.error}`, 'error');
+    if (!product) {
+      showToast('Product not found', 'error');
+      return;
     }
+    
+    // Add to cart
+    addToCart(product);
+    showToast(`✓ Added ${product.title.substring(0, 30)}... to cart!`, 'success');
+    
+    // Update replenishment panel after adding
+    setTimeout(() => updateReplenishmentPanel(), 500);
+    
   } catch (error) {
     console.error('Quick-add error:', error);
     showToast('Failed to add item to cart', 'error');

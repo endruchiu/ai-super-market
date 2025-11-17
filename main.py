@@ -1171,8 +1171,9 @@ from replenishment_engine import ReplenishmentEngine
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
     """
-    Get products due for replenishment in the next 7 days
-    Returns: {due_now: [...], due_soon: [...], upcoming: [...]}
+    Get top 10 most urgent replenishment opportunities based on urgency scoring.
+    Includes both established cycles (2+ purchases) and first-purchase predictions.
+    Returns: {due_now: [...], due_soon: [...], upcoming: [...], total_active_cycles: N}
     """
     try:
         # Get or create user
@@ -1196,39 +1197,43 @@ def get_replenishment_due_soon():
                 "message": "No purchase history yet"
             })
         
-        # Direct database query to avoid SQLAlchemy conflicts
-        from sqlalchemy import text
+        # Get top 10 replenishment opportunities using new urgency-based ranking
+        engine = ReplenishmentEngine(
+            db=db, 
+            products_df=PRODUCTS_DF,
+            Order=Order,
+            OrderItem=OrderItem,
+            ReplenishableProduct=ReplenishableProduct,
+            UserReplenishmentCycle=UserReplenishmentCycle
+        )
         
-        cycles_query = text("""
-            SELECT 
-                id as cycle_id,
-                product_title as title,
-                median_interval_days as interval_days,
-                next_due_date,
-                (next_due_date - CURRENT_DATE) as days_until_due
-            FROM user_replenishment_cycles
-            WHERE user_id = :user_id
-              AND is_active = true
-              AND next_due_date <= CURRENT_DATE + INTERVAL '7 days'
-            ORDER BY next_due_date
-        """)
+        opportunities = engine.get_top_replenishment_opportunities(
+            user_id=user.id,  # Pass numeric user.id instead of session_id
+            top_k=10
+        )
         
-        result = db.session.execute(cycles_query, {"user_id": user.id}).fetchall()
-        
+        # Categorize by urgency
         due_now = []
         due_soon = []
         upcoming = []
         
-        for row in result:
+        for opp in opportunities:
             item = {
-                "cycle_id": row[0],
-                "title": row[1],
-                "interval_days": float(row[2]) if row[2] else 7.0,
-                "next_due_date": str(row[3]),
-                "days_until_due": int(row[4]) if row[4] is not None else 0,
-                "price": 9.99  # Default price for demo
+                "product_id": opp['product_id'],
+                "title": opp['title'],
+                "subcat": opp['subcat'],
+                "price": opp['price'],
+                "interval_days": opp['predicted_interval'],
+                "last_purchase": opp['last_purchase'],
+                "days_since_purchase": opp['days_since_purchase'],
+                "days_until_due": opp['days_until_due'],
+                "purchase_count": opp['purchase_count'],
+                "urgency_score": opp['urgency_score'],
+                "prediction_type": opp['prediction_type'],  # 'personalized' or 'predicted'
+                "cf_confidence": opp['cf_confidence']
             }
             
+            # Categorize based on days until due
             if item["days_until_due"] <= 0:
                 due_now.append(item)
             elif item["days_until_due"] <= 3:
@@ -1236,17 +1241,15 @@ def get_replenishment_due_soon():
             else:
                 upcoming.append(item)
         
-        total = db.session.execute(
-            text("SELECT COUNT(*) FROM user_replenishment_cycles WHERE user_id = :user_id AND is_active = true"),
-            {"user_id": user.id}
-        ).scalar()
+        # Get total count of tracked products (for stats)
+        total_tracked = len(opportunities)
         
         return jsonify({
             "due_now": due_now,
             "due_soon": due_soon,
             "upcoming": upcoming,
-            "total_active_cycles": total or 0,
-            "message": "Live replenishment data"
+            "total_active_cycles": total_tracked,
+            "message": f"Top {total_tracked} replenishment opportunities (urgency-ranked)"
         })
         
     except Exception as e:
