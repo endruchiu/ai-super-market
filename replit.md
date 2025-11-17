@@ -25,7 +25,14 @@ Preferred communication style: Simple, everyday language.
 - **Store Map**: Visual aisle layout categorizing products into 6 aisles (A-F).
 - **Components**: Responsive header, interactive aisle cards, product cards, budget controls, shopping cart, collapsible product browser, animated notifications.
 - **Responsiveness**: Mobile-friendly layout.
-- **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Simplified sign-in form (name + email only, no password) with localStorage for persistence. Designed for easy demo access.
+- **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Two login methods available:
+  - **Email + Name Login**: Simplified sign-in form (name + email only, no password) with localStorage for persistence
+  - **QR Code Login**: Scannable QR code for instant mobile login with device fingerprinting
+    - First scan creates a demo user account
+    - Same device consistently receives the same demo account
+    - Auto-login flow with device_id stored in localStorage
+    - Dedicated landing page at /qr-login for scanned devices
+  - Designed for easy demo access with multiple authentication options
 - **Purchase History UI**: Enhanced purchase history display with smart pagination:
   - Shows 3 most recent orders by default with compact card design
   - "View all" / "View less" toggle for expanding to see all order history
