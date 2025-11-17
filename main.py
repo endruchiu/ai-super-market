@@ -10,6 +10,8 @@ from semantic_budget import ensure_index, recommend_substitutions
 from cf_inference import get_cf_recommendations, get_user_purchase_history
 from blended_recommendations import get_blended_recommendations
 from intent_detector import intent_detector
+import qrcode
+from io import BytesIO
 
 # SQLAlchemy base class
 class Base(DeclarativeBase):
@@ -937,6 +939,91 @@ def user_signin():
         print(f"Sign-in error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/qr-code")
+def generate_qr_code():
+    """
+    Generate a QR code image for quick login
+    The QR code points to /qr-login endpoint
+    """
+    try:
+        base_url = request.host_url.rstrip('/')
+        qr_url = f"{base_url}/qr-login"
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        img_io = BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        return Response(img_io.getvalue(), mimetype='image/png')
+        
+    except Exception as e:
+        print(f"QR code generation error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/qr-login")
+def qr_login_page():
+    """
+    Landing page when QR code is scanned
+    This page will handle device fingerprinting and auto-login
+    """
+    return render_template('qr_login.html')
+
+@app.route("/api/qr-login", methods=["POST"])
+def qr_login():
+    """
+    Handle QR code login with device fingerprinting
+    Creates or retrieves a demo account based on device_id
+    """
+    try:
+        data = request.get_json(force=True)
+        device_id = data.get("device_id")
+        
+        if not device_id:
+            return jsonify({"success": False, "error": "Device ID required"}), 400
+        
+        demo_email = f"qr_demo_{device_id}@ai-supermarket.demo"
+        
+        user = User.query.filter_by(session_id=demo_email).first()
+        
+        if not user:
+            user = User(
+                session_id=demo_email,
+                name=f"QR Demo User",
+                intent_ema=0.5
+            )
+            db.session.add(user)
+            db.session.commit()
+            is_new = True
+        else:
+            is_new = False
+        
+        session['user_session'] = demo_email
+        
+        return jsonify({
+            "success": True,
+            "message": "QR login successful",
+            "is_new_user": is_new,
+            "user": {
+                "id": user.id,
+                "email": demo_email,
+                "name": user.name
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"QR login error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/user/stats", methods=["POST"])
 def get_user_stats():
