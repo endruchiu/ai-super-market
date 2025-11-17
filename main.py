@@ -457,16 +457,11 @@ def api_blended_recommendations():
                     price = float(row.get("_price_final", 0))
                     title_lower = str(row['Title']).lower()
                     
-                    # Quality signals
+                    # Quality signals - only track cart_add and cart_remove
                     is_premium = any(kw in title_lower for kw in premium_keywords)
                     is_expensive = price > 25
                     
-                    if event.event_type == 'view':
-                        if is_premium:
-                            quality_score += 1.0
-                        if is_expensive:
-                            quality_score += 0.5
-                    elif event.event_type == 'cart_add':
+                    if event.event_type == 'cart_add':
                         if is_premium:
                             quality_score += 2.0
                         if is_expensive:
@@ -474,14 +469,11 @@ def api_blended_recommendations():
                     elif event.event_type == 'cart_remove' and price < 15:
                         quality_score += 1.5
                     
-                    # Economy signals
+                    # Economy signals - only track cart_add and cart_remove
                     is_value = any(kw in title_lower for kw in budget_keywords)
                     is_cheap = price < 10
                     
-                    if event.event_type == 'view':
-                        if is_value or is_cheap:
-                            economy_score += 1.0
-                    elif event.event_type == 'cart_add':
+                    if event.event_type == 'cart_add':
                         if is_value:
                             economy_score += 2.0
                         if is_cheap:
@@ -1121,16 +1113,11 @@ def get_isrec_intent():
                 price = float(row.get("_price_final", 0))
                 title_lower = str(row['Title']).lower()
                 
-                # Quality signals
+                # Quality signals - only track cart_add and cart_remove
                 is_premium = any(kw in title_lower for kw in premium_keywords)
                 is_expensive = price > 25
                 
-                if event.event_type == 'view':
-                    if is_premium:
-                        quality_score += 1.0
-                    if is_expensive:
-                        quality_score += 0.5
-                elif event.event_type == 'cart_add':
+                if event.event_type == 'cart_add':
                     if is_premium:
                         quality_score += 2.0
                     if is_expensive:
@@ -1138,14 +1125,11 @@ def get_isrec_intent():
                 elif event.event_type == 'cart_remove' and price < 15:
                     quality_score += 1.5
                 
-                # Economy signals
+                # Economy signals - only track cart_add and cart_remove
                 is_value = any(kw in title_lower for kw in budget_keywords)
                 is_cheap = price < 10
                 
-                if event.event_type == 'view':
-                    if is_value or is_cheap:
-                        economy_score += 1.0
-                elif event.event_type == 'cart_add':
+                if event.event_type == 'cart_add':
                     if is_value:
                         economy_score += 2.0
                     if is_cheap:
