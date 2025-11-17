@@ -96,9 +96,8 @@ class IntentDetector:
     
     def _calculate_quality_signals(self, actions: List[Dict], cart: List[Dict] = None) -> float:
         """
-        Count quality-focused signals:
-        - View premium/organic products
-        - Add expensive items to cart
+        Count quality-focused signals using RELATIVE PRICE POSITION:
+        - View/add products in top price tier within their category
         - Remove cheap items (upgrading)
         """
         from main import PRODUCTS_DF  # Import global product catalog
@@ -114,46 +113,50 @@ class IntentDetector:
             
             product = PRODUCTS_DF.loc[product_id]
             price = float(product.get('_price_final', 0))
+            subcat = str(product.get('Sub Category', ''))
             title = str(product.get('Title', '')).lower()
             
-            # Check for quality indicators (PRICE IS PRIMARY SIGNAL)
+            # Calculate RELATIVE price position within subcategory
+            price_percentile = self._get_price_percentile(price, subcat, PRODUCTS_DF)
+            
+            # Check for premium keywords
             is_premium_keyword = any(keyword in title for keyword in [
                 'premium', 'grass-fed', 'free-range',
                 'artisan', 'imported', 'gourmet', 'specialty', 'wagyu', 'truffle'
             ])
             
-            # Price thresholds (primary signal)
-            is_expensive = price > 20  # Expensive items
-            is_very_expensive = price > 35  # Very expensive items
+            # Relative price tiers (within same category)
+            is_top_tier = price_percentile >= 75  # Top 25% most expensive in category
+            is_upper_tier = price_percentile >= 60  # Top 40%
             
             if action['event_type'] == 'view':
-                if is_very_expensive:
-                    signals += 2.0  # Very expensive = strong quality signal
-                elif is_expensive:
+                if is_top_tier:
+                    signals += 2.0  # Viewing expensive items in category
+                elif is_upper_tier:
                     signals += 1.0
-                elif is_premium_keyword and price > 15:
-                    signals += 0.5  # Keywords only matter if also somewhat expensive
+                elif is_premium_keyword:
+                    signals += 0.5
             
             elif action['event_type'] == 'cart_add':
-                if is_very_expensive:
-                    signals += 3.0  # Very strong signal
-                elif is_expensive:
+                if is_top_tier:
+                    signals += 3.0  # Adding expensive items = strong signal
+                elif is_upper_tier:
                     signals += 2.0
-                elif is_premium_keyword and price > 15:
+                elif is_premium_keyword:
                     signals += 1.0
             
             elif action['event_type'] == 'cart_remove':
                 # Removing cheap items = quality signal (upgrading)
-                if not is_premium_keyword and price < 12:
+                is_bottom_tier = price_percentile <= 25
+                if is_bottom_tier:
                     signals += 1.5
         
         return signals
     
     def _calculate_economy_signals(self, actions: List[Dict], cart: List[Dict] = None) -> float:
         """
-        Count economy-focused signals:
-        - View budget products
-        - Add cheap items to cart
+        Count economy-focused signals using RELATIVE PRICE POSITION:
+        - View/add products in bottom price tier within their category
         - Remove expensive items (downgrading)
         """
         from main import PRODUCTS_DF
@@ -168,39 +171,72 @@ class IntentDetector:
             
             product = PRODUCTS_DF.loc[product_id]
             price = float(product.get('_price_final', 0))
+            subcat = str(product.get('Sub Category', ''))
             title = str(product.get('Title', '')).lower()
             
-            # Check for budget indicators (PRICE IS PRIMARY SIGNAL)
+            # Calculate RELATIVE price position within subcategory
+            price_percentile = self._get_price_percentile(price, subcat, PRODUCTS_DF)
+            
+            # Check for value keywords
             is_value_keyword = any(keyword in title for keyword in [
                 'value', 'budget', 'saver', 'basic', 'everyday', 'kirkland'
             ])
             
-            # Price thresholds (primary signal)
-            is_cheap = price < 12
-            is_very_cheap = price < 8
+            # Relative price tiers (within same category)
+            is_bottom_tier = price_percentile <= 25  # Bottom 25% cheapest in category
+            is_lower_tier = price_percentile <= 40   # Bottom 40%
             
             if action['event_type'] == 'view':
-                if is_very_cheap:
-                    signals += 2.0  # Very cheap = strong economy signal
-                elif is_cheap:
+                if is_bottom_tier:
+                    signals += 2.0  # Viewing cheap items in category
+                elif is_lower_tier:
                     signals += 1.0
                 elif is_value_keyword:
                     signals += 0.5
             
             elif action['event_type'] == 'cart_add':
-                if is_very_cheap:
-                    signals += 3.0  # Very strong signal
-                elif is_cheap:
+                if is_bottom_tier:
+                    signals += 3.0  # Adding cheap items = strong signal
+                elif is_lower_tier:
                     signals += 2.0
                 elif is_value_keyword:
                     signals += 1.0
             
             elif action['event_type'] == 'cart_remove':
                 # Removing expensive items = economy signal (downgrading)
-                if price > 20:
+                is_top_tier = price_percentile >= 75
+                if is_top_tier:
                     signals += 2.0
         
         return signals
+    
+    def _get_price_percentile(self, price: float, subcategory: str, products_df) -> float:
+        """
+        Calculate price percentile within the same subcategory.
+        
+        Returns:
+            Percentile (0-100) where 100 = most expensive in category
+        """
+        try:
+            # Get all products in same subcategory
+            same_category = products_df[products_df['Sub Category'] == subcategory]
+            
+            if len(same_category) < 2:
+                # Not enough data, fall back to global percentile
+                all_prices = products_df['_price_final'].dropna()
+                if len(all_prices) == 0:
+                    return 50  # Default to middle
+                percentile = (all_prices <= price).sum() / len(all_prices) * 100
+                return percentile
+            
+            # Calculate percentile within category
+            category_prices = same_category['_price_final'].dropna()
+            percentile = (category_prices <= price).sum() / len(category_prices) * 100
+            
+            return percentile
+            
+        except Exception:
+            return 50  # Default to middle if calculation fails
     
     def get_intent_description(self, intent_score: float) -> str:
         """Convert intent score to human-readable description"""
