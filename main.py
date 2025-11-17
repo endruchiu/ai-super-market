@@ -1012,6 +1012,178 @@ def get_user_stats():
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/user/goals", methods=["POST"])
+def save_user_goals():
+    """
+    Save user health goals for goal alignment tracking.
+    
+    Expected payload:
+    {
+        "user_id": "optional_session_id",
+        "goals": [
+            {
+                "goal_type": "protein" | "sugar" | "calories" | "sodium",
+                "goal_direction": "increase" | "decrease",
+                "target_value": 50.0,
+                "priority": 1-5
+            }
+        ]
+    }
+    """
+    try:
+        data = request.get_json(force=True)
+        
+        # Get or create session_id
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        
+        # Use provided user_id or default to session user
+        user_session_id = data.get("user_id", session['user_session'])
+        
+        # Find or create user
+        user = User.query.filter_by(session_id=user_session_id).first()
+        if not user:
+            user = User(session_id=user_session_id)
+            db.session.add(user)
+            db.session.flush()
+        
+        # Get goals array
+        goals = data.get("goals", [])
+        
+        if not isinstance(goals, list):
+            return jsonify({"success": False, "error": "goals must be an array"}), 400
+        
+        # Delete existing goals for this user
+        UserGoal.query.filter_by(user_id=user.id).delete()
+        
+        # Create new goals
+        created_count = 0
+        for goal_data in goals:
+            goal_type = goal_data.get("goal_type")
+            goal_direction = goal_data.get("goal_direction")
+            target_value = goal_data.get("target_value")
+            priority = goal_data.get("priority", 1)
+            
+            # Validate required fields
+            if not goal_type or not goal_direction:
+                continue
+            
+            # Validate goal_type
+            valid_types = ["protein", "sugar", "calories", "sodium"]
+            if goal_type not in valid_types:
+                continue
+            
+            # Validate goal_direction
+            valid_directions = ["increase", "decrease"]
+            if goal_direction not in valid_directions:
+                continue
+            
+            # Validate priority (1-5)
+            try:
+                priority = int(priority)
+                if priority < 1 or priority > 5:
+                    priority = 1
+            except (ValueError, TypeError):
+                priority = 1
+            
+            # Create goal record
+            goal = UserGoal(
+                user_id=user.id,
+                goal_type=goal_type,
+                goal_direction=goal_direction,
+                target_value=float(target_value) if target_value else None,
+                priority=priority,
+                is_active=True
+            )
+            db.session.add(goal)
+            created_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "goals_saved": created_count,
+            "user_id": user.session_id,
+            "message": f"Saved {created_count} health goals successfully"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Save goals error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/user/goals", methods=["GET"])
+def get_user_goals():
+    """
+    Retrieve user health goals.
+    
+    Query params:
+    - user_id (optional): Defaults to session user
+    
+    Returns:
+    {
+        "success": true,
+        "goals": [
+            {
+                "id": 1,
+                "goal_type": "protein",
+                "goal_direction": "increase",
+                "target_value": 50.0,
+                "priority": 3,
+                "is_active": true
+            }
+        ]
+    }
+    """
+    try:
+        # Get or create session_id
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        
+        # Use query param user_id or default to session user
+        user_session_id = request.args.get("user_id", session['user_session'])
+        
+        # Find user
+        user = User.query.filter_by(session_id=user_session_id).first()
+        
+        if not user:
+            # No user found - return empty goals
+            return jsonify({
+                "success": True,
+                "goals": [],
+                "user_id": user_session_id
+            })
+        
+        # Get active goals for this user
+        goals = UserGoal.query.filter_by(user_id=user.id, is_active=True).all()
+        
+        # Convert to dict format
+        goals_data = []
+        for goal in goals:
+            goals_data.append({
+                "id": goal.id,
+                "goal_type": goal.goal_type,
+                "goal_direction": goal.goal_direction,
+                "target_value": float(goal.target_value) if goal.target_value else None,
+                "priority": goal.priority,
+                "is_active": goal.is_active,
+                "created_at": goal.created_at.isoformat() if goal.created_at else None
+            })
+        
+        return jsonify({
+            "success": True,
+            "goals": goals_data,
+            "user_id": user.session_id
+        })
+        
+    except Exception as e:
+        print(f"Get goals error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/track-event", methods=["POST"])
 def track_event():
     """
@@ -1552,6 +1724,464 @@ def refresh_replenishment_cycles():
         
     except Exception as e:
         print(f"Refresh cycles error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/analytics/track-interaction", methods=["POST"])
+def track_interaction():
+    """
+    Track user interaction with AI recommendations for behavioral analytics.
+    
+    Expected payload:
+    {
+        "recommendation_id": "rec_123",
+        "action_type": "shown" | "accept" | "dismiss" | "cart_removal",
+        "original_product": {"id": "123", "title": "...", "price": 10.99, ...},
+        "recommended_product": {"id": "456", "title": "...", "price": 8.99, ...},
+        "expected_saving": "2.00",
+        "recommendation_reason": "...",
+        "has_explanation": true,
+        "shown_at": "2025-11-17T10:30:00Z",
+        "action_at": "2025-11-17T10:30:15Z",  # optional, for accept/dismiss
+        "scroll_depth_percent": 75,  # optional
+        "was_removed": false  # optional, for cart_removal tracking
+    }
+    """
+    try:
+        data = request.get_json(force=True)
+        
+        # Validate required fields
+        required_fields = ["recommendation_id", "action_type"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"success": False, "error": f"Missing required field: {field}"}), 400
+        
+        recommendation_id = data.get("recommendation_id")
+        action_type = data.get("action_type")
+        
+        # Validate action_type
+        valid_actions = ["shown", "accept", "dismiss", "cart_removal"]
+        if action_type not in valid_actions:
+            return jsonify({"success": False, "error": f"Invalid action_type. Must be one of: {valid_actions}"}), 400
+        
+        # Get or create session_id
+        if 'user_session' not in session:
+            session['user_session'] = str(uuid.uuid4())
+        session_id = session['user_session']
+        
+        # Find or create user
+        user = User.query.filter_by(session_id=session_id).first()
+        if not user:
+            user = User(session_id=session_id)
+            db.session.add(user)
+            db.session.flush()
+        
+        # Extract product information
+        original_product = data.get("original_product", {})
+        recommended_product = data.get("recommended_product", {})
+        
+        # Validate product data
+        if not original_product.get("id") or not recommended_product.get("id"):
+            return jsonify({"success": False, "error": "Missing product IDs"}), 400
+        
+        # Parse timestamps
+        from datetime import datetime
+        shown_at = None
+        action_at = None
+        time_to_action_seconds = None
+        
+        if data.get("shown_at"):
+            try:
+                shown_at = datetime.fromisoformat(data["shown_at"].replace('Z', '+00:00'))
+            except Exception as e:
+                print(f"Error parsing shown_at: {e}")
+        
+        if data.get("action_at"):
+            try:
+                action_at = datetime.fromisoformat(data["action_at"].replace('Z', '+00:00'))
+                # Calculate time_to_action if both timestamps available
+                if shown_at and action_at:
+                    time_to_action_seconds = int((action_at - shown_at).total_seconds())
+            except Exception as e:
+                print(f"Error parsing action_at: {e}")
+        
+        # Check goal alignment for "shown" and "accept" actions
+        goal_aligned = False
+        
+        if action_type in ["shown", "accept"]:
+            # Get user's active goals
+            user_goals = UserGoal.query.filter_by(user_id=user.id, is_active=True).all()
+            
+            if user_goals:
+                # Extract nutrition data from products
+                orig_nutrition = original_product.get("nutrition", {})
+                rec_nutrition = recommended_product.get("nutrition", {})
+                
+                # Check alignment for each goal
+                for goal in user_goals:
+                    goal_type = goal.goal_type
+                    goal_direction = goal.goal_direction
+                    
+                    # Map goal_type to nutrition field names
+                    nutrition_mapping = {
+                        "protein": ["Protein_g", "protein", "Protein"],
+                        "sugar": ["Sugar_g", "sugar", "Sugar"],
+                        "calories": ["Calories", "calories"],
+                        "sodium": ["Sodium_mg", "sodium", "Sodium"]
+                    }
+                    
+                    # Get nutrition values for this goal type
+                    orig_value = None
+                    rec_value = None
+                    
+                    if goal_type in nutrition_mapping:
+                        for field_name in nutrition_mapping[goal_type]:
+                            if field_name in orig_nutrition and orig_nutrition[field_name] is not None:
+                                orig_value = float(orig_nutrition[field_name])
+                            if field_name in rec_nutrition and rec_nutrition[field_name] is not None:
+                                rec_value = float(rec_nutrition[field_name])
+                    
+                    # Check if recommendation aligns with this goal
+                    if orig_value is not None and rec_value is not None:
+                        if goal_direction == "decrease" and rec_value < orig_value:
+                            goal_aligned = True
+                            break
+                        elif goal_direction == "increase" and rec_value > orig_value:
+                            goal_aligned = True
+                            break
+        
+        # Helper function to safely extract nutrition value
+        def get_nutrition_value(product_dict, field_name, is_int=False):
+            """Extract nutrition value, returning None if missing or null"""
+            nutrition = product_dict.get("nutrition")
+            if not nutrition:
+                return None
+            value = nutrition.get(field_name)
+            if value is None:
+                return None
+            try:
+                return int(value) if is_int else float(value)
+            except (ValueError, TypeError):
+                return None
+        
+        # Create interaction record
+        interaction = RecommendationInteraction(
+            user_id=user.id,
+            recommendation_id=recommendation_id,
+            action_type=action_type,
+            
+            # Product IDs and titles
+            original_product_id=int(original_product.get("id")),
+            recommended_product_id=int(recommended_product.get("id")),
+            original_product_title=original_product.get("title", ""),
+            recommended_product_title=recommended_product.get("title", ""),
+            
+            # Recommendation details
+            expected_saving=float(data.get("expected_saving", 0.0)),
+            recommendation_reason=data.get("recommendation_reason", ""),
+            has_explanation=data.get("has_explanation", True),
+            
+            # Timing
+            shown_at=shown_at or db.func.current_timestamp(),
+            action_at=action_at,
+            time_to_action_seconds=time_to_action_seconds,
+            scroll_depth_percent=data.get("scroll_depth_percent"),
+            
+            # Product attributes (from original product) - Use None for missing data
+            original_price=float(original_product.get("price", 0.0)),
+            original_protein=get_nutrition_value(original_product, "Protein_g"),
+            original_sugar=get_nutrition_value(original_product, "Sugar_g"),
+            original_calories=get_nutrition_value(original_product, "Calories", is_int=True),
+            original_sodium=get_nutrition_value(original_product, "Sodium_mg"),
+            
+            # Product attributes (from recommended product) - Use None for missing data
+            recommended_price=float(recommended_product.get("price", 0.0)),
+            recommended_protein=get_nutrition_value(recommended_product, "Protein_g"),
+            recommended_sugar=get_nutrition_value(recommended_product, "Sugar_g"),
+            recommended_calories=get_nutrition_value(recommended_product, "Calories", is_int=True),
+            recommended_sodium=get_nutrition_value(recommended_product, "Sodium_mg"),
+            
+            # Removal tracking
+            was_removed=data.get("was_removed", False),
+            removed_from_cart_at=action_at if action_type == "cart_removal" else None,
+            
+            # Goal alignment tracking
+            goal_aligned=goal_aligned
+        )
+        
+        db.session.add(interaction)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "interaction_id": interaction.id,
+            "user_id": user.session_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Track interaction error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/analytics/metrics", methods=["GET"])
+def get_analytics_metrics():
+    """
+    Get behavioral analytics metrics for recommendations.
+    
+    Query params:
+    - user_id (optional): Filter by specific session_id
+    - period (optional): "7d" | "30d" | "all" (default: "all")
+    
+    Returns 9 key metrics:
+    - RAR (Replace Action Rate)
+    - ACR (Action to Cart Rate)
+    - Time-to-Accept
+    - Average Scroll Depth
+    - BCR (Basket Change Rate)
+    - Dismiss Rate
+    - Removal Rate
+    - BDS (Behavioral Drift Score)
+    - EAS (Explanation Acceptance Score)
+    """
+    try:
+        # Get query parameters
+        user_session_id = request.args.get("user_id")
+        period = request.args.get("period", "all")
+        
+        # Build base query
+        query = RecommendationInteraction.query
+        
+        # Filter by user if specified
+        if user_session_id:
+            user = User.query.filter_by(session_id=user_session_id).first()
+            if user:
+                query = query.filter_by(user_id=user.id)
+            else:
+                return jsonify({"success": False, "error": "User not found"}), 404
+        
+        # Filter by time period
+        from datetime import datetime, timedelta
+        if period == "7d":
+            cutoff = datetime.utcnow() - timedelta(days=7)
+            query = query.filter(RecommendationInteraction.shown_at >= cutoff)
+        elif period == "30d":
+            cutoff = datetime.utcnow() - timedelta(days=30)
+            query = query.filter(RecommendationInteraction.shown_at >= cutoff)
+        
+        # Get all interactions
+        all_interactions = query.all()
+        
+        # Calculate counts for each action type
+        shown_count = sum(1 for i in all_interactions if i.action_type == "shown")
+        accept_count = sum(1 for i in all_interactions if i.action_type == "accept")
+        dismiss_count = sum(1 for i in all_interactions if i.action_type == "dismiss")
+        removal_count = sum(1 for i in all_interactions if i.action_type == "cart_removal")
+        
+        # Calculate metrics with division by zero protection
+        
+        # 1. RAR (Replace Action Rate) = (# of "accept" actions) / (# of recommendations shown) * 100
+        rar = (accept_count / shown_count * 100) if shown_count > 0 else 0.0
+        
+        # 2. ACR (Action to Cart Rate) = (# of "accept" actions) / (# of recommendations shown) * 100
+        # Note: ACR is the same as RAR in this context
+        acr = (accept_count / shown_count * 100) if shown_count > 0 else 0.0
+        
+        # 3. Time-to-Accept = Average time_to_action_seconds for "accept" actions
+        accept_interactions = [i for i in all_interactions if i.action_type == "accept" and i.time_to_action_seconds is not None]
+        time_to_accept = sum(i.time_to_action_seconds for i in accept_interactions) / len(accept_interactions) if accept_interactions else 0.0
+        
+        # 4. Average Scroll Depth = Mean scroll_depth_percent across all interactions
+        interactions_with_scroll = [i for i in all_interactions if i.scroll_depth_percent is not None]
+        avg_scroll_depth = sum(i.scroll_depth_percent for i in interactions_with_scroll) / len(interactions_with_scroll) if interactions_with_scroll else 0.0
+        
+        # 5. BCR (Basket Change Rate) = (# of items removed after recommendation) / (# of accepted recommendations) * 100
+        removed_after_accept = sum(1 for i in all_interactions if i.was_removed)
+        bcr = (removed_after_accept / accept_count * 100) if accept_count > 0 else 0.0
+        
+        # 6. Dismiss Rate = (# of "dismiss" actions) / (# of recommendations shown) * 100
+        dismiss_rate = (dismiss_count / shown_count * 100) if shown_count > 0 else 0.0
+        
+        # 7. Removal Rate = (# of cart_removal events) / (# of accepted recommendations) * 100
+        removal_rate = (removal_count / accept_count * 100) if accept_count > 0 else 0.0
+        
+        # 8. BDS (Behavioral Drift Score) - Detect shifts in user preferences over time
+        bds_data = {
+            "drift_score": 0.0,
+            "drift_level": "Low drift",
+            "attribute_drifts": {
+                "protein_drift": 0.0,
+                "sugar_drift": 0.0,
+                "calories_drift": 0.0,
+                "price_drift": 0.0
+            },
+            "sample_size": 0
+        }
+        
+        # Get all "accept" interactions with product attributes, sorted by timestamp
+        accept_with_attrs = [
+            i for i in all_interactions 
+            if i.action_type == "accept" 
+            and i.recommended_protein is not None 
+            and i.recommended_sugar is not None
+            and i.recommended_calories is not None
+            and i.recommended_price is not None
+        ]
+        
+        if len(accept_with_attrs) >= 4:
+            # Sort by timestamp
+            accept_with_attrs.sort(key=lambda x: x.shown_at)
+            
+            # Split into first half and second half
+            mid_point = len(accept_with_attrs) // 2
+            first_half = accept_with_attrs[:mid_point]
+            second_half = accept_with_attrs[mid_point:]
+            
+            # Calculate average attributes for each half
+            def calc_avg(interactions, attr_name):
+                values = [getattr(i, attr_name) for i in interactions if getattr(i, attr_name) is not None]
+                return sum(float(v) for v in values) / len(values) if values else 0.0
+            
+            # First half averages
+            first_protein = calc_avg(first_half, 'recommended_protein')
+            first_sugar = calc_avg(first_half, 'recommended_sugar')
+            first_calories = calc_avg(first_half, 'recommended_calories')
+            first_price = calc_avg(first_half, 'recommended_price')
+            
+            # Second half averages
+            second_protein = calc_avg(second_half, 'recommended_protein')
+            second_sugar = calc_avg(second_half, 'recommended_sugar')
+            second_calories = calc_avg(second_half, 'recommended_calories')
+            second_price = calc_avg(second_half, 'recommended_price')
+            
+            # Calculate drifts (normalized by dividing by typical values to make them comparable)
+            protein_drift = (second_protein - first_protein) / 10.0 if first_protein > 0 else 0.0
+            sugar_drift = (second_sugar - first_sugar) / 10.0 if first_sugar > 0 else 0.0
+            calories_drift = (second_calories - first_calories) / 100.0 if first_calories > 0 else 0.0
+            price_drift = (second_price - first_price) / 10.0 if first_price > 0 else 0.0
+            
+            # Compute overall drift score: sqrt(sum of squared drifts) / 4
+            import math
+            drift_score = math.sqrt(
+                protein_drift**2 + sugar_drift**2 + calories_drift**2 + price_drift**2
+            ) / 4.0
+            
+            # Interpret drift level
+            if drift_score > 0.15:
+                drift_level = "High drift"
+            elif drift_score >= 0.05:
+                drift_level = "Moderate drift"
+            else:
+                drift_level = "Low drift"
+            
+            bds_data = {
+                "drift_score": round(drift_score, 4),
+                "drift_level": drift_level,
+                "attribute_drifts": {
+                    "protein_drift": round(protein_drift, 4),
+                    "sugar_drift": round(sugar_drift, 4),
+                    "calories_drift": round(calories_drift, 4),
+                    "price_drift": round(price_drift, 4)
+                },
+                "sample_size": len(accept_with_attrs)
+            }
+        
+        # 9. EAS (Explanation Acceptance Score) - Compare acceptance rates with/without explanations
+        eas_data = {
+            "acceptance_with_explanation": 0.0,
+            "acceptance_without_explanation": 0.0,
+            "explanation_lift_percent": 0.0,
+            "with_explanation_count": 0,
+            "without_explanation_count": 0
+        }
+        
+        # Group interactions by has_explanation
+        with_explanation = [i for i in all_interactions if i.has_explanation]
+        without_explanation = [i for i in all_interactions if not i.has_explanation]
+        
+        # Calculate acceptance rates for each group
+        with_expl_shown = sum(1 for i in with_explanation if i.action_type == "shown")
+        with_expl_accept = sum(1 for i in with_explanation if i.action_type == "accept")
+        
+        without_expl_shown = sum(1 for i in without_explanation if i.action_type == "shown")
+        without_expl_accept = sum(1 for i in without_explanation if i.action_type == "accept")
+        
+        acceptance_with = (with_expl_accept / with_expl_shown * 100) if with_expl_shown > 0 else 0.0
+        acceptance_without = (without_expl_accept / without_expl_shown * 100) if without_expl_shown > 0 else 0.0
+        
+        # Calculate lift
+        explanation_lift = acceptance_with - acceptance_without
+        
+        eas_data = {
+            "acceptance_with_explanation": round(acceptance_with, 2),
+            "acceptance_without_explanation": round(acceptance_without, 2),
+            "explanation_lift_percent": round(explanation_lift, 2),
+            "with_explanation_count": with_expl_shown,
+            "without_explanation_count": without_expl_shown
+        }
+        
+        # 10. HGAB (Health Goal Alignment Behavior) - Track how well recommendations align with user goals
+        hgab_data = {
+            "hgab_score": 0.0,
+            "goal_aligned_shown": 0,
+            "goal_aligned_accepts": 0,
+            "alignment_details": "No goal-aligned recommendations yet"
+        }
+        
+        # Count goal-aligned interactions
+        goal_aligned_shown = sum(1 for i in all_interactions if i.action_type == "shown" and i.goal_aligned)
+        goal_aligned_accepts = sum(1 for i in all_interactions if i.action_type == "accept" and i.goal_aligned)
+        
+        # Calculate HGAB score
+        hgab_score = (goal_aligned_accepts / goal_aligned_shown * 100) if goal_aligned_shown > 0 else 0.0
+        
+        # Get user's current goals for details
+        alignment_details = "No goals set"
+        if user_session_id:
+            current_user = User.query.filter_by(session_id=user_session_id).first()
+            if current_user:
+                current_goals = UserGoal.query.filter_by(user_id=current_user.id, is_active=True).all()
+                if current_goals:
+                    goal_list = [f"{g.goal_direction} {g.goal_type}" for g in current_goals]
+                    alignment_details = f"Active goals: {', '.join(goal_list)}"
+        
+        hgab_data = {
+            "hgab_score": round(hgab_score, 2),
+            "goal_aligned_shown": goal_aligned_shown,
+            "goal_aligned_accepts": goal_aligned_accepts,
+            "alignment_details": alignment_details
+        }
+        
+        return jsonify({
+            "success": True,
+            "period": period,
+            "user_id": user_session_id,
+            "metrics": {
+                "rar": round(rar, 2),
+                "acr": round(acr, 2),
+                "time_to_accept_seconds": round(time_to_accept, 2),
+                "avg_scroll_depth_percent": round(avg_scroll_depth, 2),
+                "bcr": round(bcr, 2),
+                "dismiss_rate": round(dismiss_rate, 2),
+                "removal_rate": round(removal_rate, 2),
+                "bds": bds_data,
+                "eas": eas_data,
+                "hgab": hgab_data
+            },
+            "counts": {
+                "total_interactions": len(all_interactions),
+                "shown": shown_count,
+                "accepted": accept_count,
+                "dismissed": dismiss_count,
+                "removed": removal_count,
+                "removed_after_accept": removed_after_accept
+            }
+        })
+        
+    except Exception as e:
+        print(f"Analytics metrics error: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500

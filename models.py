@@ -270,6 +270,9 @@ def init_models(db):
         removed_from_cart_at = db.Column(db.DateTime, nullable=True)
         was_removed = db.Column(db.Boolean, default=False)
         
+        # Goal alignment tracking (for HGAB)
+        goal_aligned = db.Column(db.Boolean, default=False, nullable=True, index=True)
+        
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
         
         def __repr__(self):

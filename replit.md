@@ -50,6 +50,30 @@ Preferred communication style: Simple, everyday language.
 ### LLM-as-a-Judge Evaluation System
 - **Methodology**: Uses OpenAI GPT-5 for automated evaluation of recommendation systems based on pairwise comparisons and criteria-based scoring across various scenarios.
 
+### Behavioral Analytics System
+- **Frontend Tracking**: Comprehensive JavaScript tracking captures all recommendation interactions:
+  - Recommendation shown events with timestamps
+  - User actions (Accept Swap, Maybe Later)
+  - Scroll depth monitoring on recommendation panels
+  - Time-to-action calculation (milliseconds precision)
+  - Cart removal tracking for AI-recommended items
+- **Database Models**:
+  - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories), savings, explanations, timestamps, scroll depth, and removal flags
+  - **UserGoal**: Tracks user health/nutrition goals (goal_type, goal_direction, target_value, priority)
+- **Analytics Endpoints**:
+  - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend
+  - **GET /api/analytics/metrics**: Computes 7 behavioral metrics:
+    1. RAR (Replace Action Rate): % of recommendations accepted
+    2. ACR (Action to Cart Rate): % of recommendations added to cart
+    3. Time-to-Accept: Average time from shown to accept (seconds)
+    4. Average Scroll Depth: Mean scroll percentage on recommendations
+    5. BCR (Basket Change Rate): % of AI items later removed from cart
+    6. Dismiss Rate: % of recommendations dismissed
+    7. Removal Rate: % of accepted items removed from cart
+  - Supports user-specific filtering and time period filtering (7d, 30d, all)
+- **Drift Detection**: Tracks product attribute changes (protein, sugar, price, calories) over time to detect behavioral shifts
+- **Explanation Tracking**: Captures whether recommendations include AI explanations for acceptance rate analysis
+
 ## External Dependencies
 
 ### Python Libraries

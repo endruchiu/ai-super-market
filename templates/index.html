@@ -626,6 +626,101 @@
         </div>
       </div>
 
+      <!-- Health & Nutrition Goals Section -->
+      <div id="healthGoalsSection" class="mb-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Health & Nutrition Goals</span>
+        </h3>
+        
+        <div class="bg-white border-2 border-gray-200 rounded-xl p-5 space-y-4">
+          <!-- Protein Goal -->
+          <div class="border-b border-gray-200 pb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold text-gray-700">Protein</label>
+              <div class="flex items-center space-x-2">
+                <button id="proteinDecrease" onclick="setGoalDirection('protein', 'decrease')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Decrease</button>
+                <button id="proteinIncrease" onclick="setGoalDirection('protein', 'increase')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Increase</button>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <input type="number" id="proteinTarget" placeholder="Target (g)" class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" min="0" step="0.1">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs text-gray-600">Priority:</label>
+                <input type="range" id="proteinPriority" min="1" max="5" value="3" class="w-20 slider-thumb">
+                <span id="proteinPriorityValue" class="text-xs font-semibold text-indigo-600 w-4">3</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sugar Goal -->
+          <div class="border-b border-gray-200 pb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold text-gray-700">Sugar</label>
+              <div class="flex items-center space-x-2">
+                <button id="sugarDecrease" onclick="setGoalDirection('sugar', 'decrease')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Decrease</button>
+                <button id="sugarIncrease" onclick="setGoalDirection('sugar', 'increase')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Increase</button>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <input type="number" id="sugarTarget" placeholder="Target (g)" class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" min="0" step="0.1">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs text-gray-600">Priority:</label>
+                <input type="range" id="sugarPriority" min="1" max="5" value="3" class="w-20 slider-thumb">
+                <span id="sugarPriorityValue" class="text-xs font-semibold text-indigo-600 w-4">3</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Calories Goal -->
+          <div class="border-b border-gray-200 pb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold text-gray-700">Calories</label>
+              <div class="flex items-center space-x-2">
+                <button id="caloriesDecrease" onclick="setGoalDirection('calories', 'decrease')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Decrease</button>
+                <button id="caloriesIncrease" onclick="setGoalDirection('calories', 'increase')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Increase</button>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <input type="number" id="caloriesTarget" placeholder="Target (kcal)" class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" min="0" step="1">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs text-gray-600">Priority:</label>
+                <input type="range" id="caloriesPriority" min="1" max="5" value="3" class="w-20 slider-thumb">
+                <span id="caloriesPriorityValue" class="text-xs font-semibold text-indigo-600 w-4">3</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sodium Goal -->
+          <div class="pb-2">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold text-gray-700">Sodium</label>
+              <div class="flex items-center space-x-2">
+                <button id="sodiumDecrease" onclick="setGoalDirection('sodium', 'decrease')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Decrease</button>
+                <button id="sodiumIncrease" onclick="setGoalDirection('sodium', 'increase')" class="px-3 py-1 text-xs rounded-md border transition-all bg-white text-gray-600 border-gray-300">Increase</button>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <input type="number" id="sodiumTarget" placeholder="Target (mg)" class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" min="0" step="1">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs text-gray-600">Priority:</label>
+                <input type="range" id="sodiumPriority" min="1" max="5" value="3" class="w-20 slider-thumb">
+                <span id="sodiumPriorityValue" class="text-xs font-semibold text-indigo-600 w-4">3</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Save Button -->
+          <div class="pt-2">
+            <button onclick="saveUserGoals()" class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg">
+              Save Goals
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Sign In Section (Shows when not logged in) -->
       <div id="loginSection" class="mb-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
