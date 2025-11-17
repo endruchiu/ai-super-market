@@ -2186,6 +2186,229 @@ def get_analytics_metrics():
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
+import json
+from datetime import datetime
+
+llm_insights_cache = {}
+
+@app.route("/api/analytics/llm-insights", methods=["GET"])
+def get_llm_insights():
+    """
+    Get LLM-powered insights for behavioral analytics metrics.
+    Uses OpenAI GPT-4o-mini to analyze recommendation system performance.
+    
+    Query params:
+    - user_id (optional): Filter by specific session_id
+    - period (optional): "7d" | "30d" | "all" (default: "all")
+    
+    Returns:
+    - overall_score: Performance score (1-10)
+    - strengths: Array of what's working well
+    - weaknesses: Array of problem areas
+    - recommendations: Array of actionable suggestions with priority levels
+    - summary: Brief overview paragraph
+    """
+    try:
+        user_session_id = request.args.get("user_id")
+        period = request.args.get("period", "all")
+        
+        cache_key = f"{user_session_id}_{period}"
+        
+        if cache_key in llm_insights_cache:
+            cached_result, cached_time = llm_insights_cache[cache_key]
+            cache_age = (datetime.utcnow() - cached_time).total_seconds()
+            if cache_age < 300:
+                return jsonify({
+                    "success": True,
+                    "cached": True,
+                    "cache_age_seconds": int(cache_age),
+                    **cached_result
+                })
+        
+        metrics_response = get_analytics_metrics()
+        metrics_data = metrics_response.get_json()
+        
+        if not metrics_data.get("success"):
+            return jsonify({
+                "success": False,
+                "error": "Failed to fetch metrics data"
+            }), 500
+        
+        metrics = metrics_data["metrics"]
+        counts = metrics_data["counts"]
+        
+        if counts["total_interactions"] == 0:
+            return jsonify({
+                "success": False,
+                "error": "No analytics data available yet. Start shopping and interacting with recommendations to generate insights."
+            }), 400
+        
+        import openai
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
+        
+        if not openai.api_key:
+            return jsonify({
+                "success": False,
+                "error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."
+            }), 500
+        
+        prompt = f"""You are an expert analyst for AI-powered recommendation systems in e-commerce, specifically grocery shopping platforms.
+
+Analyze these behavioral metrics from an AI grocery shopping assistant that provides personalized product recommendations:
+
+CURRENT METRICS:
+1. RAR (Replace Action Rate): {metrics['rar']}%
+   Definition: Percentage of shown recommendations that users accept
+   Industry Benchmark: Good = >20%, Excellent = >30%
+
+2. ACR (Action to Cart Rate): {metrics['acr']}%
+   Definition: Percentage of recommendations that lead to cart additions
+   Industry Benchmark: Good = >15%, Excellent = >25%
+
+3. Time-to-Accept: {metrics['time_to_accept_seconds']} seconds
+   Definition: Average time users take to accept a recommendation
+   Industry Benchmark: Good = <5s, Excellent = <3s (faster indicates more relevant recommendations)
+
+4. Average Scroll Depth: {metrics['avg_scroll_depth_percent']}%
+   Definition: How far users scroll through recommendation lists
+   Industry Benchmark: Good = >50%, Excellent = >70% (higher engagement)
+
+5. BCR (Basket Change Rate): {metrics['bcr']}%
+   Definition: Percentage of accepted recommendations later removed from cart
+   Industry Benchmark: Good = <20%, Excellent = <10% (lower is better - indicates quality recommendations)
+
+6. Dismiss Rate: {metrics['dismiss_rate']}%
+   Definition: Percentage of recommendations explicitly rejected by users
+   Industry Benchmark: Good = <40%, Excellent = <25% (lower is better)
+
+7. Removal Rate: {metrics['removal_rate']}%
+   Definition: Percentage of cart items removed before checkout
+   Industry Benchmark: Good = <30%, Excellent = <15% (lower is better)
+
+8. BDS (Behavioral Drift Score): {metrics['bds']['drift_score']}
+   Level: {metrics['bds']['drift_level']}
+   Protein Drift: {metrics['bds']['attribute_drifts']['protein_drift']}
+   Sugar Drift: {metrics['bds']['attribute_drifts']['sugar_drift']}
+   Calories Drift: {metrics['bds']['attribute_drifts']['calories_drift']}
+   Price Drift: {metrics['bds']['attribute_drifts']['price_drift']}
+   Sample Size: {metrics['bds']['sample_size']} accepted recommendations
+   Definition: Measures changes in user preferences over time
+   Industry Context: Low drift = stable preferences, High drift = evolving tastes or poor initial recommendations
+
+9. EAS (Explanation Acceptance Score): {metrics['eas']['explanation_lift_percent']}%
+   With Explanation: {metrics['eas']['acceptance_with_explanation']}% ({metrics['eas']['with_explanation_count']} shown)
+   Without Explanation: {metrics['eas']['acceptance_without_explanation']}% ({metrics['eas']['without_explanation_count']} shown)
+   Definition: Impact of showing explanations on acceptance rates
+   Industry Benchmark: Good lift = >5%, Excellent lift = >15%
+
+10. HGAB (Health Goal Alignment Behavior): {metrics['hgab']['hgab_score']}%
+    Goal-aligned shown: {metrics['hgab']['goal_aligned_shown']}
+    Goal-aligned accepts: {metrics['hgab']['goal_aligned_accepts']}
+    Details: {metrics['hgab']['alignment_details']}
+    Definition: How well recommendations align with user's stated health goals
+    Industry Benchmark: Good = >60%, Excellent = >80%
+
+INTERACTION COUNTS:
+- Total interactions: {counts['total_interactions']}
+- Recommendations shown: {counts['shown']}
+- Accepted: {counts['accepted']}
+- Dismissed: {counts['dismissed']}
+- Removed from cart: {counts['removed']}
+
+TIME PERIOD: {period}
+{f"USER: {user_session_id}" if user_session_id else "ALL USERS"}
+
+TASK:
+Provide a comprehensive analysis of this recommendation system's performance. Consider:
+1. Which metrics are performing well vs. poorly compared to industry benchmarks
+2. Patterns and relationships between metrics (e.g., high dismiss rate + low RAR = relevance problem)
+3. Specific, actionable recommendations prioritized by potential impact
+4. Overall system health and areas needing immediate attention
+
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "overall_score": <number 1-10>,
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "weaknesses": ["<weakness 1>", "<weakness 2>", "<weakness 3>"],
+  "recommendations": [
+    {{"text": "<actionable recommendation>", "priority": "High"}},
+    {{"text": "<actionable recommendation>", "priority": "High"}},
+    {{"text": "<actionable recommendation>", "priority": "Medium"}},
+    {{"text": "<actionable recommendation>", "priority": "Medium"}},
+    {{"text": "<actionable recommendation>", "priority": "Low"}}
+  ],
+  "summary": "<2-3 sentence overview of overall system performance>"
+}}
+
+Ensure your response is valid JSON only, with no additional text."""
+
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai.api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert analyst for AI recommendation systems. You provide structured, data-driven insights in JSON format only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=1500,
+                response_format={"type": "json_object"}
+            )
+            
+            llm_response_text = response.choices[0].message.content
+            llm_insights = json.loads(llm_response_text)
+            
+            result = {
+                "overall_score": llm_insights.get("overall_score", 5),
+                "strengths": llm_insights.get("strengths", []),
+                "weaknesses": llm_insights.get("weaknesses", []),
+                "recommendations": llm_insights.get("recommendations", []),
+                "summary": llm_insights.get("summary", "Analysis completed successfully."),
+                "metrics_snapshot": {
+                    "rar": metrics['rar'],
+                    "acr": metrics['acr'],
+                    "bcr": metrics['bcr'],
+                    "dismiss_rate": metrics['dismiss_rate']
+                }
+            }
+            
+            llm_insights_cache[cache_key] = (result, datetime.utcnow())
+            
+            return jsonify({
+                "success": True,
+                "cached": False,
+                **result
+            })
+            
+        except openai.RateLimitError:
+            return jsonify({
+                "success": False,
+                "error": "OpenAI API rate limit reached. Please try again in a few moments."
+            }), 429
+            
+        except openai.APIError as e:
+            return jsonify({
+                "success": False,
+                "error": f"OpenAI API error: {str(e)}"
+            }), 500
+            
+        except json.JSONDecodeError:
+            return jsonify({
+                "success": False,
+                "error": "Failed to parse LLM response. Please try again."
+            }), 500
+            
+    except Exception as e:
+        print(f"LLM insights error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
+
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory('static', filename)

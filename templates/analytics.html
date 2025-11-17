@@ -592,6 +592,137 @@
         </div>
       </div>
       
+      <!-- AI-Powered Insights Card -->
+      <div class="metric-card bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl shadow-lg border-2 border-indigo-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+              <span>🤖</span>
+              <span>AI-Powered Insights</span>
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">GPT-4o-mini Analysis of Your Metrics</p>
+          </div>
+          <button 
+            onclick="generateLLMInsights()" 
+            id="generateInsightsBtn"
+            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all flex items-center space-x-2 shadow-lg hover:shadow-xl">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span>Generate Insights</span>
+          </button>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="llmLoadingState" class="hidden text-center py-12">
+          <div class="loading-spinner mx-auto mb-4"></div>
+          <p class="text-gray-700 font-medium">Analyzing your metrics with AI...</p>
+          <p class="text-sm text-gray-500 mt-2">This may take a few seconds</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="llmErrorState" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h3 class="text-sm font-semibold text-red-900">Error Generating Insights</h3>
+              <p id="llmErrorMessage" class="text-sm text-red-700 mt-1"></p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="llmEmptyState" class="text-center py-12">
+          <svg class="w-20 h-20 text-indigo-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+          </svg>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Get AI-Powered Analysis</h3>
+          <p class="text-gray-600 max-w-md mx-auto">Click "Generate Insights" to get expert AI analysis of your recommendation system performance, including strengths, weaknesses, and actionable recommendations.</p>
+        </div>
+        
+        <!-- Insights Results -->
+        <div id="llmInsightsContent" class="hidden space-y-6">
+          
+          <!-- Summary Section -->
+          <div class="bg-white rounded-lg p-6 border-2 border-indigo-200 shadow-sm">
+            <div class="flex items-start space-x-3 mb-4">
+              <div class="bg-indigo-100 p-2 rounded-lg">
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900">Executive Summary</h3>
+                <p id="llmSummary" class="text-gray-700 mt-2 leading-relaxed"></p>
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-semibold text-gray-600 mb-1">Overall Score</p>
+                <p id="llmOverallScore" class="text-5xl font-bold text-indigo-600">0</p>
+                <p class="text-xs text-gray-500">/10</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Strengths Section -->
+            <div class="bg-white rounded-lg p-6 border-2 border-green-200 shadow-sm">
+              <div class="flex items-center space-x-2 mb-4">
+                <div class="bg-green-100 p-2 rounded-lg">
+                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Strengths</h3>
+              </div>
+              <div id="llmStrengths" class="space-y-2">
+              </div>
+            </div>
+            
+            <!-- Weaknesses Section -->
+            <div class="bg-white rounded-lg p-6 border-2 border-red-200 shadow-sm">
+              <div class="flex items-center space-x-2 mb-4">
+                <div class="bg-red-100 p-2 rounded-lg">
+                  <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Areas for Improvement</h3>
+              </div>
+              <div id="llmWeaknesses" class="space-y-2">
+              </div>
+            </div>
+            
+          </div>
+          
+          <!-- Recommendations Section -->
+          <div class="bg-white rounded-lg p-6 border-2 border-purple-200 shadow-sm">
+            <div class="flex items-center space-x-2 mb-4">
+              <div class="bg-purple-100 p-2 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-gray-900">Actionable Recommendations</h3>
+            </div>
+            <div id="llmRecommendations" class="space-y-3">
+            </div>
+          </div>
+          
+          <!-- Cache Info -->
+          <div id="llmCacheInfo" class="hidden text-center text-sm text-gray-500">
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span id="llmCacheMessage"></span>
+          </div>
+          
+        </div>
+        
+      </div>
+      
     </div>
     
   </div>
@@ -857,6 +988,140 @@
       document.getElementById('statDismissed').textContent = counts.dismissed;
       document.getElementById('statRemoved').textContent = counts.removed;
       document.getElementById('statRemovedAfterAccept').textContent = counts.removed_after_accept;
+    }
+    
+    async function generateLLMInsights() {
+      const loadingState = document.getElementById('llmLoadingState');
+      const errorState = document.getElementById('llmErrorState');
+      const emptyState = document.getElementById('llmEmptyState');
+      const insightsContent = document.getElementById('llmInsightsContent');
+      const generateBtn = document.getElementById('generateInsightsBtn');
+      
+      loadingState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      emptyState.classList.add('hidden');
+      insightsContent.classList.add('hidden');
+      generateBtn.disabled = true;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('period', currentPeriod);
+        if (currentUserId) {
+          params.append('user_id', currentUserId);
+        }
+        
+        const response = await fetch(`/api/analytics/llm-insights?${params.toString()}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to generate insights');
+        }
+        
+        displayLLMInsights(data);
+        
+        loadingState.classList.add('hidden');
+        insightsContent.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Error generating LLM insights:', error);
+        loadingState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        document.getElementById('llmErrorMessage').textContent = error.message;
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+    
+    function displayLLMInsights(data) {
+      document.getElementById('llmOverallScore').textContent = data.overall_score || 0;
+      document.getElementById('llmSummary').textContent = data.summary || 'No summary available';
+      
+      const scoreEl = document.getElementById('llmOverallScore');
+      const score = data.overall_score || 0;
+      if (score >= 8) {
+        scoreEl.className = 'text-5xl font-bold text-green-600';
+      } else if (score >= 6) {
+        scoreEl.className = 'text-5xl font-bold text-yellow-600';
+      } else if (score >= 4) {
+        scoreEl.className = 'text-5xl font-bold text-orange-600';
+      } else {
+        scoreEl.className = 'text-5xl font-bold text-red-600';
+      }
+      
+      const strengthsContainer = document.getElementById('llmStrengths');
+      strengthsContainer.innerHTML = '';
+      (data.strengths || []).forEach(strength => {
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-2 bg-green-50 p-3 rounded-lg border border-green-200';
+        div.innerHTML = `
+          <svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <p class="text-sm text-gray-800 leading-relaxed">${strength}</p>
+        `;
+        strengthsContainer.appendChild(div);
+      });
+      
+      const weaknessesContainer = document.getElementById('llmWeaknesses');
+      weaknessesContainer.innerHTML = '';
+      (data.weaknesses || []).forEach(weakness => {
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-2 bg-red-50 p-3 rounded-lg border border-red-200';
+        div.innerHTML = `
+          <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          <p class="text-sm text-gray-800 leading-relaxed">${weakness}</p>
+        `;
+        weaknessesContainer.appendChild(div);
+      });
+      
+      const recommendationsContainer = document.getElementById('llmRecommendations');
+      recommendationsContainer.innerHTML = '';
+      (data.recommendations || []).forEach((rec, index) => {
+        const priority = rec.priority || 'Medium';
+        let priorityColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        let priorityIcon = '⚠️';
+        
+        if (priority === 'High') {
+          priorityColor = 'bg-red-100 text-red-800 border-red-200';
+          priorityIcon = '🔴';
+        } else if (priority === 'Low') {
+          priorityColor = 'bg-blue-100 text-blue-800 border-blue-200';
+          priorityIcon = '🔵';
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-3 bg-gray-50 p-4 rounded-lg border border-gray-200';
+        div.innerHTML = `
+          <div class="bg-purple-100 text-purple-800 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 text-sm">
+            ${index + 1}
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-gray-800 leading-relaxed mb-2">${rec.text}</p>
+            <span class="inline-flex items-center space-x-1 px-3 py-1 ${priorityColor} rounded-full text-xs font-semibold border">
+              <span>${priorityIcon}</span>
+              <span>${priority} Priority</span>
+            </span>
+          </div>
+        `;
+        recommendationsContainer.appendChild(div);
+      });
+      
+      if (data.cached) {
+        const cacheInfo = document.getElementById('llmCacheInfo');
+        const cacheMessage = document.getElementById('llmCacheMessage');
+        cacheInfo.classList.remove('hidden');
+        cacheMessage.textContent = `Showing cached results (${data.cache_age_seconds}s old). Results are cached for 5 minutes.`;
+      } else {
+        document.getElementById('llmCacheInfo').classList.add('hidden');
+      }
     }
   </script>
 
