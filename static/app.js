@@ -863,6 +863,13 @@ async function getBlendedRecommendations() {
     
     document.getElementById('blendedRecommendations').style.display = 'block';
     updateRecommendationsModule();
+    
+    // Scroll recommendation module into view
+    const recommendationsModule = document.getElementById('recommendationsModule');
+    if (recommendationsModule && recommendationsModule.style.display === 'block') {
+      console.log('✅ Hybrid AI recommendations displayed!');
+      recommendationsModule.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   } catch (error) {
     console.error('Error fetching blended recommendations:', error);
     alert('Failed to load hybrid recommendations: ' + error.message);
