@@ -116,29 +116,35 @@ class IntentDetector:
             price = float(product.get('_price_final', 0))
             title = str(product.get('Title', '')).lower()
             
-            # Check for quality indicators
-            is_premium = any(keyword in title for keyword in [
-                'organic', 'premium', 'grass-fed', 'free-range',
-                'artisan', 'imported', 'gourmet', 'specialty'
+            # Check for quality indicators (PRICE IS PRIMARY SIGNAL)
+            is_premium_keyword = any(keyword in title for keyword in [
+                'premium', 'grass-fed', 'free-range',
+                'artisan', 'imported', 'gourmet', 'specialty', 'wagyu', 'truffle'
             ])
             
-            is_expensive = price > 25  # Above average grocery price
+            # Price thresholds (primary signal)
+            is_expensive = price > 20  # Expensive items
+            is_very_expensive = price > 35  # Very expensive items
             
             if action['event_type'] == 'view':
-                if is_premium:
-                    signals += 1.0
+                if is_very_expensive:
+                    signals += 2.0  # Very expensive = strong quality signal
                 elif is_expensive:
-                    signals += 0.5
+                    signals += 1.0
+                elif is_premium_keyword and price > 15:
+                    signals += 0.5  # Keywords only matter if also somewhat expensive
             
             elif action['event_type'] == 'cart_add':
-                if is_premium:
-                    signals += 2.0  # Cart adds weighted higher
+                if is_very_expensive:
+                    signals += 3.0  # Very strong signal
                 elif is_expensive:
+                    signals += 2.0
+                elif is_premium_keyword and price > 15:
                     signals += 1.0
             
             elif action['event_type'] == 'cart_remove':
                 # Removing cheap items = quality signal (upgrading)
-                if not is_premium and price < 15:
+                if not is_premium_keyword and price < 12:
                     signals += 1.5
         
         return signals
@@ -164,22 +170,30 @@ class IntentDetector:
             price = float(product.get('_price_final', 0))
             title = str(product.get('Title', '')).lower()
             
-            # Check for budget indicators
-            is_value = any(keyword in title for keyword in [
-                'value', 'budget', 'saver', 'basic', 'everyday'
+            # Check for budget indicators (PRICE IS PRIMARY SIGNAL)
+            is_value_keyword = any(keyword in title for keyword in [
+                'value', 'budget', 'saver', 'basic', 'everyday', 'kirkland'
             ])
             
-            is_cheap = price < 10
+            # Price thresholds (primary signal)
+            is_cheap = price < 12
+            is_very_cheap = price < 8
             
             if action['event_type'] == 'view':
-                if is_value or is_cheap:
+                if is_very_cheap:
+                    signals += 2.0  # Very cheap = strong economy signal
+                elif is_cheap:
                     signals += 1.0
+                elif is_value_keyword:
+                    signals += 0.5
             
             elif action['event_type'] == 'cart_add':
-                if is_value:
-                    signals += 2.0
+                if is_very_cheap:
+                    signals += 3.0  # Very strong signal
                 elif is_cheap:
-                    signals += 1.5
+                    signals += 2.0
+                elif is_value_keyword:
+                    signals += 1.0
             
             elif action['event_type'] == 'cart_remove':
                 # Removing expensive items = economy signal (downgrading)
