@@ -1092,20 +1092,20 @@ function hideSignInModal() {
 async function handleEmailLogin(event) {
   event.preventDefault();
   
+  const name = document.getElementById('loginName').value.trim();
   const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
   
-  if (!email || !password) {
-    showNotification('Please enter both email and password', 'error');
+  if (!name || !email) {
+    showNotification('Please enter both name and email', 'error');
     return;
   }
   
   try {
-    // Call backend to authenticate user
-    const response = await fetch('/api/user/login', {
+    // Call backend to sign in user
+    const response = await fetch('/api/user/signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ name, email })
     });
     
     const data = await response.json();
@@ -1113,7 +1113,7 @@ async function handleEmailLogin(event) {
     if (response.ok && data.success) {
       // Store user data in localStorage
       const userData = {
-        name: data.user.name || email.split('@')[0],
+        name: data.user.name,
         email: data.user.email,
         userId: data.user.id,
         signedInAt: new Date().toISOString()
@@ -1146,149 +1146,24 @@ async function handleEmailLogin(event) {
   }
 }
 
-// Handle new user registration
-async function handleEmailRegister() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  
-  if (!email || !password) {
-    showNotification('Please enter both email and password to register', 'error');
-    return;
-  }
-  
-  // Email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    showNotification('Please enter a valid email address', 'error');
-    return;
-  }
-  
-  // Password validation
-  if (password.length < 6) {
-    showNotification('Password must be at least 6 characters long', 'error');
-    return;
-  }
-  
-  try {
-    // Call backend to create new user
-    const response = await fetch('/api/user/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok && data.success) {
-      // Auto-login after registration
-      const userData = {
-        name: data.user.name || email.split('@')[0],
-        email: data.user.email,
-        userId: data.user.id,
-        signedInAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      
-      // Update session ID globally
-      SESSION_ID = email;
-      
-      // Update UI
-      updateUserDisplay(userData);
-      
-      // Hide login section
-      document.getElementById('loginSection').style.display = 'none';
-      
-      // Reload user data
-      await loadUserData();
-      
-      showNotification(`Account created! Welcome, ${userData.name}!`, 'success');
-      
-      // Clear form
-      document.getElementById('loginForm').reset();
-    } else {
-      showNotification(data.message || 'Registration failed. Email may already be in use.', 'error');
-    }
-  } catch (error) {
-    console.error('Registration error:', error);
-    showNotification('Registration failed. Please try again.', 'error');
-  }
-}
-
-// Generate or retrieve device fingerprint for persistent demo user
-function getDeviceFingerprint() {
-  let deviceId = localStorage.getItem('deviceFingerprint');
-  
-  if (!deviceId) {
-    const components = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + 'x' + screen.height,
-      new Date().getTimezoneOffset(),
-      navigator.hardwareConcurrency || 'unknown'
-    ];
-    
-    const hash = components.join('|').split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    
-    deviceId = 'device_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
-    localStorage.setItem('deviceFingerprint', deviceId);
-  }
-  
-  return deviceId;
-}
-
-// Handle demo login from QR code
-async function handleDemoLogin(token) {
-  const deviceId = getDeviceFingerprint();
-  
-  let userData = localStorage.getItem('demoUser');
+// User display management
+function updateUserDisplay(userData) {
+  const userDisplayName = document.getElementById('userDisplayName');
+  const userDisplayEmail = document.getElementById('userDisplayEmail');
+  const signInBtn = document.getElementById('signInBtn');
+  const signOutBtn = document.getElementById('signOutBtn');
   
   if (userData) {
-    userData = JSON.parse(userData);
-    console.log('Returning demo user:', userData.name);
+    userDisplayName.textContent = userData.name;
+    userDisplayEmail.textContent = userData.email;
+    signInBtn.style.display = 'none';
+    signOutBtn.style.display = 'flex';
   } else {
-    const demoNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson'];
-    
-    const deviceHash = deviceId.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    const nameIndex = Math.abs(deviceHash) % demoNames.length;
-    const demoName = demoNames[nameIndex];
-    const demoEmail = deviceId + '@demo.device';
-    
-    userData = {
-      name: demoName,
-      email: demoEmail,
-      deviceId: deviceId,
-      token: token,
-      signedInAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('demoUser', JSON.stringify(userData));
-    console.log('New demo user created:', demoName, 'for device:', deviceId);
+    userDisplayName.textContent = 'Guest User';
+    userDisplayEmail.textContent = 'Session Active';
+    signInBtn.style.display = 'block';
+    signOutBtn.style.display = 'none';
   }
-  
-  try {
-    await fetch('/api/user/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email: userData.email,
-        name: userData.name,
-        deviceId: deviceId
-      })
-    });
-  } catch (error) {
-    console.error('Backend sign-in failed:', error);
-  }
-  
-  updateUserDisplay(userData);
-  hideSignInModal();
-  showNotification('Signed in successfully as ' + userData.name + '!', 'success');
 }
 
 function signOut() {
