@@ -1184,8 +1184,8 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 def generate_llm_recommendation_message(intent_score: float, product_name: str, original_product: str, savings: float, discount_pct: int) -> str:
     """
-    Use LLM to generate natural, conversational recommendation message.
-    Connects ISRec intent detection with product recommendations using AI.
+    Generate simple, clear recommendation message without marketing fluff.
+    Connects ISRec intent detection with product recommendations.
     
     Args:
         intent_score: 0.0-1.0 (0=economy-focused, 1=quality-focused)
@@ -1195,51 +1195,18 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         discount_pct: Percentage cheaper
     
     Returns:
-        Natural, human-friendly message from AI (max 10 words)
+        Simple, factual message
     """
-    try:
-        # Determine user's shopping style from ISRec and set focus
-        if intent_score >= 0.6:
-            # Quality mode - emphasize maintaining quality/premium ONLY
-            system_prompt = "You're a grocery assistant for premium shoppers. Generate a 10-word (maximum) message emphasizing QUALITY, PREMIUM, or STANDARDS maintained. Never mention savings/money. Be conversational."
-            focus = "Focus ONLY on quality/premium aspect. NO money talk."
-        elif intent_score <= 0.4:
-            # Economy mode - emphasize savings/deals ONLY
-            system_prompt = "You're a grocery assistant for budget shoppers. Generate a 10-word (maximum) message emphasizing SAVINGS, DEALS, or DISCOUNTS. Never mention quality. Be conversational."
-            focus = "Focus ONLY on savings/deals. NO quality talk."
-        else:
-            # Balanced mode
-            system_prompt = "You're a grocery assistant. Generate a 10-word (maximum) recommendation balancing quality and price. Be warm and conversational."
-            focus = "Mention both quality AND savings"
-        
-        # Use GPT to generate natural message
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": f"Recommend '{product_name}' instead of '{original_product}'. Saves ${savings:.2f}. {focus}. Max 10 words!"
-                }
-            ],
-            temperature=0.7,
-            max_tokens=30
-        )
-        
-        return response.choices[0].message.content.strip()
-    
-    except Exception as e:
-        # Fallback to simple template if LLM fails
-        print(f"LLM generation failed: {e}")
-        if intent_score >= 0.6:
-            return f"Premium quality maintained at better price"
-        elif intent_score <= 0.4:
-            return f"Huge deal: ${savings:.2f} off!"
-        else:
-            return f"Smart choice balancing quality and savings"
+    # Use simple templates without LLM - clearer and more consistent
+    if intent_score >= 0.6:
+        # Quality mode - emphasize maintaining quality
+        return f"Similar quality, saves ${savings:.2f}"
+    elif intent_score <= 0.4:
+        # Economy mode - emphasize savings
+        return f"Save ${savings:.2f} ({discount_pct}% off)"
+    else:
+        # Balanced mode
+        return f"Good alternative, saves ${savings:.2f}"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
