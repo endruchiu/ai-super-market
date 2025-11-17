@@ -928,26 +928,6 @@ async function getBlendedRecommendations() {
         card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300';
         
         card.innerHTML = 
-          // Header with icon and title (more compact)
-          '<div class="flex items-start justify-between mb-3">' +
-            '<div class="flex items-center space-x-2">' +
-              '<div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-lg shadow-md">' +
-                '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                  '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
-                '</svg>' +
-              '</div>' +
-              '<div>' +
-                '<h3 class="text-base font-bold text-gray-900">AI Recommendation</h3>' +
-                '<p class="text-xs text-gray-600">Smart substitution available</p>' +
-              '</div>' +
-            '</div>' +
-            '<button onclick="this.closest(\'.bg-gradient-to-br\').remove()" class="text-gray-400 hover:text-gray-600 transition-colors">' +
-              '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>' +
-              '</svg>' +
-            '</button>' +
-          '</div>' +
-          
           // Product comparison block (more compact)
           '<div class="bg-white rounded-lg p-3 mb-3 shadow-sm">' +
             '<div class="flex items-center justify-between gap-2">' +
