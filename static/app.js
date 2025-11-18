@@ -2211,13 +2211,16 @@ function renderReplenishmentItem(item, urgencyColor) {
 
 async function quickAddReplenishment(productId) {
   try {
-    // Find product in PRODUCTS array
-    const product = PRODUCTS.find(p => p.id === productId);
+    // Fetch product details from server (not all products are in PRODUCTS array)
+    const response = await fetch(`/api/product/${productId}`);
+    const data = await response.json();
     
-    if (!product) {
+    if (!data.success || !data.product) {
       showToast('Product not found', 'error');
       return;
     }
+    
+    const product = data.product;
     
     // Add to cart
     addToCart(product);

@@ -147,6 +147,69 @@ def api_products():
     subcats = sorted(PRODUCTS_DF["Sub Category"].dropna().unique().tolist())[:50]
     return jsonify({"items": data, "subcats": subcats})
 
+@app.route("/api/product/<product_id>", methods=["GET"])
+def api_get_product(product_id):
+    """
+    Get a single product by ID.
+    Used by replenishment quick-add to fetch product details.
+    """
+    try:
+        if PRODUCTS_DF is None:
+            _init_index()
+        
+        # Convert string ID to int64
+        try:
+            pid = int(product_id)
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid product ID"}), 400
+        
+        # Look up product in DataFrame (indexed by id)
+        if pid not in PRODUCTS_DF.index:
+            return jsonify({"success": False, "error": "Product not found"}), 404
+        
+        row = PRODUCTS_DF.loc[pid]
+        
+        # Use same to_item format as /api/products endpoint
+        def to_item(row):
+            item = {
+                "id": str(int(row.name)),
+                "title": str(row["Title"]),
+                "subcat": str(row["Sub Category"]),
+                "price": float(row["_price_final"]) if pd.notna(row["_price_final"]) else None,
+                "qty": 1,
+            }
+            # size info
+            if pd.notna(row.get("_size_value")) and pd.notna(row.get("_size_unit")):
+                item["size_value"] = float(row["_size_value"])
+                item["size_unit"]  = str(row["_size_unit"])
+            else:
+                item["size_value"] = None
+                item["size_unit"]  = None
+            # nutrition (if present)
+            nutr = {}
+            for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
+                if k in row and pd.notna(row[k]):
+                    try:
+                        v = float(row[k])
+                        nutr[k] = v
+                    except Exception:
+                        pass
+            if nutr:
+                item["nutrition"] = nutr
+            # extra display fields
+            item["feature"] = str(row.get("Feature") or "")
+            item["desc"] = str(row.get("Product Description") or "")
+            return item
+        
+        product = to_item(row)
+        return jsonify({"success": True, "product": product})
+        
+    except Exception as e:
+        print(f"Error fetching product {product_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/budget/recommendations", methods=["POST"])
 def api_budget_recommendations():
     payload = request.get_json(force=True)
