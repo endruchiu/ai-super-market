@@ -1764,14 +1764,12 @@ def track_interaction():
             original_protein=get_nutrition_value(original_product, "Protein_g"),
             original_sugar=get_nutrition_value(original_product, "Sugar_g"),
             original_calories=get_nutrition_value(original_product, "Calories", is_int=True),
-            original_sodium=get_nutrition_value(original_product, "Sodium_mg"),
             
             # Product attributes (from recommended product) - Use None for missing data
             recommended_price=float(recommended_product.get("price", 0.0)),
             recommended_protein=get_nutrition_value(recommended_product, "Protein_g"),
             recommended_sugar=get_nutrition_value(recommended_product, "Sugar_g"),
             recommended_calories=get_nutrition_value(recommended_product, "Calories", is_int=True),
-            recommended_sodium=get_nutrition_value(recommended_product, "Sodium_mg"),
             
             # Removal tracking
             was_removed=data.get("was_removed", False),
