@@ -1438,9 +1438,6 @@ async function handleEmailLogin(event) {
       // Reload cart and user data
       await loadUserData();
       
-      // Load user's health goals
-      await loadUserGoals();
-      
       showNotification(`Welcome back, ${userData.name}!`, 'success');
       
       // Close the sign-in modal
@@ -1718,149 +1715,6 @@ function clearUserStats() {
   `;
 }
 
-// ==================== HEALTH GOALS FUNCTIONS ====================
-
-// Store current goal directions for each type
-const GOAL_DIRECTIONS = {
-  protein: null,
-  sugar: null,
-  calories: null,
-  sodium: null
-};
-
-// Set goal direction (increase/decrease) for a specific goal type
-function setGoalDirection(goalType, direction) {
-  GOAL_DIRECTIONS[goalType] = direction;
-  
-  // Update button styles
-  const increaseBtn = document.getElementById(`${goalType}Increase`);
-  const decreaseBtn = document.getElementById(`${goalType}Decrease`);
-  
-  if (direction === 'increase') {
-    increaseBtn.classList.remove('bg-white', 'text-gray-600', 'border-gray-300');
-    increaseBtn.classList.add('bg-green-600', 'text-white', 'border-green-600');
-    decreaseBtn.classList.remove('bg-red-600', 'text-white', 'border-red-600');
-    decreaseBtn.classList.add('bg-white', 'text-gray-600', 'border-gray-300');
-  } else if (direction === 'decrease') {
-    decreaseBtn.classList.remove('bg-white', 'text-gray-600', 'border-gray-300');
-    decreaseBtn.classList.add('bg-red-600', 'text-white', 'border-red-600');
-    increaseBtn.classList.remove('bg-green-600', 'text-white', 'border-green-600');
-    increaseBtn.classList.add('bg-white', 'text-gray-600', 'border-gray-300');
-  }
-}
-
-// Load user's current goals from backend
-async function loadUserGoals() {
-  try {
-    const response = await fetch('/api/user/goals');
-    const data = await response.json();
-    
-    if (data.success && data.goals.length > 0) {
-      // Populate the form with existing goals
-      data.goals.forEach(goal => {
-        const goalType = goal.goal_type;
-        
-        // Set direction
-        setGoalDirection(goalType, goal.goal_direction);
-        
-        // Set target value
-        const targetInput = document.getElementById(`${goalType}Target`);
-        if (targetInput && goal.target_value) {
-          targetInput.value = goal.target_value;
-        }
-        
-        // Set priority
-        const priorityInput = document.getElementById(`${goalType}Priority`);
-        const priorityValue = document.getElementById(`${goalType}PriorityValue`);
-        if (priorityInput && goal.priority) {
-          priorityInput.value = goal.priority;
-          if (priorityValue) {
-            priorityValue.textContent = goal.priority;
-          }
-        }
-      });
-      
-      console.log('✓ Loaded user goals:', data.goals.length);
-    }
-  } catch (error) {
-    console.error('Error loading user goals:', error);
-  }
-}
-
-// Save user goals to backend
-async function saveUserGoals() {
-  try {
-    const goals = [];
-    const goalTypes = ['protein', 'sugar', 'calories', 'sodium'];
-    
-    // Collect goals from the form
-    for (const goalType of goalTypes) {
-      const direction = GOAL_DIRECTIONS[goalType];
-      const targetInput = document.getElementById(`${goalType}Target`);
-      const priorityInput = document.getElementById(`${goalType}Priority`);
-      
-      // Only add goal if direction is set (user clicked increase or decrease)
-      if (direction && targetInput) {
-        const targetValue = parseFloat(targetInput.value);
-        const priority = parseInt(priorityInput.value) || 3;
-        
-        // Skip if no target value entered
-        if (isNaN(targetValue) || targetValue <= 0) {
-          continue;
-        }
-        
-        goals.push({
-          goal_type: goalType,
-          goal_direction: direction,
-          target_value: targetValue,
-          priority: priority
-        });
-      }
-    }
-    
-    // Only send if at least one goal is set
-    if (goals.length === 0) {
-      showNotification('Please set at least one health goal', 'error');
-      return;
-    }
-    
-    // Send to backend
-    const response = await fetch('/api/user/goals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goals: goals })
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok && data.success) {
-      showNotification(`Saved ${data.goals_saved} health goal${data.goals_saved !== 1 ? 's' : ''} successfully!`, 'success');
-      console.log('✓ Saved goals:', goals);
-    } else {
-      showNotification(data.error || 'Failed to save goals', 'error');
-    }
-  } catch (error) {
-    console.error('Error saving goals:', error);
-    showNotification('Failed to save goals. Please try again.', 'error');
-  }
-}
-
-// Initialize priority sliders (updates the displayed value when slider changes)
-function initializePrioritySliders() {
-  const goalTypes = ['protein', 'sugar', 'calories', 'sodium'];
-  
-  goalTypes.forEach(goalType => {
-    const slider = document.getElementById(`${goalType}Priority`);
-    const valueDisplay = document.getElementById(`${goalType}PriorityValue`);
-    
-    if (slider && valueDisplay) {
-      slider.addEventListener('input', (e) => {
-        valueDisplay.textContent = e.target.value;
-      });
-    }
-  });
-}
-
 function clearReplenishmentPanel() {
   // Hide all sections and show empty state
   const dueNowSection = document.getElementById('dueNowSection');
@@ -2125,10 +1979,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Load user data
   loadUserData();
-  
-  // Initialize health goals UI
-  initializePrioritySliders();
-  loadUserGoals();
   
   // Add budget slider change listener
   const budgetInput = document.getElementById('budget');

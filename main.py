@@ -1813,6 +1813,8 @@ def get_analytics_metrics():
     - Removal Rate
     - BDS (Behavioral Drift Score)
     - EAS (Explanation Acceptance Score)
+    
+    Note: HGAB metric has been removed.
     """
     try:
         # Get query parameters
@@ -1990,38 +1992,6 @@ def get_analytics_metrics():
             "without_explanation_count": without_expl_shown
         }
         
-        # 10. HGAB (Health Goal Alignment Behavior) - Track how well recommendations align with user goals
-        hgab_data = {
-            "hgab_score": 0.0,
-            "goal_aligned_shown": 0,
-            "goal_aligned_accepts": 0,
-            "alignment_details": "No goal-aligned recommendations yet"
-        }
-        
-        # Count goal-aligned interactions
-        goal_aligned_shown = sum(1 for i in all_interactions if i.action_type == "shown" and i.goal_aligned)
-        goal_aligned_accepts = sum(1 for i in all_interactions if i.action_type == "accept" and i.goal_aligned)
-        
-        # Calculate HGAB score
-        hgab_score = (goal_aligned_accepts / goal_aligned_shown * 100) if goal_aligned_shown > 0 else 0.0
-        
-        # Get user's current goals for details
-        alignment_details = "No goals set"
-        if user_session_id:
-            current_user = User.query.filter_by(session_id=user_session_id).first()
-            if current_user:
-                current_goals = UserGoal.query.filter_by(user_id=current_user.id, is_active=True).all()
-                if current_goals:
-                    goal_list = [f"{g.goal_direction} {g.goal_type}" for g in current_goals]
-                    alignment_details = f"Active goals: {', '.join(goal_list)}"
-        
-        hgab_data = {
-            "hgab_score": round(hgab_score, 2),
-            "goal_aligned_shown": goal_aligned_shown,
-            "goal_aligned_accepts": goal_aligned_accepts,
-            "alignment_details": alignment_details
-        }
-        
         return jsonify({
             "success": True,
             "period": period,
@@ -2035,8 +2005,7 @@ def get_analytics_metrics():
                 "dismiss_rate": round(dismiss_rate, 2),
                 "removal_rate": round(removal_rate, 2),
                 "bds": bds_data,
-                "eas": eas_data,
-                "hgab": hgab_data
+                "eas": eas_data
             },
             "counts": {
                 "total_interactions": len(all_interactions),
@@ -2168,13 +2137,6 @@ CURRENT METRICS:
    Without Explanation: {metrics['eas']['acceptance_without_explanation']}% ({metrics['eas']['without_explanation_count']} shown)
    Definition: Impact of showing explanations on acceptance rates
    Industry Benchmark: Good lift = >5%, Excellent lift = >15%
-
-10. HGAB (Health Goal Alignment Behavior): {metrics['hgab']['hgab_score']}%
-    Goal-aligned shown: {metrics['hgab']['goal_aligned_shown']}
-    Goal-aligned accepts: {metrics['hgab']['goal_aligned_accepts']}
-    Details: {metrics['hgab']['alignment_details']}
-    Definition: How well recommendations align with user's stated health goals
-    Industry Benchmark: Good = >60%, Excellent = >80%
 
 INTERACTION COUNTS:
 - Total interactions: {counts['total_interactions']}

@@ -77,7 +77,6 @@ class RecommendationInteraction(Base):
     recommended_calories = Column(Integer, nullable=True)
     removed_from_cart_at = Column(DateTime, nullable=True)
     was_removed = Column(Boolean, default=False)
-    goal_aligned = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.current_timestamp())
 
 
@@ -90,7 +89,6 @@ USER_PERSONAS = {
         'scroll_depth_range': (80, 100),
         'removal_rate_range': (5, 20),
         'has_explanation_prob': 0.9,
-        'goal_aligned_prob': 0.7,
     },
     'budget_conscious': {
         'weight': 0.25,
@@ -100,7 +98,6 @@ USER_PERSONAS = {
         'scroll_depth_range': (70, 95),
         'removal_rate_range': (10, 25),
         'has_explanation_prob': 0.8,
-        'goal_aligned_prob': 0.5,
     },
     'casual_shopper': {
         'weight': 0.30,
@@ -110,7 +107,6 @@ USER_PERSONAS = {
         'scroll_depth_range': (40, 70),
         'removal_rate_range': (20, 40),
         'has_explanation_prob': 0.6,
-        'goal_aligned_prob': 0.3,
     },
     'dismissive_user': {
         'weight': 0.15,
@@ -120,7 +116,6 @@ USER_PERSONAS = {
         'scroll_depth_range': (20, 50),
         'removal_rate_range': (40, 70),
         'has_explanation_prob': 0.4,
-        'goal_aligned_prob': 0.2,
     },
     'explorer': {
         'weight': 0.10,
@@ -130,7 +125,6 @@ USER_PERSONAS = {
         'scroll_depth_range': (85, 100),
         'removal_rate_range': (15, 35),
         'has_explanation_prob': 0.75,
-        'goal_aligned_prob': 0.6,
     }
 }
 
@@ -218,7 +212,6 @@ def generate_session_metrics(persona_config: Dict, recs_shown: int) -> Dict:
         'avg_time_to_accept': avg_time_to_accept,
         'avg_scroll_depth': avg_scroll_depth,
         'has_explanation_prob': persona_config['has_explanation_prob'],
-        'goal_aligned_prob': persona_config['goal_aligned_prob'],
     }
 
 
@@ -263,7 +256,6 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
         saving = max(0, price_diff)
         
         has_explanation = random.random() < metrics['has_explanation_prob']
-        goal_aligned = random.random() < metrics['goal_aligned_prob']
         
         # Determine if this will be accepted or dismissed
         will_accept = accept_count < metrics['accepts']
@@ -306,7 +298,6 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
             'recommended_sugar': Decimal(str(recommended['sugar'])),
             'original_calories': original['calories'],
             'recommended_calories': recommended['calories'],
-            'goal_aligned': goal_aligned,
         }
         
         # 1. Create SHOWN event (exposure tracking)
