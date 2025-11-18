@@ -21,10 +21,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 - **Design System**: Modern UI using Tailwind CSS CDN and Inter Font, with a blue/indigo gradient color scheme.
-- **Layout**: Two-column design (store map 60%, shopping cart 40%).
+- **Layout**: Responsive grid system with automatic transitions:
+  - **Default (no recommendations)**: Two-column layout (Store Map 66%, Shopping Cart 33%)
+  - **With AI Recommendations**: Three-column fixed layout (Store Map 50%, AI Recommendations 25%, Shopping Cart 25%)
+  - **Mobile (<768px)**: Single-column stacked layout
+  - Smooth automatic transitions when recommendations appear/disappear
 - **Store Map**: Visual aisle layout categorizing products into 6 aisles (A-F).
 - **Components**: Responsive header, interactive aisle cards, product cards, budget controls, shopping cart, collapsible product browser, animated notifications.
-- **Responsiveness**: Mobile-friendly layout.
+- **Responsiveness**: Mobile-friendly layout with adaptive grid system.
 - **User Panel & Sign-In**: Slide-in panel for user profile, history, and preferences. Two login methods available:
   - **Email + Name Login**: Simplified sign-in form (name + email only, no password) with localStorage for persistence
   - **QR Code Login**: Scannable QR code for instant mobile login with device fingerprinting
