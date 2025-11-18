@@ -145,16 +145,25 @@
 
   <!-- Main Content -->
   <div class="max-w-[1600px] mx-auto px-6 py-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div id="mainLayoutGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-300">
       
-      <!-- Left: Store Map (2/3 width) -->
-      <div class="lg:col-span-2">
-        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <!-- Left: Store Map (dynamic width) -->
+      <div id="storeMapColumn" class="lg:col-span-2 transition-all duration-300">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 relative">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold text-gray-900">Store Map</h2>
-            <button onclick="resetView()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all">
-              Reset View
-            </button>
+            <div class="flex items-center space-x-2">
+              <!-- Expand Map Button (shown when recommendations are visible) -->
+              <button id="expandMapBtn" onclick="toggleMapExpansion()" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-lg transition-all flex items-center space-x-1" style="display:none;" title="Expand Map">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                </svg>
+                <span id="expandMapText">Expand</span>
+              </button>
+              <button onclick="resetView()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all">
+                Reset View
+              </button>
+            </div>
           </div>
           
           <!-- Store Aisles Grid -->
@@ -391,8 +400,26 @@
         </div>
       </div>
       
-      <!-- Right: Shopping Cart Panel (1/3 width) -->
-      <div class="lg:col-span-1 space-y-4">
+      <!-- Middle: AI Recommendations (shown dynamically) -->
+      <div id="recommendationsColumn" class="lg:col-span-1 transition-all duration-300" style="display:none;">
+        <!-- MODULE 2: AI Recommendations -->
+        <div id="recommendationsModule" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 h-full">
+          <div class="flex items-center space-x-2 mb-4 pb-3 border-b border-gray-200">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <h2 class="text-xl font-bold text-gray-900">Hybrid AI Recommendations</h2>
+          </div>
+          
+          <!-- Hybrid AI Recommendations -->
+          <div id="blendedRecommendations" class="mb-4" style="display:none;">
+            <div id="blendedRecsContent" class="text-sm space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-gray-100"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right: Shopping Cart Panel (dynamic width) -->
+      <div id="cartColumn" class="lg:col-span-1 space-y-4 transition-all duration-300">
         
         <!-- MODULE 1: Shopping Cart -->
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
@@ -462,21 +489,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-          </div>
-        </div>
-        
-        <!-- MODULE 2: AI Recommendations -->
-        <div id="recommendationsModule" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6" style="display:none;">
-          <div class="flex items-center space-x-2 mb-4 pb-3 border-b border-gray-200">
-            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            <h2 class="text-xl font-bold text-gray-900">Hybrid AI Recommendations</h2>
-          </div>
-          
-          <!-- Hybrid AI Recommendations -->
-          <div id="blendedRecommendations" class="mb-4" style="display:none;">
-            <div id="blendedRecsContent" class="text-sm space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-gray-100"></div>
           </div>
         </div>
         

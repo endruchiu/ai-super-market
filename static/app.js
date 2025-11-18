@@ -297,13 +297,75 @@ function updateRecommendationDots() {
   });
 }
 
-// Helper function: Update Recommendations Module visibility
+// Helper function: Update Recommendations Module visibility and layout
 function updateRecommendationsModule() {
   const hybrid = document.getElementById('blendedRecommendations');
   const module = document.getElementById('recommendationsModule');
+  const recommendationsColumn = document.getElementById('recommendationsColumn');
+  const mainLayoutGrid = document.getElementById('mainLayoutGrid');
+  const storeMapColumn = document.getElementById('storeMapColumn');
+  const expandMapBtn = document.getElementById('expandMapBtn');
   
-  // Show module if hybrid recommendation section is visible
-  module.style.display = hybrid.style.display === 'block' ? 'block' : 'none';
+  const shouldShow = hybrid && hybrid.style.display === 'block';
+  
+  // Toggle module visibility (required for downstream code checks)
+  if (module) {
+    module.style.display = shouldShow ? 'block' : 'none';
+  }
+  
+  // Update layout when recommendations are shown
+  if (shouldShow && recommendationsColumn && mainLayoutGrid && storeMapColumn && expandMapBtn) {
+    recommendationsColumn.style.display = 'block';
+    mainLayoutGrid.classList.remove('lg:grid-cols-3');
+    mainLayoutGrid.classList.add('lg:grid-cols-4');
+    storeMapColumn.classList.remove('lg:col-span-2');
+    storeMapColumn.classList.add('lg:col-span-1');
+    expandMapBtn.style.display = 'flex';
+  } else if (recommendationsColumn && mainLayoutGrid && storeMapColumn && expandMapBtn) {
+    recommendationsColumn.style.display = 'none';
+    mainLayoutGrid.classList.remove('lg:grid-cols-4');
+    mainLayoutGrid.classList.add('lg:grid-cols-3');
+    storeMapColumn.classList.remove('lg:col-span-1');
+    storeMapColumn.classList.add('lg:col-span-2');
+    expandMapBtn.style.display = 'none';
+    resetMapExpansion();
+  }
+}
+
+let MAP_EXPANDED = false;
+
+function toggleMapExpansion() {
+  const storeMapColumn = document.getElementById('storeMapColumn');
+  const recommendationsColumn = document.getElementById('recommendationsColumn');
+  const expandMapText = document.getElementById('expandMapText');
+  
+  if (!MAP_EXPANDED) {
+    storeMapColumn.classList.remove('lg:col-span-1');
+    storeMapColumn.classList.add('lg:col-span-2');
+    recommendationsColumn.style.opacity = '0.3';
+    recommendationsColumn.style.pointerEvents = 'none';
+    expandMapText.textContent = 'Collapse';
+    MAP_EXPANDED = true;
+  } else {
+    storeMapColumn.classList.remove('lg:col-span-2');
+    storeMapColumn.classList.add('lg:col-span-1');
+    recommendationsColumn.style.opacity = '1';
+    recommendationsColumn.style.pointerEvents = 'auto';
+    expandMapText.textContent = 'Expand';
+    MAP_EXPANDED = false;
+  }
+}
+
+function resetMapExpansion() {
+  const recommendationsColumn = document.getElementById('recommendationsColumn');
+  const expandMapText = document.getElementById('expandMapText');
+  
+  if (MAP_EXPANDED) {
+    recommendationsColumn.style.opacity = '1';
+    recommendationsColumn.style.pointerEvents = 'auto';
+    expandMapText.textContent = 'Expand';
+    MAP_EXPANDED = false;
+  }
 }
 
 // New function: Filter by category (for store map)
