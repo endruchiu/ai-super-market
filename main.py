@@ -160,11 +160,14 @@ def api_get_product(product_id):
         # Convert string ID to int64
         try:
             pid = int(product_id)
-        except (ValueError, TypeError):
+            print(f"Fetching product ID: {pid} (original: {product_id})")
+        except (ValueError, TypeError) as e:
+            print(f"Invalid product ID format: {product_id}, error: {e}")
             return jsonify({"success": False, "error": "Invalid product ID"}), 400
         
         # Look up product in DataFrame (indexed by id)
         if pid not in PRODUCTS_DF.index:
+            print(f"Product ID {pid} not found in catalog. Index size: {len(PRODUCTS_DF.index)}, Sample IDs: {list(PRODUCTS_DF.index[:5])}")
             return jsonify({"success": False, "error": "Product not found"}), 404
         
         row = PRODUCTS_DF.loc[pid]
