@@ -487,16 +487,16 @@ def api_blended_recommendations():
             total = quality_score + economy_score
             current_intent = quality_score / total if total > 0 else 0.5
         
-        # Map ISRec intent to guardrail mode (stricter thresholds for instant responsiveness)
-        if current_intent > 0.65:
+        # Map ISRec intent to guardrail mode
+        if current_intent > 0.6:
             guardrail_mode = 'quality'
-            mode_label = "Quality mode"
-        elif current_intent < 0.35:
+            mode_label = "Premium mode"
+        elif current_intent < 0.4:
             guardrail_mode = 'economy'
-            mode_label = "Economy mode"
+            mode_label = "Value mode"
         else:
             guardrail_mode = 'balanced'
-            mode_label = "Balanced mode"
+            mode_label = "Balance mode"
         
         # DEBUG: Log intent detection for recommendations
         print(f"🎯 ISRec Intent: {current_intent:.2f} → Guardrail Mode: {guardrail_mode} ({mode_label})")
@@ -509,7 +509,7 @@ def api_blended_recommendations():
             'cart_size': len(cart),
             'budget': budget,
             'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0,
-            'current_intent': current_intent  # Intent score [0=economy, 1=quality]
+            'current_intent': current_intent  # Intent score [0=value, 1=premium]
         }
         
         recs = get_blended_recommendations(
@@ -1229,13 +1229,13 @@ def get_isrec_intent():
         total = quality_score + economy_score
         intent_score = quality_score / total if total > 0 else 0.5
         
-        # Determine mode (stricter thresholds for instant responsiveness)
-        if intent_score > 0.65:
-            mode = "quality"
-        elif intent_score < 0.35:
-            mode = "economy"
+        # Determine mode
+        if intent_score > 0.6:
+            mode = "premium"
+        elif intent_score < 0.4:
+            mode = "value"
         else:
-            mode = "balanced"
+            mode = "balance"
         
         # Format recent actions for display
         actions_list = []
@@ -1348,10 +1348,10 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 def generate_llm_recommendation_message(intent_score: float, product_name: str, original_product: str, savings: float, discount_pct: int) -> str:
     """
     Generate personalized recommendation message using LLM based on ISRec intent.
-    Messages adapt to user's shopping mode (quality vs economy) detected by ISRec.
+    Messages adapt to user's shopping mode (premium vs value) detected by ISRec.
     
     Args:
-        intent_score: 0.0-1.0 (0=economy-focused, 1=quality-focused)
+        intent_score: 0.0-1.0 (0=value-focused, 1=premium-focused)
         product_name: Recommended product
         original_product: Original product being replaced
         savings: Dollar amount saved
@@ -1361,21 +1361,21 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         Natural language message adapted to shopping mode
     """
     # Debug: Log intent detection for message generation
-    mode = "quality" if intent_score >= 0.6 else "economy" if intent_score <= 0.4 else "balanced"
+    mode = "premium" if intent_score > 0.6 else "value" if intent_score < 0.4 else "balance"
     print(f"🎨 Generating message: Intent={intent_score:.2f} ({mode}), Product='{product_name[:30]}', Save=${savings:.2f}")
     
     try:
         # Adapt message style based on detected shopping intent
-        if intent_score >= 0.6:
-            # Quality mode - user cares about maintaining standards
+        if intent_score > 0.6:
+            # Premium mode - user cares about maintaining standards
             system_prompt = "You help premium shoppers. Write ONE short sentence (max 8 words) about why this product maintains their quality standards. Be factual, not salesy."
             user_prompt = f"Suggest '{product_name}' as alternative to '{original_product}'. Focus on quality/premium aspects only."
-        elif intent_score <= 0.4:
-            # Economy mode - user cares about savings
+        elif intent_score < 0.4:
+            # Value mode - user cares about savings
             system_prompt = "You help budget shoppers. Write ONE short sentence (max 8 words) about the savings. Be factual, not salesy."
             user_prompt = f"Suggest '{product_name}' instead of '{original_product}'. Saves ${savings:.2f}. Focus on savings only."
         else:
-            # Balanced mode - user cares about both
+            # Balance mode - user cares about both
             system_prompt = "You help smart shoppers. Write ONE short sentence (max 8 words) about quality AND value. Be factual, not salesy."
             user_prompt = f"Suggest '{product_name}' instead of '{original_product}'. Saves ${savings:.2f}. Mention both quality and savings."
         
@@ -1399,9 +1399,9 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
     except Exception as e:
         # Fallback templates if LLM fails
         print(f"⚠️ LLM generation failed: {e}")
-        if intent_score >= 0.6:
+        if intent_score > 0.6:
             return f"Maintains quality, saves ${savings:.2f}"
-        elif intent_score <= 0.4:
+        elif intent_score < 0.4:
             return f"Save ${savings:.2f} ({discount_pct}% off)"
         else:
             return f"Quality choice, saves ${savings:.2f}"
