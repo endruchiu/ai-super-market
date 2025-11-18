@@ -71,6 +71,14 @@ Preferred communication style: Simple, everyday language.
 - **Database Models**:
   - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories, sodium), savings, explanations, timestamps, scroll depth, goal alignment flag, and removal flags
   - **UserGoal**: Tracks user health/nutrition goals (goal_type, goal_direction, target_value, priority)
+- **User Behavior Simulation Tool** (`simulate_user_behavior.py`):
+  - Generates realistic user sessions for analytics demonstration
+  - **5 User Personas**: Power User (70-95% RAR), Budget Conscious (60-85% RAR), Casual Shopper (30-60% RAR), Dismissive User (5-30% RAR), Explorer (50-75% RAR)
+  - **Two-Event Schema**: Creates paired SHOWN/ACTION events per recommendation for accurate exposure tracking
+  - **Correlated Metrics**: Generates interdependent RAR, ACR, BCR, time-to-accept, scroll depth, removal rate, goal alignment
+  - **100 Sessions**: Simulates diverse behavioral patterns across 30-user pool with varied engagement levels
+  - Standalone SQLAlchemy script with graceful product catalog fallback
+  - Run: `python3 simulate_user_behavior.py` to populate analytics dashboard with realistic data
 - **Analytics Endpoints**:
   - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend with goal alignment checking
   - **GET /api/analytics/metrics**: Computes 10 behavioral metrics:
