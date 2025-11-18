@@ -50,7 +50,11 @@ Preferred communication style: Simple, everyday language.
 - **Data Pipeline**: Extracts unified event data from user interactions for CF model training.
 - **Cold Start Handling**: Graceful fallback to general recommendations for new users.
 - **Filtering**: Suggestions prioritize cheaper alternatives within the same subcategory.
-- **ISRec Intent Detection System**: Analyzes recent user actions to detect "Quality" or "Economy" intent, influencing recommendations. Uses EMA smoothing for intent tracking.
+- **ISRec Intent Detection System**: Analyzes recent user actions to detect shopping intent (Value/Balance/Premium), influencing recommendations. Intent score ranges:
+  - **< 0.4**: Value mode (price-focused)
+  - **0.4 - 0.6**: Balance mode (mixed behavior)
+  - **> 0.6**: Premium mode (quality-focused)
+  - Uses EMA smoothing (30% current + 70% historical) for stable intent tracking
 - **LightGBM LambdaMART Re-Ranking**: A behavior-aware re-ranking model using 21 features (including intent, budget pressure, CF/semantic scores) to optimize recommendations.
 - **Online Learning System**: Captures user interactions in real-time. Automatically retrains the LightGBM model in a background thread after every 5 purchases, with hot-reloading of new models.
 - **Synthetic Training Data Generator**: Creates tailored training data with distinct behavioral patterns for demonstration purposes, ensuring visible feature importance in the UI.
