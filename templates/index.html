@@ -145,10 +145,10 @@
 
   <!-- Main Content -->
   <div class="max-w-[1600px] mx-auto px-6 py-6">
-    <div id="mainLayoutGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-300">
+    <div id="mainLayoutGrid" class="grid grid-cols-1 gap-6 transition-all duration-300" style="grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);">
       
       <!-- Left: Store Map (dynamic width) -->
-      <div id="storeMapColumn" class="lg:col-span-2 transition-all duration-300">
+      <div id="storeMapColumn" class="md:col-span-1 lg:col-span-1 min-w-0 overflow-hidden transition-all duration-300">
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 relative">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold text-gray-900">Store Map</h2>
@@ -167,7 +167,7 @@
           </div>
           
           <!-- Store Aisles Grid -->
-          <div class="grid grid-cols-6 gap-4 mb-6">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
             
             <!-- Aisle A -->
             <div class="flex flex-col space-y-2">
@@ -401,7 +401,7 @@
       </div>
       
       <!-- Middle: AI Recommendations (shown dynamically) -->
-      <div id="recommendationsColumn" class="lg:col-span-1 transition-all duration-300" style="display:none;">
+      <div id="recommendationsColumn" class="md:col-span-1 lg:col-span-1 min-w-0 overflow-hidden transition-all duration-300" style="display:none;">
         <!-- MODULE 2: AI Recommendations -->
         <div id="recommendationsModule" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 h-full">
           <div class="flex items-center space-x-2 mb-4 pb-3 border-b border-gray-200">
@@ -419,7 +419,7 @@
       </div>
       
       <!-- Right: Shopping Cart Panel (dynamic width) -->
-      <div id="cartColumn" class="lg:col-span-1 space-y-4 transition-all duration-300">
+      <div id="cartColumn" class="md:col-span-1 lg:col-span-1 min-w-0 overflow-hidden space-y-4 transition-all duration-300">
         
         <!-- MODULE 1: Shopping Cart -->
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
