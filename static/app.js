@@ -302,7 +302,6 @@ function updateRecommendationsModule() {
   const hybrid = document.getElementById('blendedRecommendations');
   const module = document.getElementById('recommendationsModule');
   const recommendationsColumn = document.getElementById('recommendationsColumn');
-  const expandMapBtn = document.getElementById('expandMapBtn');
   
   const shouldShow = hybrid && hybrid.style.display === 'block';
   
@@ -312,63 +311,16 @@ function updateRecommendationsModule() {
   }
   
   // Update layout when recommendations are shown
-  if (shouldShow && recommendationsColumn && expandMapBtn) {
+  if (shouldShow && recommendationsColumn) {
     // Show recommendations column
     recommendationsColumn.style.display = 'block';
-    
-    // Show expand button
-    expandMapBtn.style.display = 'flex';
-  } else if (recommendationsColumn && expandMapBtn) {
+  } else if (recommendationsColumn) {
     // Hide recommendations column
     recommendationsColumn.style.display = 'none';
-    
-    // Hide expand button
-    expandMapBtn.style.display = 'none';
-    resetMapExpansion();
   }
   
   // Update grid layout based on current state
   handleResponsiveGrid();
-}
-
-let MAP_EXPANDED = false;
-
-function toggleMapExpansion() {
-  const recommendationsColumn = document.getElementById('recommendationsColumn');
-  const expandMapText = document.getElementById('expandMapText');
-  
-  if (!recommendationsColumn || !expandMapText) return;
-  
-  if (window.innerWidth < 768) return; // Don't expand on mobile
-  
-  if (!MAP_EXPANDED) {
-    // Fade out recommendations
-    recommendationsColumn.style.opacity = '0.3';
-    recommendationsColumn.style.pointerEvents = 'none';
-    expandMapText.textContent = 'Collapse';
-    MAP_EXPANDED = true;
-  } else {
-    // Restore recommendations visibility
-    recommendationsColumn.style.opacity = '1';
-    recommendationsColumn.style.pointerEvents = 'auto';
-    expandMapText.textContent = 'Expand';
-    MAP_EXPANDED = false;
-  }
-  
-  // Update grid layout
-  handleResponsiveGrid();
-}
-
-function resetMapExpansion() {
-  const recommendationsColumn = document.getElementById('recommendationsColumn');
-  const expandMapText = document.getElementById('expandMapText');
-  
-  if (MAP_EXPANDED) {
-    recommendationsColumn.style.opacity = '1';
-    recommendationsColumn.style.pointerEvents = 'auto';
-    expandMapText.textContent = 'Expand';
-    MAP_EXPANDED = false;
-  }
 }
 
 // New function: Filter by category (for store map)
@@ -2230,13 +2182,6 @@ function handleResponsiveGrid() {
     // Mobile: Single column
     mainLayoutGrid.style.gridTemplateColumns = '1fr';
     
-    // Reset map expansion state on mobile
-    if (MAP_EXPANDED) {
-      MAP_EXPANDED = false;
-      const expandMapText = document.getElementById('expandMapText');
-      if (expandMapText) expandMapText.textContent = 'Expand';
-    }
-    
     // Ensure recommendations column is fully interactive on mobile
     if (recommendationsColumn && recommendationsColumn.style.display === 'block') {
       recommendationsColumn.style.opacity = '1';
@@ -2245,29 +2190,14 @@ function handleResponsiveGrid() {
   } else {
     // Tablet/Desktop: Apply appropriate grid based on recommendations visibility
     if (isRecommendationsVisible) {
-      // Recommendations are shown - 3-column layout
-      if (MAP_EXPANDED) {
-        // Map expanded: Give map 2fr, others 1fr each (50% + 25% + 25%)
-        mainLayoutGrid.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)';
-        // Keep recommendations dimmed when expanded
-        recommendationsColumn.style.opacity = '0.3';
-        recommendationsColumn.style.pointerEvents = 'none';
-      } else {
-        // Normal 3-column: Equal thirds (33% each)
-        mainLayoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)';
-        // Ensure recommendations are fully interactive when not expanded
-        recommendationsColumn.style.opacity = '1';
-        recommendationsColumn.style.pointerEvents = 'auto';
-      }
+      // Recommendations shown - Automatic 50/25/25 layout (Store Map 50%, AI Recs 25%, Cart 25%)
+      mainLayoutGrid.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)';
+      // Ensure recommendations are fully interactive
+      recommendationsColumn.style.opacity = '1';
+      recommendationsColumn.style.pointerEvents = 'auto';
     } else {
       // Recommendations hidden - 2-column layout (66% + 33%)
       mainLayoutGrid.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(0, 1fr)';
-      // Reset expansion state if recommendations are hidden
-      if (MAP_EXPANDED) {
-        MAP_EXPANDED = false;
-        const expandMapText = document.getElementById('expandMapText');
-        if (expandMapText) expandMapText.textContent = 'Expand';
-      }
     }
   }
 }
