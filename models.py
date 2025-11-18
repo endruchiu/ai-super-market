@@ -270,35 +270,9 @@ def init_models(db):
         removed_from_cart_at = db.Column(db.DateTime, nullable=True)
         was_removed = db.Column(db.Boolean, default=False)
         
-        # Goal alignment tracking (for HGAB)
-        goal_aligned = db.Column(db.Boolean, default=False, nullable=True, index=True)
-        
         created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
         
         def __repr__(self):
             return f'<RecommendationInteraction {self.id}: {self.action_type} by User {self.user_id}>'
 
-    class UserGoal(db.Model):
-        """User health and nutrition goals for goal alignment tracking"""
-        __tablename__ = 'user_goals'
-        __table_args__ = {'extend_existing': True}
-        
-        id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-        
-        # Goal configuration
-        goal_type = db.Column(db.String(50), nullable=False, index=True)
-        goal_direction = db.Column(db.String(20), nullable=False)
-        target_value = db.Column(db.Numeric(10, 2), nullable=True)
-        
-        # Status
-        is_active = db.Column(db.Boolean, default=True, index=True)
-        priority = db.Column(db.Integer, default=1)
-        
-        created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-        updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-        
-        def __repr__(self):
-            return f'<UserGoal {self.id}: User {self.user_id} - {self.goal_direction} {self.goal_type}>'
-    
-    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction, UserGoal
+    return Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction
