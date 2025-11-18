@@ -20,9 +20,9 @@ class IntentDetector:
     Detects user shopping intent from recent session actions.
     
     Intent Score:
-    - 0.0 - 0.3: Strong economy mode (price-focused)
-    - 0.3 - 0.7: Balanced mode
-    - 0.7 - 1.0: Strong quality mode (premium-focused)
+    - 0.0 - 0.4: Value mode (price-focused)
+    - 0.4 - 0.6: Balance mode (mixed behavior)
+    - 0.6 - 1.0: Premium mode (quality-focused)
     """
     
     def __init__(self, lookback_minutes=10, max_actions=10):
@@ -44,7 +44,7 @@ class IntentDetector:
             db_session: Database session (required for querying events)
             
         Returns:
-            Smoothed intent score [0, 1] where 0=economy, 1=quality
+            Smoothed intent score [0, 1] where 0=value, 1=premium
         """
         # Get recent user events
         recent_actions = self._get_recent_actions(user_id, db_session)
@@ -274,12 +274,12 @@ class IntentDetector:
     
     def get_intent_description(self, intent_score: float) -> str:
         """Convert intent score to human-readable description"""
-        if intent_score >= 0.7:
-            return "quality"
-        elif intent_score <= 0.3:
-            return "economy"
+        if intent_score > 0.6:
+            return "premium"
+        elif intent_score < 0.4:
+            return "value"
         else:
-            return "balanced"
+            return "balance"
 
 
 # Global instance
