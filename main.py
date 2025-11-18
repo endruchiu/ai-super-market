@@ -33,7 +33,7 @@ db.init_app(app)
 
 # Import and initialize models
 from models import init_models
-Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction, UserGoal = init_models(db)
+Product, ShoppingCart, UserBudget, User, Order, OrderItem, UserEvent, ReplenishableProduct, UserReplenishmentCycle, RecommendationInteraction = init_models(db)
 
 # Create tables
 with app.app_context():
@@ -1722,51 +1722,6 @@ def track_interaction():
             except Exception as e:
                 print(f"Error parsing action_at: {e}")
         
-        # Check goal alignment for "shown" and "accept" actions
-        goal_aligned = False
-        
-        if action_type in ["shown", "accept"]:
-            # Get user's active goals
-            user_goals = UserGoal.query.filter_by(user_id=user.id, is_active=True).all()
-            
-            if user_goals:
-                # Extract nutrition data from products
-                orig_nutrition = original_product.get("nutrition", {})
-                rec_nutrition = recommended_product.get("nutrition", {})
-                
-                # Check alignment for each goal
-                for goal in user_goals:
-                    goal_type = goal.goal_type
-                    goal_direction = goal.goal_direction
-                    
-                    # Map goal_type to nutrition field names
-                    nutrition_mapping = {
-                        "protein": ["Protein_g", "protein", "Protein"],
-                        "sugar": ["Sugar_g", "sugar", "Sugar"],
-                        "calories": ["Calories", "calories"],
-                        "sodium": ["Sodium_mg", "sodium", "Sodium"]
-                    }
-                    
-                    # Get nutrition values for this goal type
-                    orig_value = None
-                    rec_value = None
-                    
-                    if goal_type in nutrition_mapping:
-                        for field_name in nutrition_mapping[goal_type]:
-                            if field_name in orig_nutrition and orig_nutrition[field_name] is not None:
-                                orig_value = float(orig_nutrition[field_name])
-                            if field_name in rec_nutrition and rec_nutrition[field_name] is not None:
-                                rec_value = float(rec_nutrition[field_name])
-                    
-                    # Check if recommendation aligns with this goal
-                    if orig_value is not None and rec_value is not None:
-                        if goal_direction == "decrease" and rec_value < orig_value:
-                            goal_aligned = True
-                            break
-                        elif goal_direction == "increase" and rec_value > orig_value:
-                            goal_aligned = True
-                            break
-        
         # Helper function to safely extract nutrition value
         def get_nutrition_value(product_dict, field_name, is_int=False):
             """Extract nutrition value, returning None if missing or null"""
@@ -1820,10 +1775,7 @@ def track_interaction():
             
             # Removal tracking
             was_removed=data.get("was_removed", False),
-            removed_from_cart_at=action_at if action_type == "cart_removal" else None,
-            
-            # Goal alignment tracking
-            goal_aligned=goal_aligned
+            removed_from_cart_at=action_at if action_type == "cart_removal" else None
         )
         
         db.session.add(interaction)
