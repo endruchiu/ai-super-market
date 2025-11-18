@@ -73,19 +73,18 @@ Preferred communication style: Simple, everyday language.
   - Cart removal tracking for AI-recommended items
   - Real nutrition attribute extraction (protein, sugar, calories, sodium) from product catalog
 - **Database Models**:
-  - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories, sodium), savings, explanations, timestamps, scroll depth, goal alignment flag, and removal flags
-  - **UserGoal**: Tracks user health/nutrition goals (goal_type, goal_direction, target_value, priority)
+  - **RecommendationInteraction**: Stores interaction data including product details, nutrition attributes (protein, sugar, calories, sodium), savings, explanations, timestamps, scroll depth, and removal flags
 - **User Behavior Simulation Tool** (`simulate_user_behavior.py`):
   - Generates realistic user sessions for analytics demonstration
   - **5 User Personas**: Power User (70-95% RAR), Budget Conscious (60-85% RAR), Casual Shopper (30-60% RAR), Dismissive User (5-30% RAR), Explorer (50-75% RAR)
   - **Two-Event Schema**: Creates paired SHOWN/ACTION events per recommendation for accurate exposure tracking
-  - **Correlated Metrics**: Generates interdependent RAR, ACR, BCR, time-to-accept, scroll depth, removal rate, goal alignment
+  - **Correlated Metrics**: Generates interdependent RAR, ACR, BCR, time-to-accept, scroll depth, removal rate
   - **100 Sessions**: Simulates diverse behavioral patterns across 30-user pool with varied engagement levels
   - Standalone SQLAlchemy script with graceful product catalog fallback
   - Run: `python3 simulate_user_behavior.py` to populate analytics dashboard with realistic data
 - **Analytics Endpoints**:
-  - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend with goal alignment checking
-  - **GET /api/analytics/metrics**: Computes 10 behavioral metrics:
+  - **POST /api/analytics/track-interaction**: Receives and stores interaction data from frontend
+  - **GET /api/analytics/metrics**: Computes 9 behavioral metrics:
     1. RAR (Replace Action Rate): % of recommendations accepted
     2. ACR (Action to Cart Rate): % of recommendations added to cart
     3. Time-to-Accept: Average time from shown to accept (seconds)
@@ -95,17 +94,12 @@ Preferred communication style: Simple, everyday language.
     7. Removal Rate: % of accepted items removed from cart
     8. BDS (Behavioral Drift Score): Detects preference shifts over time (protein, sugar, calories, price)
     9. EAS (Explanation Acceptance Score): Measures effectiveness of AI explanations on acceptance rates
-    10. HGAB (Health Goal Alignment Behavior): % of goal-aligned recommendations accepted
-  - **POST /api/user/goals**: Saves user health/nutrition goals
-  - **GET /api/user/goals**: Retrieves active user goals
   - **GET /api/analytics/llm-insights**: AI-powered insights using GPT-4o-mini to analyze all metrics and provide recommendations
   - Supports user-specific filtering and time period filtering (7d, 30d, all)
-- **Health Goal System**: User interface in User Panel for setting nutrition goals (increase/decrease protein, sugar, calories, sodium) with target values and priorities
 - **Analytics Dashboard**: Dedicated /analytics route with comprehensive visualizations:
   - Overview metrics: RAR, ACR, Time-to-Accept, Scroll Depth
   - Cart behavior: BCR, Dismiss Rate, Removal Rate
   - Advanced analytics: BDS with drift detection alerts, EAS with lift comparisons
-  - Health goal alignment: HGAB score with alignment breakdown
   - AI-powered insights: GPT-4o-mini analysis with strengths, weaknesses, recommendations, and performance score
   - Time period and user filtering with real-time updates
   - Color-coded badges, progress bars, and responsive grid layout
