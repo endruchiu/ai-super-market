@@ -79,11 +79,16 @@ function trackRecommendationShown(recommendationData) {
       system: recommendationData.system || 'hybrid'
     };
     
-    // Send to backend
+    // Send to backend with correct field names
     sendInteractionToBackend({
-      event_type: 'recommendation_shown',
       recommendation_id: recId,
-      ...ACTIVE_RECOMMENDATIONS[recId]
+      action_type: 'shown',
+      original_product: ACTIVE_RECOMMENDATIONS[recId].originalProduct,
+      recommended_product: ACTIVE_RECOMMENDATIONS[recId].recommendedProduct,
+      expected_saving: ACTIVE_RECOMMENDATIONS[recId].expectedSaving,
+      recommendation_reason: ACTIVE_RECOMMENDATIONS[recId].reason,
+      has_explanation: true,
+      shown_at: ACTIVE_RECOMMENDATIONS[recId].shownAt
     });
     
     console.log('✓ Tracked recommendation shown:', recId);
@@ -108,15 +113,15 @@ function trackRecommendationAction(actionType, originalProduct, recommendedProdu
     // Calculate time-to-action
     const timeToAction = Date.now() - recommendation.timestamp;
     
-    // Prepare interaction data
+    // Prepare interaction data with correct field names for backend
     const interactionData = {
-      event_type: `recommendation_${actionType}`,
       recommendation_id: recId,
       action_type: actionType,
       original_product: recommendation.originalProduct,
       recommended_product: recommendation.recommendedProduct,
       expected_saving: recommendation.expectedSaving,
-      reason: recommendation.reason,
+      recommendation_reason: recommendation.reason,
+      has_explanation: true,
       shown_at: recommendation.shownAt,
       action_at: new Date().toISOString(),
       time_to_action_ms: timeToAction,
@@ -202,7 +207,7 @@ async function sendInteractionToBackend(interactionData) {
     });
     
     if (response.ok) {
-      console.log('✓ Interaction tracked:', interactionData.event_type);
+      console.log('✓ Interaction tracked:', interactionData.action_type || 'unknown');
     } else if (response.status === 404) {
       // Endpoint not implemented yet - silently ignore
       console.log('ℹ Analytics endpoint not available yet');
@@ -653,20 +658,27 @@ function removeItem(i) {
   const aiRecommendation = AI_RECOMMENDED_ITEMS[item.title];
   
   if (aiRecommendation) {
-    // Track removal of AI-recommended item
+    // Track removal of AI-recommended item with correct backend payload format
     sendInteractionToBackend({
-      event_type: 'ai_recommendation_removed',
       recommendation_id: aiRecommendation.recommendationId,
-      removed_product: {
+      action_type: 'cart_removal',
+      original_product: { 
+        id: null, 
+        title: aiRecommendation.originalProduct,
+        price: 0
+      },
+      recommended_product: {
         id: item.id,
         title: item.title,
         price: item.price,
         subcat: item.subcat
       },
-      original_product_title: aiRecommendation.originalProduct,
-      added_at: aiRecommendation.addedAt,
-      removed_at: new Date().toISOString(),
-      time_in_cart_ms: Date.now() - aiRecommendation.timestamp
+      expected_saving: 0,
+      recommendation_reason: 'User removed AI-recommended item from cart',
+      has_explanation: false,
+      shown_at: aiRecommendation.addedAt,
+      action_at: new Date().toISOString(),
+      was_removed: true
     });
     
     console.log('✓ Tracked removal of AI-recommended item:', item.title);
