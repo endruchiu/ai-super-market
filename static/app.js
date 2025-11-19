@@ -79,16 +79,11 @@ function trackRecommendationShown(recommendationData) {
       system: recommendationData.system || 'hybrid'
     };
     
-    // Send to backend with correct field names
+    // Send to backend
     sendInteractionToBackend({
+      event_type: 'recommendation_shown',
       recommendation_id: recId,
-      action_type: 'shown',
-      original_product: ACTIVE_RECOMMENDATIONS[recId].originalProduct,
-      recommended_product: ACTIVE_RECOMMENDATIONS[recId].recommendedProduct,
-      expected_saving: ACTIVE_RECOMMENDATIONS[recId].expectedSaving,
-      recommendation_reason: ACTIVE_RECOMMENDATIONS[recId].reason,
-      has_explanation: true,
-      shown_at: ACTIVE_RECOMMENDATIONS[recId].shownAt
+      ...ACTIVE_RECOMMENDATIONS[recId]
     });
     
     console.log('✓ Tracked recommendation shown:', recId);
@@ -113,15 +108,15 @@ function trackRecommendationAction(actionType, originalProduct, recommendedProdu
     // Calculate time-to-action
     const timeToAction = Date.now() - recommendation.timestamp;
     
-    // Prepare interaction data with correct field names for backend
+    // Prepare interaction data
     const interactionData = {
+      event_type: `recommendation_${actionType}`,
       recommendation_id: recId,
       action_type: actionType,
       original_product: recommendation.originalProduct,
       recommended_product: recommendation.recommendedProduct,
       expected_saving: recommendation.expectedSaving,
-      recommendation_reason: recommendation.reason,
-      has_explanation: true,
+      reason: recommendation.reason,
       shown_at: recommendation.shownAt,
       action_at: new Date().toISOString(),
       time_to_action_ms: timeToAction,
@@ -207,7 +202,7 @@ async function sendInteractionToBackend(interactionData) {
     });
     
     if (response.ok) {
-      console.log('✓ Interaction tracked:', interactionData.action_type || 'unknown');
+      console.log('✓ Interaction tracked:', interactionData.event_type);
     } else if (response.status === 404) {
       // Endpoint not implemented yet - silently ignore
       console.log('ℹ Analytics endpoint not available yet');
@@ -658,27 +653,20 @@ function removeItem(i) {
   const aiRecommendation = AI_RECOMMENDED_ITEMS[item.title];
   
   if (aiRecommendation) {
-    // Track removal of AI-recommended item with correct backend payload format
+    // Track removal of AI-recommended item
     sendInteractionToBackend({
+      event_type: 'ai_recommendation_removed',
       recommendation_id: aiRecommendation.recommendationId,
-      action_type: 'cart_removal',
-      original_product: { 
-        id: null, 
-        title: aiRecommendation.originalProduct,
-        price: 0
-      },
-      recommended_product: {
+      removed_product: {
         id: item.id,
         title: item.title,
         price: item.price,
         subcat: item.subcat
       },
-      expected_saving: 0,
-      recommendation_reason: 'User removed AI-recommended item from cart',
-      has_explanation: false,
-      shown_at: aiRecommendation.addedAt,
-      action_at: new Date().toISOString(),
-      was_removed: true
+      original_product_title: aiRecommendation.originalProduct,
+      added_at: aiRecommendation.addedAt,
+      removed_at: new Date().toISOString(),
+      time_in_cart_ms: Date.now() - aiRecommendation.timestamp
     });
     
     console.log('✓ Tracked removal of AI-recommended item:', item.title);
@@ -1178,26 +1166,6 @@ async function getBlendedRecommendations() {
           }
         }
         
-        // Category-specific visual themes for product images
-        const getCategoryVisual = (subcat) => {
-          const visualThemes = {
-            'Meat & Seafood': { gradient: 'from-red-100 via-red-200 to-red-300', icon: 'M12 6v6m0 0v6m0-6h6m-6 0H6', color: 'text-red-700' },
-            'Seafood': { gradient: 'from-blue-100 via-blue-200 to-cyan-300', icon: 'M12 6v6m0 0v6m0-6h6m-6 0H6', color: 'text-blue-700' },
-            'Snacks': { gradient: 'from-orange-100 via-amber-200 to-yellow-300', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-orange-700' },
-            'Beverages & Water': { gradient: 'from-cyan-100 via-blue-200 to-indigo-300', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z', color: 'text-blue-600' },
-            'Bakery & Desserts': { gradient: 'from-pink-100 via-rose-200 to-red-300', icon: 'M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z', color: 'text-pink-700' },
-            'Pantry & Dry Goods': { gradient: 'from-amber-100 via-yellow-200 to-orange-300', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', color: 'text-amber-700' },
-            'Coffee': { gradient: 'from-brown-100 via-amber-200 to-orange-300', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'text-amber-800' },
-            'Candy': { gradient: 'from-purple-100 via-pink-200 to-red-300', icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-purple-700' },
-            'Household': { gradient: 'from-teal-100 via-green-200 to-emerald-300', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', color: 'text-teal-700' },
-            'Cleaning Supplies': { gradient: 'from-blue-100 via-cyan-200 to-teal-300', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'text-cyan-700' },
-            'default': { gradient: 'from-gray-100 via-slate-200 to-gray-300', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', color: 'text-gray-700' }
-          };
-          return visualThemes[subcat] || visualThemes['default'];
-        };
-        
-        const visual = getCategoryVisual(s.replacement_product.subcat);
-        
         // Determine aisle from subcategory (matches Store Map layout exactly)
         const aisleMap = {
           // Aisle A
@@ -1235,96 +1203,86 @@ async function getBlendedRecommendations() {
           modeBadge = 'Smart choice: good quality and price combined';
         }
         
-        // Create natural explanation combining reason with savings
-        const naturalExplanation = s.reason || 
-          (discountPct > 0 ? `Similar quality with ${discountPct}% lower price.` : 
-          `More affordable alternative with the same flavor profile.`);
-        
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200';
+        card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300';
         
         card.innerHTML = 
-          // Horizontal layout: Image left, Content right
-          '<div class="flex flex-col sm:flex-row">' +
-            // Large Product Image (left side)
-            '<div class="relative flex-shrink-0">' +
-              '<div class="w-full sm:w-32 h-32 bg-gradient-to-br ' + visual.gradient + ' flex items-center justify-center relative">' +
-                '<svg class="w-16 h-16 ' + visual.color + ' opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">' +
-                  '<path stroke-linecap="round" stroke-linejoin="round" d="' + visual.icon + '"></path>' +
-                '</svg>' +
-                // Discount badge overlay
-                (discountPct > 0 ? 
-                  '<div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">' +
-                    discountPct + '% OFF' +
-                  '</div>' 
-                : '') +
+          // Product comparison block (more compact)
+          '<div class="bg-white rounded-lg p-3 mb-3 shadow-sm">' +
+            '<div class="flex items-center justify-between gap-2">' +
+              '<div class="flex items-center space-x-2 flex-1 min-w-0">' +
+                // Smaller product image
+                '<div class="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">' +
+                  '<svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>' +
+                  '</svg>' +
+                '</div>' +
+                '<div class="flex-1 min-w-0">' +
+                  '<p class="text-xs text-gray-500">Replace</p>' +
+                  '<p class="text-xs text-gray-500 line-through truncate">' + s.replace.substring(0, 35) + (s.replace.length > 35 ? '...' : '') + '</p>' +
+                  '<p class="text-sm font-bold text-gray-900 mt-1 truncate">' + s.with.substring(0, 35) + (s.with.length > 35 ? '...' : '') + '</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="text-right flex-shrink-0">' +
+                '<div class="flex items-center justify-end space-x-1 mb-1">' +
+                  '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>' +
+                  '</svg>' +
+                  '<span class="text-xs font-semibold text-green-600">−$' + s.expected_saving + '</span>' +
+                '</div>' +
+                '<div class="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-sm">$' + 
+                  (s.replacement_product.price ? s.replacement_product.price.toFixed(2) : '0.00') + 
+                '</div>' +
               '</div>' +
             '</div>' +
-            
-            // Content Area (right side)
-            '<div class="flex-1 p-4">' +
-              // Product Title & Price
-              '<div class="mb-3">' +
-                '<h3 class="text-base font-bold text-gray-900 mb-1 leading-tight">' + 
-                  s.with.substring(0, 60) + (s.with.length > 60 ? '...' : '') + 
-                '</h3>' +
-                '<div class="flex items-center space-x-3">' +
-                  '<span class="text-2xl font-bold text-blue-600">$' + 
-                    (s.replacement_product.price ? s.replacement_product.price.toFixed(2) : '0.00') + 
-                  '</span>' +
-                  '<div class="flex items-center text-green-600 font-semibold">' +
-                    '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>' +
-                    '</svg>' +
-                    '<span class="text-sm">Save $' + s.expected_saving + '</span>' +
-                  '</div>' +
-                '</div>' +
-              '</div>' +
-              
-              // Prominent Explanation Text
-              '<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3 rounded-r">' +
-                '<p class="text-sm text-gray-800 leading-relaxed">' +
-                  '<span class="font-semibold text-blue-700">Why we recommend this:</span> ' +
-                  naturalExplanation +
-                '</p>' +
-              '</div>' +
-              
-              // Replacing info (smaller, less prominent)
-              '<div class="text-xs text-gray-500 mb-3">' +
-                'Replaces: <span class="line-through">' + s.replace.substring(0, 45) + (s.replace.length > 45 ? '...' : '') + '</span>' +
-              '</div>' +
-              
-              // Badges row
-              '<div class="flex flex-wrap gap-2 mb-4">' +
-                // Aisle location badge
-                '<div class="inline-flex items-center bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-1 rounded-full text-xs font-semibold">' +
-                  '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>' +
-                  '</svg>' +
-                  'Aisle ' + aisle +
-                '</div>' +
-                // Intent mode badge
-                '<div class="inline-flex items-center bg-purple-100 border border-purple-300 text-purple-800 px-2.5 py-1 rounded-full text-xs font-semibold">' +
-                  '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
-                  '</svg>' +
-                  modeBadge.substring(0, 35) + (modeBadge.length > 35 ? '...' : '') +
-                '</div>' +
-              '</div>' +
-              
-              // Action buttons
-              '<div class="flex gap-2">' +
-                '<button class="flex-1 bg-gray-100 border-2 border-gray-300 text-gray-700 font-semibold py-2.5 px-4 rounded-lg hover:bg-gray-200 hover:border-gray-400 transition-all text-sm">' +
-                  'Maybe Later' +
-                '</button>' +
-                '<button class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg transition-all transform hover:scale-105 shadow-md flex items-center justify-center gap-2 text-sm">' +
-                  '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
-                  '</svg>' +
-                  '<span>Accept Swap</span>' +
-                '</button>' +
-              '</div>' +
+          '</div>' +
+          
+          // Evaluation badges (more compact) - Updated per user request
+          '<div class="flex flex-wrap gap-1.5 mb-3">' +
+            // 1. Price saving percentage badge (downward arrow for price decrease)
+            '<div class="bg-green-100 border border-green-300 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
+              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path>' +
+              '</svg>' +
+              '<span>' + (discountPct > 0 ? discountPct + '% OFF' : 'Save $' + s.expected_saving) + '</span>' +
             '</div>' +
+            // 2. Similarity badge removed per user request
+            // 3. Mode-based badge (replaces "Intent Match") - uses LLM-generated context
+            '<div class="bg-purple-100 border border-purple-300 text-purple-800 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">' +
+              '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' +
+              '</svg>' +
+              '<span>' + modeBadge + '</span>' +
+            '</div>' +
+          '</div>' +
+          
+          // Location indicator (more compact)
+          '<div class="bg-yellow-50 border border-yellow-300 rounded-lg p-2 mb-3">' +
+            '<div class="flex items-center space-x-1.5">' +
+              '<svg class="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>' +
+              '</svg>' +
+              '<span class="text-xs font-semibold text-yellow-900">📍 Located in Aisle ' + aisle + '</span>' +
+            '</div>' +
+          '</div>' +
+          
+          // Reason text (more compact)
+          '<div class="text-xs text-gray-600 italic mb-3 px-1">' +
+            s.reason +
+          '</div>' +
+          
+          // Action buttons (more compact)
+          '<div class="flex space-x-2">' +
+            '<button class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all text-sm">' +
+              'Maybe Later' +
+            '</button>' +
+            '<button class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 px-3 rounded-lg transition-all transform hover:scale-105 shadow-md flex items-center justify-center space-x-1.5 text-sm">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' +
+              '</svg>' +
+              '<span>Accept Swap</span>' +
+            '</button>' +
           '</div>';
         
         // Add click handlers to buttons with tracking
