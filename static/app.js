@@ -1336,7 +1336,7 @@ async function getBlendedRecommendations() {
           '</div>' +
           
           // Action buttons (more compact)
-          '<div class="flex space-x-2">' +
+          '<div class="flex space-x-2 mb-2">' +
             '<button class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all text-sm">' +
               'Maybe Later' +
             '</button>' +
@@ -1346,7 +1346,14 @@ async function getBlendedRecommendations() {
               '</svg>' +
               '<span>Accept Swap</span>' +
             '</button>' +
-          '</div>';
+          '</div>' +
+          // View Details button
+          '<button class="w-full bg-indigo-100 hover:bg-indigo-200 border border-indigo-300 text-indigo-700 font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center space-x-1.5">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
+            '</svg>' +
+            '<span>View Details</span>' +
+          '</button>';
         
         // Add click handlers to buttons with tracking
         const acceptBtn = card.querySelector('button[class*="bg-gradient-to-r"]');
@@ -1354,6 +1361,10 @@ async function getBlendedRecommendations() {
         
         const maybeLaterBtn = card.querySelector('button[class*="border-gray-300"]');
         maybeLaterBtn.onclick = function() { dismissRecommendation(card, recId, originalProduct, s.replacement_product); };
+        
+        // Add click handler for View Details button
+        const viewDetailsBtn = card.querySelector('button[class*="bg-indigo-100"]');
+        viewDetailsBtn.onclick = function() { openProductDetailsModal(s.replacement_product, originalProduct); };
         
         // Store recommendation ID with card for later reference
         card.dataset.recommendationId = recId;
@@ -2318,4 +2329,113 @@ async function skipReplenishment(cycleId) {
     console.error('Skip replenishment error:', error);
     showToast('Failed to skip reminder', 'error');
   }
+}
+
+// ==================== PRODUCT DETAILS MODAL ====================
+
+function openProductDetailsModal(recommendedProduct, originalProduct) {
+  const modal = document.getElementById('productDetailsModal');
+  const overlay = document.getElementById('productDetailsOverlay');
+  const content = document.getElementById('productDetailsContent');
+  
+  // Get product image
+  const imgSrc = getProductImage(recommendedProduct);
+  const productImageHTML = imgSrc 
+    ? '<img src="' + imgSrc + '" alt="' + recommendedProduct.title + '" class="w-full h-48 object-cover rounded-lg mb-4">'
+    : '<div class="w-full h-48 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg mb-4 flex items-center justify-center"><svg class="w-20 h-20 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
+  
+  // Determine aisle from subcategory
+  const aisleMap = {
+    'Meat & Seafood': 'A', 'Seafood': 'A', 'Poultry': 'A', 'Deli': 'A', 'Breakfast': 'A', 'Floral': 'A',
+    'Snacks': 'B',
+    'Candy': 'C', 'Gift Baskets': 'C', 'Organic': 'C', 'Kirkland Signature Grocery': 'C',
+    'Pantry & Dry Goods': 'D', 'Coffee': 'D',
+    'Beverages & Water': 'E', 'Paper & Plastic Products': 'E', 'Household': 'E',
+    'Bakery & Desserts': 'F', 'Cleaning Supplies': 'F', 'Laundry Detergent & Supplies': 'F'
+  };
+  const aisle = aisleMap[recommendedProduct.subcat] || 'A';
+  
+  // Format nutrition data
+  const nutrition = recommendedProduct.nutrition || {};
+  const nutritionHTML = Object.keys(nutrition).length > 0
+    ? Object.entries(nutrition).slice(0, 6).map(([key, value]) => {
+        const label = key.replace(/_/g, ' ');
+        return '<div class="flex justify-between py-2 border-b border-gray-100">' +
+          '<span class="text-sm text-gray-600">' + label + '</span>' +
+          '<span class="text-sm font-semibold text-gray-900">' + value + '</span>' +
+        '</div>';
+      }).join('')
+    : '<p class="text-sm text-gray-500 italic">Nutrition information not available</p>';
+  
+  // Build comparison section if original product exists
+  let comparisonHTML = '';
+  if (originalProduct && originalProduct.title) {
+    const originalPrice = originalProduct.price || 0;
+    const recommendedPrice = recommendedProduct.price || 0;
+    const savings = originalPrice - recommendedPrice;
+    const savingsPct = originalPrice > 0 ? Math.round((savings / originalPrice) * 100) : 0;
+    
+    comparisonHTML = '<div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">' +
+      '<h3 class="text-sm font-bold text-green-800 mb-2 flex items-center">' +
+        '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>' +
+        '</svg>' +
+        'Price Comparison' +
+      '</h3>' +
+      '<div class="space-y-2 text-sm">' +
+        '<div class="flex justify-between">' +
+          '<span class="text-gray-600">Original:</span>' +
+          '<span class="text-gray-900 line-through">$' + originalPrice.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="flex justify-between">' +
+          '<span class="text-gray-600">Recommended:</span>' +
+          '<span class="text-green-700 font-bold">$' + recommendedPrice.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="flex justify-between pt-2 border-t border-green-300">' +
+          '<span class="text-green-800 font-semibold">You Save:</span>' +
+          '<span class="text-green-800 font-bold">$' + savings.toFixed(2) + ' (' + savingsPct + '% OFF)</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  
+  content.innerHTML = 
+    productImageHTML +
+    '<h3 class="text-lg font-bold text-gray-900 mb-2">' + recommendedProduct.title + '</h3>' +
+    '<div class="flex items-center space-x-2 mb-4">' +
+      '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">' +
+        '📍 Aisle ' + aisle + ' - ' + recommendedProduct.subcat +
+      '</span>' +
+      '<span class="text-2xl font-bold text-blue-600">$' + (recommendedProduct.price ? recommendedProduct.price.toFixed(2) : '0.00') + '</span>' +
+    '</div>' +
+    comparisonHTML +
+    '<div class="bg-gray-50 rounded-lg p-4">' +
+      '<h3 class="text-sm font-bold text-gray-900 mb-3 flex items-center">' +
+        '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>' +
+        '</svg>' +
+        'Key Nutrition Information' +
+      '</h3>' +
+      '<div class="space-y-1">' +
+        nutritionHTML +
+      '</div>' +
+    '</div>';
+  
+  // Show modal
+  overlay.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  
+  // Prevent body scroll
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProductDetailsModal() {
+  const modal = document.getElementById('productDetailsModal');
+  const overlay = document.getElementById('productDetailsOverlay');
+  
+  overlay.classList.add('hidden');
+  modal.classList.add('hidden');
+  
+  // Restore body scroll
+  document.body.style.overflow = '';
 }
