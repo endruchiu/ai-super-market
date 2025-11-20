@@ -34,35 +34,40 @@ function getProductImage(product) {
   const subcat = (product.subcat || '').toLowerCase();
   
   // Map products to stock images based on keywords
-  if (title.includes('almond butter') || title.includes('peanut butter')) {
-    return '/attached_assets/stock_images/organic_almond_butte_a1614830.jpg';
+  // Note: More specific matches must come BEFORE broader matches
+  
+  // Specific beverage types first
+  if (title.includes('water') || title.includes('sparkling')) {
+    return '/static/images/bottled_water_sparkl_cea6f071.jpg';
   }
-  if (title.includes('wellness shot') || title.includes('juice') || subcat.includes('beverages')) {
-    return '/attached_assets/stock_images/wellness_shot_bottle_b29ff9a1.jpg';
+  if (title.includes('wellness shot') || title.includes('juice')) {
+    return '/static/images/wellness_shot_bottle_b29ff9a1.jpg';
+  }
+  
+  // Specific food types
+  if (title.includes('almond butter') || title.includes('peanut butter')) {
+    return '/static/images/organic_almond_butte_a1614830.jpg';
   }
   if (title.includes('cake') || title.includes('dessert') || subcat.includes('bakery')) {
-    return '/attached_assets/stock_images/gourmet_chocolate_ca_7490ea21.jpg';
+    return '/static/images/gourmet_chocolate_ca_7490ea21.jpg';
   }
   if (title.includes('brownie') || title.includes('cookie')) {
-    return '/attached_assets/stock_images/brownie_cookies_asso_e2b01edd.jpg';
+    return '/static/images/brownie_cookies_asso_e2b01edd.jpg';
   }
   if (title.includes('corn') || title.includes('chip') || title.includes('snack') || subcat.includes('snack')) {
-    return '/attached_assets/stock_images/toasted_corn_snacks__286789fe.jpg';
-  }
-  if (title.includes('vegetable') || title.includes('produce') || title.includes('organic')) {
-    return '/attached_assets/stock_images/fresh_organic_produc_bb814e70.jpg';
+    return '/static/images/toasted_corn_snacks__286789fe.jpg';
   }
   if (title.includes('coffee') || title.includes('espresso')) {
-    return '/attached_assets/stock_images/coffee_beans_gourmet_35500994.jpg';
+    return '/static/images/coffee_beans_gourmet_35500994.jpg';
   }
   if (title.includes('pasta') || title.includes('noodle') || subcat.includes('pantry')) {
-    return '/attached_assets/stock_images/pasta_noodles_dry_go_07624f1f.jpg';
+    return '/static/images/pasta_noodles_dry_go_07624f1f.jpg';
   }
   if (title.includes('milk') || title.includes('dairy')) {
-    return '/attached_assets/stock_images/fresh_milk_dairy_bot_706ccfc9.jpg';
+    return '/static/images/fresh_milk_dairy_bot_706ccfc9.jpg';
   }
-  if (title.includes('water') || title.includes('sparkling')) {
-    return '/attached_assets/stock_images/bottled_water_sparkl_cea6f071.jpg';
+  if (title.includes('vegetable') || title.includes('produce') || title.includes('organic')) {
+    return '/static/images/fresh_organic_produc_bb814e70.jpg';
   }
   
   // Default: return null (will use fallback SVG icon)
