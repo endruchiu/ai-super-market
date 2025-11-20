@@ -678,6 +678,27 @@ def api_blended_recommendations():
                                     discount_pct=discount_pct
                                 )
                                 
+                                # Extract nutrition data
+                                nutr = {}
+                                for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
+                                    if k in row and pd.notna(row[k]):
+                                        try:
+                                            nutr[k] = float(row[k])
+                                        except Exception:
+                                            pass
+                                
+                                replacement_product = {
+                                    "id": str(product_id),
+                                    "title": rec_title,
+                                    "subcat": rec_subcat,
+                                    "price": rec_price,
+                                    "qty": 1,
+                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                                }
+                                if nutr:
+                                    replacement_product["nutrition"] = nutr
+                                
                                 cheaper_alts.append({
                                     "replace": item_title,
                                     "with": rec_title,
@@ -685,15 +706,7 @@ def api_blended_recommendations():
                                     "similarity": "Good alternative",  # Human-friendly, no numbers
                                     "reason": reason,
                                     "intent_score": current_intent,  # Pass ISRec intent score to frontend
-                                    "replacement_product": {
-                                        "id": str(product_id),
-                                        "title": rec_title,
-                                        "subcat": rec_subcat,
-                                        "price": rec_price,
-                                        "qty": 1,
-                                        "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                        "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                    }
+                                    "replacement_product": replacement_product
                                 })
                                 if len(cheaper_alts) >= 2:
                                     break
