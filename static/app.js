@@ -27,6 +27,48 @@ function fmt(n) {
   return (Math.round(n * 100) / 100).toFixed(2); 
 }
 
+// ==================== PRODUCT IMAGE MAPPING ====================
+
+function getProductImage(product) {
+  const title = (product.title || '').toLowerCase();
+  const subcat = (product.subcat || '').toLowerCase();
+  
+  // Map products to stock images based on keywords
+  if (title.includes('almond butter') || title.includes('peanut butter')) {
+    return '/attached_assets/stock_images/organic_almond_butte_a1614830.jpg';
+  }
+  if (title.includes('wellness shot') || title.includes('juice') || subcat.includes('beverages')) {
+    return '/attached_assets/stock_images/wellness_shot_bottle_b29ff9a1.jpg';
+  }
+  if (title.includes('cake') || title.includes('dessert') || subcat.includes('bakery')) {
+    return '/attached_assets/stock_images/gourmet_chocolate_ca_7490ea21.jpg';
+  }
+  if (title.includes('brownie') || title.includes('cookie')) {
+    return '/attached_assets/stock_images/brownie_cookies_asso_e2b01edd.jpg';
+  }
+  if (title.includes('corn') || title.includes('chip') || title.includes('snack') || subcat.includes('snack')) {
+    return '/attached_assets/stock_images/toasted_corn_snacks__286789fe.jpg';
+  }
+  if (title.includes('vegetable') || title.includes('produce') || title.includes('organic')) {
+    return '/attached_assets/stock_images/fresh_organic_produc_bb814e70.jpg';
+  }
+  if (title.includes('coffee') || title.includes('espresso')) {
+    return '/attached_assets/stock_images/coffee_beans_gourmet_35500994.jpg';
+  }
+  if (title.includes('pasta') || title.includes('noodle') || subcat.includes('pantry')) {
+    return '/attached_assets/stock_images/pasta_noodles_dry_go_07624f1f.jpg';
+  }
+  if (title.includes('milk') || title.includes('dairy')) {
+    return '/attached_assets/stock_images/fresh_milk_dairy_bot_706ccfc9.jpg';
+  }
+  if (title.includes('water') || title.includes('sparkling')) {
+    return '/attached_assets/stock_images/bottled_water_sparkl_cea6f071.jpg';
+  }
+  
+  // Default: return null (will use fallback SVG icon)
+  return null;
+}
+
 // ==================== RECOMMENDATION TRACKING FUNCTIONS ====================
 
 // Generate unique recommendation ID
@@ -499,19 +541,30 @@ function updateCartDisplay() {
       
       const badge = x.isSubstitute ? '<span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-500 text-white">✓</span>' : '';
       
-      row.innerHTML = '<div class="text-sm font-semibold text-gray-900 mb-1">' + x.title.substring(0, 50) + (x.title.length > 50 ? '...' : '') + badge + '</div>' +
-        '<div class="flex items-center justify-between text-xs mb-2">' +
-          '<span class="text-gray-600">' + x.subcat + '</span>' +
-          '<span class="font-bold text-green-600">$' + fmt(x.price) + '</span>' +
-        '</div>' +
-        '<div class="flex items-center justify-between">' +
-          '<div class="flex items-center space-x-1">' +
-            '<button onclick="decQty(' + i + ')" class="bg-gray-400 hover:bg-gray-500 text-white font-bold w-6 h-6 rounded transition-colors text-xs">-</button>' +
-            '<span class="px-2 text-sm font-semibold">' + x.qty + '</span>' +
-            '<button onclick="incQty(' + i + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-6 h-6 rounded transition-colors text-xs">+</button>' +
+      // Get product image
+      const imgSrc = getProductImage(x);
+      const productImageHTML = imgSrc 
+        ? '<img src="' + imgSrc + '" alt="' + x.title + '" class="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0">'
+        : '<div class="w-12 h-12 bg-indigo-100 rounded-lg mr-3 flex-shrink-0 flex items-center justify-center"><svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
+      
+      row.innerHTML = '<div class="flex">' +
+        productImageHTML +
+        '<div class="flex-1">' +
+          '<div class="text-sm font-semibold text-gray-900 mb-1">' + x.title.substring(0, 50) + (x.title.length > 50 ? '...' : '') + badge + '</div>' +
+          '<div class="flex items-center justify-between text-xs mb-2">' +
+            '<span class="text-gray-600">' + x.subcat + '</span>' +
+            '<span class="font-bold text-green-600">$' + fmt(x.price) + '</span>' +
           '</div>' +
-          '<button onclick="removeItem(' + i + ')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Remove</button>' +
-        '</div>';
+          '<div class="flex items-center justify-between">' +
+            '<div class="flex items-center space-x-1">' +
+              '<button onclick="decQty(' + i + ')" class="bg-gray-400 hover:bg-gray-500 text-white font-bold w-6 h-6 rounded transition-colors text-xs">-</button>' +
+              '<span class="px-2 text-sm font-semibold">' + x.qty + '</span>' +
+              '<button onclick="incQty(' + i + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold w-6 h-6 rounded transition-colors text-xs">+</button>' +
+            '</div>' +
+            '<button onclick="removeItem(' + i + ')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Remove</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
       
       div.appendChild(row);
     });
@@ -1206,17 +1259,22 @@ async function getBlendedRecommendations() {
         const card = document.createElement('div');
         card.className = 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300';
         
+        // Get product image for recommendation
+        const recImgSrc = getProductImage(s.replacement_product);
+        const recImageHTML = recImgSrc 
+          ? '<img src="' + recImgSrc + '" alt="' + s.with + '" class="w-14 h-14 object-cover rounded-lg flex-shrink-0">'
+          : '<div class="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">' +
+              '<svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>' +
+              '</svg>' +
+            '</div>';
+        
         card.innerHTML = 
           // Product comparison block (more compact)
           '<div class="bg-white rounded-lg p-3 mb-3 shadow-sm">' +
             '<div class="flex items-center justify-between gap-2">' +
               '<div class="flex items-center space-x-2 flex-1 min-w-0">' +
-                // Smaller product image
-                '<div class="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">' +
-                  '<svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>' +
-                  '</svg>' +
-                '</div>' +
+                recImageHTML +
                 '<div class="flex-1 min-w-0">' +
                   '<p class="text-xs text-gray-500">Replace</p>' +
                   '<p class="text-xs text-gray-500 line-through truncate">' + s.replace.substring(0, 35) + (s.replace.length > 35 ? '...' : '') + '</p>' +
