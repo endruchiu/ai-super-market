@@ -46,16 +46,17 @@ Preferred communication style: Simple, everyday language.
 - **AI Recommendation UI**: Recommendations trigger when the cart exceeds budget. Features an aisle highlighting system with pulsing orange gradient for the most recent recommendation and green dots for other recommended aisles.
 
 ### AI & Recommendations
+- **Business Goal**: Amplify profit through cheaper alternatives while maintaining customer satisfaction via habit matching
 - **Hybrid AI System**: Combines 60% Collaborative Filtering (TensorFlow/Keras) and 40% semantic similarity (Sentence-transformers) for personalized and budget-saving recommendations.
 - **Data Pipeline**: Extracts unified event data from user interactions for CF model training.
 - **Cold Start Handling**: Graceful fallback to general recommendations for new users.
-- **Filtering**: Suggestions prioritize cheaper alternatives within the same subcategory.
+- **Category-Aligned Filtering**: Per-item recommendation system with hierarchical filtering (subcategory → department → all) ensures toilet paper gets toilet paper recommendations, not snack bars. Prioritizes same-category products with ISRec price matching; allows cross-category only when ISRec intent filtering passes.
 - **ISRec Intent Detection System**: Analyzes recent user actions to detect shopping intent (Value/Balance/Premium), influencing recommendations. Intent score ranges:
-  - **< 0.4**: Value mode (price-focused)
-  - **0.4 - 0.6**: Balance mode (mixed behavior)
-  - **> 0.6**: Premium mode (quality-focused)
+  - **< 0.4**: Value mode (price-focused, bottom 40% price percentile)
+  - **0.4 - 0.6**: Balance mode (mixed behavior, middle 20-80% price percentile)
+  - **> 0.6**: Premium mode (quality-focused, top 40% price percentile)
   - Uses EMA smoothing (30% current + 70% historical) for stable intent tracking
-- **LightGBM LambdaMART Re-Ranking**: A behavior-aware re-ranking model using 21 features (including intent, budget pressure, CF/semantic scores) to optimize recommendations.
+- **LightGBM LambdaMART Re-Ranking**: A behavior-aware re-ranking model using 21 features (including intent, budget pressure, CF/semantic scores, category_match) to optimize recommendations. The category_match feature (1=same category, 0=cross-category) trains the model to prefer habit-matching alternatives.
 - **Online Learning System**: Captures user interactions in real-time. Automatically retrains the LightGBM model in a background thread after every 5 purchases, with hot-reloading of new models.
 - **Synthetic Training Data Generator**: Creates tailored training data with distinct behavioral patterns for demonstration purposes, ensuring visible feature importance in the UI.
 - **Replenishment Recommendation System**: A comprehensive, budget-agnostic system predicting when users need to restock ALL products based on purchase patterns. Features:
