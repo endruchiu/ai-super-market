@@ -266,6 +266,12 @@ def init_models(db):
         original_calories = db.Column(db.Integer, nullable=True)
         recommended_calories = db.Column(db.Integer, nullable=True)
         
+        # ML Model scores (for ROC/CM evaluation)
+        ltr_score = db.Column(db.Numeric(10, 6), nullable=True)  # LightGBM re-ranker score
+        blended_score = db.Column(db.Numeric(10, 6), nullable=True)  # CF + semantic blended score
+        cf_score = db.Column(db.Numeric(10, 6), nullable=True)  # Collaborative filtering score
+        semantic_score = db.Column(db.Numeric(10, 6), nullable=True)  # Semantic similarity score
+        
         # Removal tracking (for BCR)
         removed_from_cart_at = db.Column(db.DateTime, nullable=True)
         was_removed = db.Column(db.Boolean, default=False)

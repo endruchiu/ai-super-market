@@ -661,7 +661,12 @@ def api_blended_recommendations():
                             "similarity": "Great match",  # Human-friendly, no numbers
                             "reason": reason,
                             "intent_score": current_intent,  # Pass ISRec intent score to frontend
-                            "replacement_product": replacement_product
+                            "replacement_product": replacement_product,
+                            # ML scores for tracking and evaluation
+                            "ltr_score": float(rec.get('ltr_score', 0)) if rec.get('ltr_score') else None,
+                            "blended_score": float(rec.get('blended_score', 0)),
+                            "cf_score": float(rec.get('cf_score', 0)),
+                            "semantic_score": float(rec.get('semantic_score', 0))
                         })
             
             # Add top 2 same-category alternatives for this item
@@ -1816,6 +1821,12 @@ def track_interaction():
             recommended_sugar=get_nutrition_value(recommended_product, "Sugar_g"),
             recommended_calories=get_nutrition_value(recommended_product, "Calories", is_int=True),
             
+            # ML Model scores for ROC/CM evaluation
+            ltr_score=float(data.get("ltr_score")) if data.get("ltr_score") is not None else None,
+            blended_score=float(data.get("blended_score")) if data.get("blended_score") is not None else None,
+            cf_score=float(data.get("cf_score")) if data.get("cf_score") is not None else None,
+            semantic_score=float(data.get("semantic_score")) if data.get("semantic_score") is not None else None,
+            
             # Removal tracking
             was_removed=data.get("was_removed", False),
             removed_from_cart_at=action_at if action_type == "cart_removal" else None
@@ -2280,6 +2291,71 @@ Ensure your response is valid JSON only, with no additional text."""
         return jsonify({
             "success": False,
             "error": f"Unexpected error: {str(e)}"
+        }), 500
+
+@app.route("/api/analytics/model-performance", methods=["GET"])
+def get_model_performance():
+    """
+    Get LightGBM re-ranker model performance metrics (ROC-AUC, Confusion Matrix).
+    
+    Query params:
+    - user_id (optional): Filter by specific session_id
+    - period (optional): "7d" | "30d" | "all" (default: "all")
+    
+    Returns:
+    - auc: ROC-AUC score (0-1 range)
+    - optimal_threshold: Threshold that maximizes Youden's J statistic
+    - confusion_matrix: {true_positive, true_negative, false_positive, false_negative}
+    - metrics: {accuracy, precision, recall, f1_score}
+    - roc_curve: [{fpr, tpr}, ...] points for visualization
+    - sample_count: Number of interactions evaluated
+    """
+    try:
+        from lgbm_evaluation import compute_model_performance, filter_interactions_by_period, filter_interactions_by_user
+        
+        user_session_id = request.args.get("user_id")
+        period = request.args.get("period", "all")
+        
+        # Get RecommendationInteraction model
+        _, _, _, User, _, _, _, _, _, RecommendationInteraction = init_db(db)
+        
+        # Fetch all interactions
+        query = db.session.query(RecommendationInteraction)
+        
+        # Filter by user if specified
+        if user_session_id:
+            # Find user by session_id (stored as email in User model for demo)
+            user = db.session.query(User).filter_by(email=user_session_id).first()
+            if user:
+                query = query.filter_by(user_id=user.id)
+        
+        interactions = query.all()
+        
+        # Filter by time period
+        interactions = filter_interactions_by_period(interactions, period)
+        
+        # Compute performance metrics
+        result = compute_model_performance(interactions, use_ltr_score=True)
+        
+        if result.get('error'):
+            return jsonify({
+                "success": False,
+                "error": result['error'],
+                "sample_count": result.get('sample_count', 0)
+            }), 400
+        
+        return jsonify({
+            "success": True,
+            **result
+        })
+        
+    except Exception as e:
+        print(f"Model performance evaluation error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Evaluation error: {str(e)}"
         }), 500
 
 @app.route("/static/<path:filename>")
