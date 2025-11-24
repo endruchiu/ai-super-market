@@ -2311,7 +2311,13 @@ def get_model_performance():
     - sample_count: Number of interactions evaluated
     """
     try:
-        from lgbm_evaluation import compute_model_performance, filter_interactions_by_period, filter_interactions_by_user
+        from lgbm_evaluation import (
+            compute_model_performance, 
+            filter_interactions_by_period, 
+            filter_interactions_by_user,
+            temporal_train_test_split,
+            compute_calibration_curve
+        )
         
         user_session_id = request.args.get("user_id")
         period = request.args.get("period", "all")
@@ -2331,31 +2337,71 @@ def get_model_performance():
         # Filter by time period
         interactions = filter_interactions_by_period(interactions, period)
         
-        # Compute performance metrics
-        result = compute_model_performance(interactions, use_ltr_score=True)
+        # Split into train/test using temporal validation (80/20 split)
+        train_interactions, test_interactions = temporal_train_test_split(interactions, test_size=0.2, min_train_size=50)
         
-        if result.get('error'):
+        # Compute metrics on training set
+        train_result = compute_model_performance(train_interactions, use_ltr_score=True)
+        
+        if train_result.get('error'):
             # Log class distribution for debugging
-            pos_count = result.get('positive_count', 0)
-            neg_count = result.get('negative_count', 0)
-            print(f"ML evaluation failed: {result['error']} (positives={pos_count}, negatives={neg_count})")
+            pos_count = train_result.get('positive_count', 0)
+            neg_count = train_result.get('negative_count', 0)
+            print(f"ML evaluation failed: {train_result['error']} (positives={pos_count}, negatives={neg_count})")
             
             # Return 200 (not 400) so frontend can display graceful error message
             return jsonify({
                 "success": False,
-                "error": result['error'],
-                "sample_count": result.get('sample_count', 0),
+                "error": train_result['error'],
+                "sample_count": train_result.get('sample_count', 0),
                 "positive_count": pos_count,
                 "negative_count": neg_count
             }), 200
         
-        # Log successful evaluation
-        print(f"ML evaluation successful: AUC={result.get('auc', 0):.3f}, samples={result.get('sample_count', 0)} (positives={result.get('positive_count', 0)}, negatives={result.get('negative_count', 0)})")
+        # Compute metrics on test set (if we have enough test data)
+        test_result = None
+        if len(test_interactions) >= 10:
+            test_result = compute_model_performance(test_interactions, use_ltr_score=True)
+            if not test_result.get('error'):
+                print(f"Test set AUC: {test_result.get('auc', 0):.3f}, samples={test_result.get('sample_count', 0)}")
         
-        return jsonify({
+        # Compute calibration curve on test set (or all data if no test set)
+        calibration_data = compute_calibration_curve(
+            test_interactions if test_result and not test_result.get('error') else interactions,
+            use_ltr_score=True,
+            n_bins=10
+        )
+        
+        # Log successful evaluation
+        train_auc = train_result.get('auc', 0)
+        test_auc = test_result.get('auc', 0) if test_result and not test_result.get('error') else None
+        test_auc_str = f"{test_auc:.3f}" if test_auc is not None else "N/A"
+        test_samples = test_result.get('sample_count', 0) if test_result and not test_result.get('error') else 0
+        print(f"ML evaluation successful - Train AUC: {train_auc:.3f}, Test AUC: {test_auc_str}, train_samples={train_result.get('sample_count', 0)}, test_samples={test_samples}")
+        
+        # Check for overfitting (test AUC significantly lower than train AUC)
+        overfitting_detected = False
+        if test_auc is not None and train_auc - test_auc > 0.10:
+            overfitting_detected = True
+            print(f"⚠️  Overfitting detected: Train AUC ({train_auc:.3f}) significantly higher than Test AUC ({test_auc:.3f})")
+        
+        response = {
             "success": True,
-            **result
-        })
+            "train_metrics": train_result,
+            "test_metrics": test_result if test_result and not test_result.get('error') else None,
+            "calibration": calibration_data if not calibration_data.get('error') else None,
+            "overfitting_detected": overfitting_detected,
+            "split_info": {
+                "train_size": len(train_interactions),
+                "test_size": len(test_interactions),
+                "total_size": len(interactions)
+            }
+        }
+        
+        # Add backward compatibility for frontends expecting flat structure
+        response.update(train_result)
+        
+        return jsonify(response)
         
     except Exception as e:
         print(f"Model performance evaluation error: {e}")

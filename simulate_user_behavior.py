@@ -281,19 +281,42 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
             f"Similar product with better value",
         ]
         
-        # Generate synthetic ML scores (higher for accepts, lower for dismisses)
-        if will_accept:
-            # Accepted recommendations get higher scores
-            cf_score = random.uniform(0.6, 0.95)
-            semantic_score = random.uniform(0.5, 0.9)
+        # Generate synthetic ML scores with realistic behavioral noise
+        # Real users don't perfectly follow ML predictions - add overlap and exceptions
+        
+        # 15% chance of behavioral mismatch (user acts contrary to model prediction)
+        behavioral_noise = random.random() < 0.15
+        
+        if will_accept and not behavioral_noise:
+            # Typical accept: higher scores (but with variance)
+            cf_score = random.gauss(0.75, 0.12)  # mean=0.75, std=0.12
+            semantic_score = random.gauss(0.70, 0.15)
             blended_score = 0.6 * cf_score + 0.4 * semantic_score
-            ltr_score = random.uniform(0.65, 0.98)
+            ltr_score = random.gauss(0.80, 0.10)
+        elif will_accept and behavioral_noise:
+            # Exception: User accepts despite mediocre scores (impulse buy, price-driven, etc.)
+            cf_score = random.uniform(0.3, 0.65)  # Lower than typical accept
+            semantic_score = random.uniform(0.25, 0.60)
+            blended_score = 0.6 * cf_score + 0.4 * semantic_score
+            ltr_score = random.uniform(0.35, 0.65)
+        elif not will_accept and not behavioral_noise:
+            # Typical dismiss: lower scores
+            cf_score = random.gauss(0.35, 0.12)  # mean=0.35, std=0.12
+            semantic_score = random.gauss(0.30, 0.15)
+            blended_score = 0.6 * cf_score + 0.4 * semantic_score
+            ltr_score = random.gauss(0.30, 0.12)
         else:
-            # Dismissed recommendations get lower scores
-            cf_score = random.uniform(0.1, 0.6)
-            semantic_score = random.uniform(0.1, 0.55)
+            # Exception: User dismisses despite high scores (bad timing, changed mind, etc.)
+            cf_score = random.uniform(0.55, 0.85)  # Higher than typical dismiss
+            semantic_score = random.uniform(0.50, 0.80)
             blended_score = 0.6 * cf_score + 0.4 * semantic_score
-            ltr_score = random.uniform(0.05, 0.55)
+            ltr_score = random.uniform(0.55, 0.85)
+        
+        # Clip scores to valid range [0, 1]
+        cf_score = max(0.0, min(1.0, cf_score))
+        semantic_score = max(0.0, min(1.0, semantic_score))
+        blended_score = max(0.0, min(1.0, blended_score))
+        ltr_score = max(0.0, min(1.0, ltr_score))
         
         # Create base data for both shown and action events
         base_data = {

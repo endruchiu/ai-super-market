@@ -1,10 +1,13 @@
 """
 LightGBM Re-ranker Model Evaluation Service
 Computes ROC-AUC curve and confusion matrix for recommendation system performance
+Includes train/test split and calibration diagnostics to detect overfitting
 """
 
 import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
+from sklearn.calibration import calibration_curve
+from sklearn.model_selection import train_test_split
 from datetime import datetime, timedelta
 
 
@@ -174,3 +177,91 @@ def filter_interactions_by_user(interactions, user_id=None):
         return interactions
     
     return [i for i in interactions if i.user_id == int(user_id)]
+
+
+def temporal_train_test_split(interactions, test_size=0.2, min_train_size=50):
+    """
+    Split interactions into train/test sets using temporal ordering.
+    Train set contains earlier interactions, test set contains later interactions.
+    This simulates real-world deployment where you train on past data and test on future data.
+    
+    Args:
+        interactions: List of RecommendationInteraction objects
+        test_size: Fraction of data to use for testing (default 0.2 = 20%)
+        min_train_size: Minimum number of samples needed in train set
+        
+    Returns:
+        tuple: (train_interactions, test_interactions)
+    """
+    if len(interactions) < min_train_size:
+        return interactions, []
+    
+    # Sort by timestamp
+    sorted_interactions = sorted(interactions, key=lambda x: x.shown_at)
+    
+    # Calculate split point
+    split_idx = int(len(sorted_interactions) * (1 - test_size))
+    
+    train_set = sorted_interactions[:split_idx]
+    test_set = sorted_interactions[split_idx:]
+    
+    return train_set, test_set
+
+
+def compute_calibration_curve(interactions, use_ltr_score=True, n_bins=10):
+    """
+    Compute calibration curve to detect if predicted probabilities match actual outcomes.
+    Perfect calibration means predicted probability = actual frequency of positive class.
+    
+    Args:
+        interactions: List of RecommendationInteraction objects
+        use_ltr_score: If True, use ltr_score; else use blended_score
+        n_bins: Number of bins for calibration curve
+        
+    Returns:
+        dict with calibration data and expected calibration error (ECE)
+    """
+    y_true = []
+    y_score = []
+    
+    for interaction in interactions:
+        if interaction.action_type == 'accept_swap':
+            y_true.append(1)
+        elif interaction.action_type == 'dismiss':
+            y_true.append(0)
+        else:
+            continue
+        
+        if use_ltr_score and interaction.ltr_score is not None:
+            y_score.append(float(interaction.ltr_score))
+        elif interaction.blended_score is not None:
+            y_score.append(float(interaction.blended_score))
+        else:
+            y_true.pop()
+            continue
+    
+    if len(y_true) < 10:
+        return {'error': 'Not enough data for calibration curve'}
+    
+    y_true = np.array(y_true)
+    y_score = np.array(y_score)
+    
+    # Compute calibration curve
+    prob_true, prob_pred = calibration_curve(y_true, y_score, n_bins=n_bins, strategy='uniform')
+    
+    # Compute Expected Calibration Error (ECE)
+    # ECE = weighted average of absolute difference between predicted and actual probabilities
+    bin_counts = np.histogram(y_score, bins=n_bins, range=(0, 1))[0]
+    bin_weights = bin_counts / len(y_score)
+    ece = np.sum(bin_weights[:len(prob_true)] * np.abs(prob_true - prob_pred))
+    
+    calibration_points = [
+        {'predicted_prob': float(prob_pred[i]), 'actual_prob': float(prob_true[i])}
+        for i in range(len(prob_true))
+    ]
+    
+    return {
+        'calibration_curve': calibration_points,
+        'expected_calibration_error': float(ece),
+        'interpretation': 'Perfect calibration' if ece < 0.05 else 'Miscalibrated' if ece > 0.15 else 'Moderately calibrated'
+    }
