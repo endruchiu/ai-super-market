@@ -240,7 +240,7 @@ class LGBMReRanker:
         features['category_match'] = candidate.get('category_match', 0)
         features['popularity'] = candidate.get('popularity', 0.5)
         features['recency'] = candidate.get('recency', 0.5)
-        features['diet_match_flag'] = candidate.get('diet_match', 0)
+        features['diet_match_flag'] = candidate.get('diet_match_flag', 0)
         features['quality_tags_score'] = candidate.get('quality_tags_score', 0.5)
         features['same_semantic_id_flag'] = candidate.get('same_semantic_cluster', 0)
         features['distance_to_semantic_center'] = candidate.get('semantic_distance', 0.5)

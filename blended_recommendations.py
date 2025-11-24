@@ -183,7 +183,7 @@ def get_blended_recommendations(
             "recency": 0.5,
             # Match lgbm_reranker expected keys
             "semantic_sim": semantic_score,  # Key for LightGBM
-            "diet_match": diet_match_flag,  # Key for LightGBM
+            "diet_match_flag": diet_match_flag,  # Key for LightGBM
             "quality_tags_score": quality_tags_score,
             "same_semantic_cluster": 0,  # Key for LightGBM
             "semantic_distance": semantic_score,  # Key for LightGBM
@@ -245,11 +245,14 @@ def get_blended_recommendations(
             if keep:
                 filtered_recs.append(rec)
         
-        # Update blended_recs with filtered results
-        blended_recs = filtered_recs
-        
-        # Log filtering results
-        print(f"🎯 ISRec Price Filtering: {guardrail_mode} mode → Kept {len(blended_recs)} products")
+        # Update blended_recs with filtered results, but fallback if filtering removes everything
+        if len(filtered_recs) > 0:
+            blended_recs = filtered_recs
+            print(f"🎯 ISRec Price Filtering: {guardrail_mode} mode → Kept {len(blended_recs)} products")
+        else:
+            # Fallback: Skip filtering to avoid empty results
+            print(f"⚠ ISRec Price Filtering: {guardrail_mode} mode would remove all candidates → Bypassing filter")
+            # Keep original blended_recs unchanged
     
     # Apply LightGBM re-ranking if available and enabled
     if use_lgbm and LGBM_AVAILABLE and session_context is not None:
