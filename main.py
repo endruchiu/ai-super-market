@@ -567,90 +567,102 @@ def api_blended_recommendations():
         # DEBUG: Log intent detection for recommendations
         print(f"🎯 ISRec Intent: {current_intent:.2f} → Guardrail Mode: {guardrail_mode} ({mode_label})")
         
-        # Build session context for LightGBM re-ranking
-        session_context = {
-            'session_id': user_id,
-            'cart': cart,
-            'cart_value': total,
-            'cart_size': len(cart),
-            'budget': budget,
-            'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0,
-            'current_intent': current_intent  # Intent score [0=value, 1=premium]
-        }
+        # Generate category-aligned recommendations for each cart item
+        # Per-item approach ensures toilet paper gets toilet paper recommendations, not snack bars
+        suggestions = []
         
-        recs = get_blended_recommendations(
-            user_id, 
-            top_k=100,
-            cf_weight=0.6,      # ← Change this (Collaborative Filtering weight)
-            semantic_weight=0.4, # ← Change this (Semantic similarity weight)
-            session_context=session_context,
-            use_lgbm=True,
-            guardrail_mode=guardrail_mode  # ← Use ISRec intent to filter products!
-        )
-        
-        # Only generate suggestions if user has purchase history
-        if len(recs) > 0:
-            for item in cart:
-                item_title = item.get("title", "")
-                item_subcat = item.get("subcat", "")
-                item_price = float(item.get("price", 0.0))
-                item_qty = int(item.get("qty", 1))
-                
-                cheaper_alts = []
-                for rec in recs:
-                    product_id = int(rec["product_id"])
-                    if product_id in PRODUCTS_DF.index:
-                        row = PRODUCTS_DF.loc[product_id]
-                        rec_price = float(row.get("_price_final", 0))
-                        rec_subcat = str(row.get("Sub Category", ""))
-                        rec_title = str(row["Title"])
+        for item in cart:
+            item_title = item.get("title", "")
+            item_subcat = item.get("subcat", "")
+            item_price = float(item.get("price", 0.0))
+            item_qty = int(item.get("qty", 1))
+            
+            # Build session context with original_item for category-aligned filtering
+            session_context = {
+                'session_id': user_id,
+                'cart': cart,
+                'cart_value': total,
+                'cart_size': len(cart),
+                'budget': budget,
+                'budget_pressure': max(0, (total - budget) / budget) if budget > 0 else 0,
+                'current_intent': current_intent,
+                'original_item': {
+                    'title': item_title,
+                    'subcat': item_subcat,
+                    'price': item_price,
+                    'id': item.get("id", "")
+                }
+            }
+            
+            # Get category-aligned recommendations for this specific item
+            recs = get_blended_recommendations(
+                user_id, 
+                top_k=30,  # Reduced since we're calling per-item
+                cf_weight=0.6,
+                semantic_weight=0.4,
+                session_context=session_context,
+                use_lgbm=True,
+                guardrail_mode=guardrail_mode
+            )
+            
+            if len(recs) == 0:
+                continue  # No recommendations for this item, skip
+            
+            cheaper_alts = []
+            for rec in recs:
+                product_id = int(rec["product_id"])
+                if product_id in PRODUCTS_DF.index:
+                    row = PRODUCTS_DF.loc[product_id]
+                    rec_price = float(row.get("_price_final", 0))
+                    rec_subcat = str(row.get("Sub Category", ""))
+                    rec_title = str(row["Title"])
+                    
+                    # Cheaper AND same subcategory AND not the same product
+                    if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
+                        saving = (item_price - rec_price) * item_qty
+                        discount_pct = int((1 - rec_price / item_price) * 100)
                         
-                        # Cheaper AND same subcategory AND not the same product
-                        if rec_price < item_price and rec_subcat == item_subcat and rec_title != item_title:
-                            saving = (item_price - rec_price) * item_qty
-                            discount_pct = int((1 - rec_price / item_price) * 100)
-                            
-                            # Use LLM to generate natural, conversational message
-                            # This connects ISRec intent with the recommendation
-                            score = float(rec.get('blended_score', 0))
-                            reason = generate_llm_recommendation_message(
-                                intent_score=current_intent,
-                                product_name=rec_title,
-                                original_product=item_title,
-                                savings=saving,
-                                discount_pct=discount_pct
-                            )
-                            
-                            # Extract nutrition data
-                            nutr = {}
-                            for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
-                                if k in row and pd.notna(row[k]):
-                                    try:
-                                        nutr[k] = float(row[k])
-                                    except Exception:
-                                        pass
-                            
-                            replacement_product = {
-                                "id": str(product_id),
-                                "title": rec_title,
-                                "subcat": rec_subcat,
-                                "price": rec_price,
-                                "qty": 1,
-                                "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                            }
-                            if nutr:
-                                replacement_product["nutrition"] = nutr
-                            
-                            cheaper_alts.append({
-                                "replace": item_title,
-                                "with": rec_title,
-                                "expected_saving": f"{saving:.2f}",
-                                "similarity": "Great match",  # Human-friendly, no numbers
-                                "reason": reason,
-                                "intent_score": current_intent,  # Pass ISRec intent score to frontend
-                                "replacement_product": replacement_product
-                            })
+                        # Use LLM to generate natural, conversational message
+                        # This connects ISRec intent with the recommendation
+                        score = float(rec.get('blended_score', 0))
+                        reason = generate_llm_recommendation_message(
+                            intent_score=current_intent,
+                            product_name=rec_title,
+                            original_product=item_title,
+                            savings=saving,
+                            discount_pct=discount_pct
+                        )
+                        
+                        # Extract nutrition data
+                        nutr = {}
+                        for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
+                            if k in row and pd.notna(row[k]):
+                                try:
+                                    nutr[k] = float(row[k])
+                                except Exception:
+                                    pass
+                        
+                        replacement_product = {
+                            "id": str(product_id),
+                            "title": rec_title,
+                            "subcat": rec_subcat,
+                            "price": rec_price,
+                            "qty": 1,
+                            "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
+                            "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
+                        }
+                        if nutr:
+                            replacement_product["nutrition"] = nutr
+                        
+                        cheaper_alts.append({
+                            "replace": item_title,
+                            "with": rec_title,
+                            "expected_saving": f"{saving:.2f}",
+                            "similarity": "Great match",  # Human-friendly, no numbers
+                            "reason": reason,
+                            "intent_score": current_intent,  # Pass ISRec intent score to frontend
+                            "replacement_product": replacement_product
+                        })
                 
                 # If no same-subcategory alternatives found, allow any cheaper alternative
                 if not cheaper_alts:

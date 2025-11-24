@@ -84,6 +84,54 @@ def get_blended_recommendations(
     if len(cf_recs) == 0:
         return []
     
+    # ===================================================================
+    # Category-Aligned Filtering (Architect Guidance)
+    # ===================================================================
+    # Filter CF candidates to match the TARGET ITEM'S category to prevent
+    # nonsensical recommendations (e.g., toilet paper → snack bar)
+    # Implements hierarchical fallback: subcategory → department → all
+    
+    from main import PRODUCTS_DF
+    import pandas as pd
+    
+    # Extract target item's category from session context (per-item filtering)
+    target_subcat = None
+    target_dept = None
+    if session_context and 'original_item' in session_context:
+        original_item = session_context['original_item']
+        target_subcat = original_item.get('subcat', '')
+        # Department not currently available in cart items, but prepare for future
+        target_dept = original_item.get('department', '')
+    
+    # If we have target category info, filter CF candidates to same category
+    if target_subcat:
+        filtered_cf_recs = []
+        for cf_rec in cf_recs:
+            product_id = int(cf_rec["product_id"])
+            if product_id in PRODUCTS_DF.index:
+                product_subcat = str(PRODUCTS_DF.loc[product_id].get("Sub Category", ""))
+                # Keep if same subcategory as target item
+                if product_subcat == target_subcat:
+                    filtered_cf_recs.append(cf_rec)
+        
+        # Fallback 1: If subcategory filtering removes everything, try department-level
+        if len(filtered_cf_recs) == 0 and target_dept:
+            print(f"⚠ Category Filter: Subcategory '{target_subcat}' filtering removed all candidates, trying department-level...")
+            for cf_rec in cf_recs:
+                product_id = int(cf_rec["product_id"])
+                if product_id in PRODUCTS_DF.index:
+                    product_dept = str(PRODUCTS_DF.loc[product_id].get("Department", ""))
+                    if product_dept == target_dept:
+                        filtered_cf_recs.append(cf_rec)
+        
+        # Fallback 2: If both filters fail, keep original pool with warning
+        if len(filtered_cf_recs) > 0:
+            cf_recs = filtered_cf_recs
+            print(f"✓ Category Filter: Kept {len(cf_recs)} products matching target category '{target_subcat}'")
+        else:
+            print(f"⚠ Category Filter: No products in category '{target_subcat}' → Bypassing filter to ensure non-empty results")
+            # Keep original cf_recs unchanged
+    
     # Build user profile from purchase history (average embedding of purchased items)
     user_profile_emb = None
     purchase_embeddings = []
