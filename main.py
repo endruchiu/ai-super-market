@@ -1900,7 +1900,7 @@ def get_analytics_metrics():
         
         # Calculate counts for each action type
         shown_count = sum(1 for i in all_interactions if i.action_type == "shown")
-        accept_count = sum(1 for i in all_interactions if i.action_type == "accept")
+        accept_count = sum(1 for i in all_interactions if i.action_type == "accept_swap")
         dismiss_count = sum(1 for i in all_interactions if i.action_type == "dismiss")
         removal_count = sum(1 for i in all_interactions if i.action_type == "cart_removal")
         
@@ -1913,8 +1913,8 @@ def get_analytics_metrics():
         # Note: ACR is the same as RAR in this context
         acr = (accept_count / shown_count * 100) if shown_count > 0 else 0.0
         
-        # 3. Time-to-Accept = Average time_to_action_seconds for "accept" actions
-        accept_interactions = [i for i in all_interactions if i.action_type == "accept" and i.time_to_action_seconds is not None]
+        # 3. Time-to-Accept = Average time_to_action_seconds for "accept_swap" actions
+        accept_interactions = [i for i in all_interactions if i.action_type == "accept_swap" and i.time_to_action_seconds is not None]
         time_to_accept = sum(i.time_to_action_seconds for i in accept_interactions) / len(accept_interactions) if accept_interactions else 0.0
         
         # 4. Average Scroll Depth = Mean scroll_depth_percent across all interactions
@@ -1947,7 +1947,7 @@ def get_analytics_metrics():
         # Get all "accept" interactions with product attributes, sorted by timestamp
         accept_with_attrs = [
             i for i in all_interactions 
-            if i.action_type == "accept" 
+            if i.action_type == "accept_swap" 
             and i.recommended_protein is not None 
             and i.recommended_sugar is not None
             and i.recommended_calories is not None
@@ -2027,10 +2027,10 @@ def get_analytics_metrics():
         
         # Calculate acceptance rates for each group
         with_expl_shown = sum(1 for i in with_explanation if i.action_type == "shown")
-        with_expl_accept = sum(1 for i in with_explanation if i.action_type == "accept")
+        with_expl_accept = sum(1 for i in with_explanation if i.action_type == "accept_swap")
         
         without_expl_shown = sum(1 for i in without_explanation if i.action_type == "shown")
-        without_expl_accept = sum(1 for i in without_explanation if i.action_type == "accept")
+        without_expl_accept = sum(1 for i in without_explanation if i.action_type == "accept_swap")
         
         acceptance_with = (with_expl_accept / with_expl_shown * 100) if with_expl_shown > 0 else 0.0
         acceptance_without = (without_expl_accept / without_expl_shown * 100) if without_expl_shown > 0 else 0.0
@@ -2315,9 +2315,6 @@ def get_model_performance():
         
         user_session_id = request.args.get("user_id")
         period = request.args.get("period", "all")
-        
-        # Get RecommendationInteraction model
-        _, _, _, User, _, _, _, _, _, RecommendationInteraction = init_db(db)
         
         # Fetch all interactions
         query = db.session.query(RecommendationInteraction)

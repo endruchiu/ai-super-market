@@ -75,6 +75,10 @@ class RecommendationInteraction(Base):
     recommended_sugar = Column(Numeric(5, 1), nullable=True)
     original_calories = Column(Integer, nullable=True)
     recommended_calories = Column(Integer, nullable=True)
+    ltr_score = Column(Numeric(10, 6), nullable=True)
+    blended_score = Column(Numeric(10, 6), nullable=True)
+    cf_score = Column(Numeric(10, 6), nullable=True)
+    semantic_score = Column(Numeric(10, 6), nullable=True)
     removed_from_cart_at = Column(DateTime, nullable=True)
     was_removed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.current_timestamp())
@@ -277,6 +281,20 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
             f"Similar product with better value",
         ]
         
+        # Generate synthetic ML scores (higher for accepts, lower for dismisses)
+        if will_accept:
+            # Accepted recommendations get higher scores
+            cf_score = random.uniform(0.6, 0.95)
+            semantic_score = random.uniform(0.5, 0.9)
+            blended_score = 0.6 * cf_score + 0.4 * semantic_score
+            ltr_score = random.uniform(0.65, 0.98)
+        else:
+            # Dismissed recommendations get lower scores
+            cf_score = random.uniform(0.1, 0.6)
+            semantic_score = random.uniform(0.1, 0.55)
+            blended_score = 0.6 * cf_score + 0.4 * semantic_score
+            ltr_score = random.uniform(0.05, 0.55)
+        
         # Create base data for both shown and action events
         base_data = {
             'user_id': user_id,
@@ -298,6 +316,10 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
             'recommended_sugar': Decimal(str(recommended['sugar'])),
             'original_calories': original['calories'],
             'recommended_calories': recommended['calories'],
+            'ltr_score': ltr_score,
+            'blended_score': blended_score,
+            'cf_score': cf_score,
+            'semantic_score': semantic_score,
         }
         
         # 1. Create SHOWN event (exposure tracking)
@@ -311,10 +333,10 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
         )
         interactions.append(shown_event)
         
-        # 2. Create ACTION event (accept or dismiss)
-        action_type = 'accept' if will_accept else 'dismiss'
+        # 2. Create ACTION event (accept_swap or dismiss)
+        action_type = 'accept_swap' if will_accept else 'dismiss'
         
-        if action_type == 'accept':
+        if action_type == 'accept_swap':
             time_to_action = int(random.gauss(metrics['avg_time_to_accept'], 3))
             time_to_action = max(1, time_to_action)
         else:
@@ -382,7 +404,7 @@ def main():
         
         total = db_session.query(func.count(RecommendationInteraction.id)).scalar()
         accepts = db_session.query(func.count(RecommendationInteraction.id)).filter(
-            RecommendationInteraction.action_type == 'accept'
+            RecommendationInteraction.action_type == 'accept_swap'
         ).scalar()
         dismisses = db_session.query(func.count(RecommendationInteraction.id)).filter(
             RecommendationInteraction.action_type == 'dismiss'
