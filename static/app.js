@@ -123,7 +123,12 @@ function trackRecommendationShown(recommendationData) {
       },
       expectedSaving: recommendationData.expectedSaving,
       reason: recommendationData.reason,
-      system: recommendationData.system || 'hybrid'
+      system: recommendationData.system || 'hybrid',
+      // ML model scores for evaluation
+      ltr_score: recommendationData.ltr_score ?? null,
+      blended_score: recommendationData.blended_score ?? null,
+      cf_score: recommendationData.cf_score ?? null,
+      semantic_score: recommendationData.semantic_score ?? null
     };
     
     // Send to backend
@@ -169,7 +174,12 @@ function trackRecommendationAction(actionType, originalProduct, recommendedProdu
       time_to_action_ms: timeToAction,
       time_to_action_seconds: Math.round(timeToAction / 1000),
       scroll_depth: MAX_SCROLL_DEPTH,
-      system: recommendation.system
+      system: recommendation.system,
+      // ML model scores for evaluation
+      ltr_score: recommendation.ltr_score,
+      blended_score: recommendation.blended_score,
+      cf_score: recommendation.cf_score,
+      semantic_score: recommendation.semantic_score
     };
     
     // If accepted, track the item as AI-recommended
