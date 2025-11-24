@@ -2338,11 +2338,22 @@ def get_model_performance():
         result = compute_model_performance(interactions, use_ltr_score=True)
         
         if result.get('error'):
+            # Log class distribution for debugging
+            pos_count = result.get('positive_count', 0)
+            neg_count = result.get('negative_count', 0)
+            print(f"ML evaluation failed: {result['error']} (positives={pos_count}, negatives={neg_count})")
+            
+            # Return 200 (not 400) so frontend can display graceful error message
             return jsonify({
                 "success": False,
                 "error": result['error'],
-                "sample_count": result.get('sample_count', 0)
-            }), 400
+                "sample_count": result.get('sample_count', 0),
+                "positive_count": pos_count,
+                "negative_count": neg_count
+            }), 200
+        
+        # Log successful evaluation
+        print(f"ML evaluation successful: AUC={result.get('auc', 0):.3f}, samples={result.get('sample_count', 0)} (positives={result.get('positive_count', 0)}, negatives={result.get('negative_count', 0)})")
         
         return jsonify({
             "success": True,

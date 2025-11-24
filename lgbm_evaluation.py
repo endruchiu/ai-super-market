@@ -64,6 +64,21 @@ def compute_model_performance(interactions, use_ltr_score=True):
     y_true = np.array(y_true)
     y_score = np.array(y_score)
     
+    # Check for class diversity (need both positive and negative samples)
+    positive_count = int(np.sum(y_true))
+    negative_count = int(len(y_true) - positive_count)
+    
+    if positive_count == 0 or negative_count == 0:
+        return {
+            'error': f'Not enough class diversity for ROC-AUC evaluation. Need both accepts and dismisses. Found {positive_count} accepts, {negative_count} dismisses.',
+            'sample_count': len(y_true),
+            'positive_count': positive_count,
+            'negative_count': negative_count,
+            'auc': None,
+            'confusion_matrix': None,
+            'roc_curve': None
+        }
+    
     # Compute ROC curve
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
     
