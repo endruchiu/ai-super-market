@@ -60,6 +60,10 @@ localPort = 34901
 externalPort = 3000
 
 [[ports]]
+localPort = 37675
+externalPort = 5173
+
+[[ports]]
 localPort = 43509
 externalPort = 3002
 
@@ -70,3 +74,8 @@ externalPort = 3001
 [[ports]]
 localPort = 43913
 externalPort = 3003
+
+[userenv]
+
+[userenv.shared]
+LD_LIBRARY_PATH = "/nix/store/bmi5znnqk4kg2grkrhk6py0irc8phf6l-gcc-14.2.1.20250322-lib/lib"

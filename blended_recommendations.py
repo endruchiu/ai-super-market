@@ -190,6 +190,67 @@ def get_blended_recommendations(
             "size_ratio": 1.0
         })
     
+    # ===================================================================
+    # ISRec Intent-Based Price Percentile Filtering
+    # ===================================================================
+    # Filter recommendations based on ISRec intent to match user's price sensitivity
+    # - Value mode (economy): Recommend bottom 40% price percentile products
+    # - Balance mode (balanced): Recommend middle 20-80% price percentile products  
+    # - Premium mode (quality): Recommend top 40% price percentile products
+    
+    if guardrail_mode in ['quality', 'economy', 'balanced']:
+        # Calculate price percentiles for each subcategory
+        category_price_percentiles = {}
+        
+        for rec in blended_recs:
+            category = rec.get('category', '')
+            if category not in category_price_percentiles:
+                # Get all products in this category
+                category_products = PRODUCTS_DF[PRODUCTS_DF['Sub Category'] == category]
+                prices = category_products['_price_final'].dropna().values
+                
+                if len(prices) > 0:
+                    # Store percentiles for this category
+                    category_price_percentiles[category] = {
+                        'p20': np.percentile(prices, 20),
+                        'p40': np.percentile(prices, 40),
+                        'p60': np.percentile(prices, 60),
+                        'p80': np.percentile(prices, 80)
+                    }
+        
+        # Filter products based on guardrail mode
+        filtered_recs = []
+        for rec in blended_recs:
+            price = rec.get('price', 0)
+            category = rec.get('category', '')
+            
+            # Skip if no category or no percentile data
+            if not category or category not in category_price_percentiles:
+                filtered_recs.append(rec)  # Keep if we can't classify
+                continue
+            
+            percentiles = category_price_percentiles[category]
+            keep = False
+            
+            if guardrail_mode == 'economy':
+                # Value mode: Keep products in bottom 40% price percentile
+                keep = price <= percentiles['p40']
+            elif guardrail_mode == 'quality':
+                # Premium mode: Keep products in top 40% price percentile  
+                keep = price >= percentiles['p60']
+            elif guardrail_mode == 'balanced':
+                # Balance mode: Keep products in middle 20-80% price percentile
+                keep = percentiles['p20'] <= price <= percentiles['p80']
+            
+            if keep:
+                filtered_recs.append(rec)
+        
+        # Update blended_recs with filtered results
+        blended_recs = filtered_recs
+        
+        # Log filtering results
+        print(f"🎯 ISRec Price Filtering: {guardrail_mode} mode → Kept {len(blended_recs)} products")
+    
     # Apply LightGBM re-ranking if available and enabled
     if use_lgbm and LGBM_AVAILABLE and session_context is not None:
         try:
