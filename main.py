@@ -663,69 +663,10 @@ def api_blended_recommendations():
                             "intent_score": current_intent,  # Pass ISRec intent score to frontend
                             "replacement_product": replacement_product
                         })
-                
-                # If no same-subcategory alternatives found, allow any cheaper alternative
-                if not cheaper_alts:
-                    for rec in recs[:20]:  # Check top 20 recommendations
-                        product_id = int(rec["product_id"])
-                        if product_id in PRODUCTS_DF.index:
-                            row = PRODUCTS_DF.loc[product_id]
-                            rec_price = float(row.get("_price_final", 0))
-                            rec_subcat = str(row.get("Sub Category", ""))
-                            rec_title = str(row["Title"])
-                            
-                            # Just cheaper AND not the same product (relax subcategory requirement)
-                            if rec_price < item_price and rec_title != item_title:
-                                saving = (item_price - rec_price) * item_qty
-                                discount_pct = int((1 - rec_price / item_price) * 100)
-                                
-                                # Use LLM to generate natural, conversational message
-                                # This connects ISRec intent with cross-category recommendation
-                                score = float(rec.get('blended_score', 0))
-                                reason = generate_llm_recommendation_message(
-                                    intent_score=current_intent,
-                                    product_name=rec_title,
-                                    original_product=item_title,
-                                    savings=saving,
-                                    discount_pct=discount_pct
-                                )
-                                
-                                # Extract nutrition data
-                                nutr = {}
-                                for k in ["Calories","Sugar_g","Protein_g","Sodium_mg","Fat_g","Carbs_g"]:
-                                    if k in row and pd.notna(row[k]):
-                                        try:
-                                            nutr[k] = float(row[k])
-                                        except Exception:
-                                            pass
-                                
-                                replacement_product = {
-                                    "id": str(product_id),
-                                    "title": rec_title,
-                                    "subcat": rec_subcat,
-                                    "price": rec_price,
-                                    "qty": 1,
-                                    "size_value": float(row["_size_value"]) if pd.notna(row.get("_size_value")) else None,
-                                    "size_unit": str(row["_size_unit"]) if pd.notna(row.get("_size_unit")) else None
-                                }
-                                if nutr:
-                                    replacement_product["nutrition"] = nutr
-                                
-                                cheaper_alts.append({
-                                    "replace": item_title,
-                                    "with": rec_title,
-                                    "expected_saving": f"{saving:.2f}",
-                                    "similarity": "Good alternative",  # Human-friendly, no numbers
-                                    "reason": reason,
-                                    "intent_score": current_intent,  # Pass ISRec intent score to frontend
-                                    "replacement_product": replacement_product
-                                })
-                                if len(cheaper_alts) >= 2:
-                                    break
-                
-                # Add top 2 alternatives for this item
-                cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
-                suggestions.extend(cheaper_alts[:2])
+            
+            # Add top 2 same-category alternatives for this item
+            cheaper_alts.sort(key=lambda x: float(x["expected_saving"]), reverse=True)
+            suggestions.extend(cheaper_alts[:2])
         
         return jsonify({
             "suggestions": suggestions,

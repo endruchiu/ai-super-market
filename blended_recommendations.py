@@ -215,6 +215,13 @@ def get_blended_recommendations(
         diet_keywords = ['organic', 'gluten-free', 'vegan', 'non-gmo']
         diet_match_flag = 1 if any(kw in product_name_lower for kw in diet_keywords) else 0
         
+        # Category match feature: 1 if candidate matches original item's subcategory
+        category_match_flag = 0
+        if session_context and 'original_item' in session_context:
+            target_subcat = session_context['original_item'].get('subcat', '')
+            if target_subcat and product_category == target_subcat:
+                category_match_flag = 1
+        
         blended_recs.append({
             "product_id": str(product_id),
             "cf_score": float(cf_score),
@@ -226,7 +233,7 @@ def get_blended_recommendations(
             "price_saving": price_saving,
             "within_budget_flag": within_budget,
             "category": product_category,
-            "category_match": 0,  # Will be computed if needed
+            "category_match": category_match_flag,  # Rewards same-category items
             "popularity": product_rating / 5.0,
             "recency": 0.5,
             # Match lgbm_reranker expected keys
