@@ -1943,26 +1943,18 @@ def get_analytics_metrics():
         # 7. Removal Rate = (# of cart_removal events) / (# of accepted recommendations) * 100
         removal_rate = (removal_count / accept_count * 100) if accept_count > 0 else 0.0
         
-        # 8. BDS (Behavioral Drift Score) - Detect shifts in user preferences over time
+        # 8. BDS (Behavioral Drift Score) - Detect shifts in user price preferences over time
         bds_data = {
             "drift_score": 0.0,
             "drift_level": "Low drift",
-            "attribute_drifts": {
-                "protein_drift": 0.0,
-                "sugar_drift": 0.0,
-                "calories_drift": 0.0,
-                "price_drift": 0.0
-            },
+            "price_drift": 0.0,
             "sample_size": 0
         }
         
-        # Get all "accept" interactions with product attributes, sorted by timestamp
+        # Get all "accept" interactions with price data, sorted by timestamp
         accept_with_attrs = [
             i for i in all_interactions 
             if i.action_type == "accept_swap" 
-            and i.recommended_protein is not None 
-            and i.recommended_sugar is not None
-            and i.recommended_calories is not None
             and i.recommended_price is not None
         ]
         
@@ -1975,36 +1967,22 @@ def get_analytics_metrics():
             first_half = accept_with_attrs[:mid_point]
             second_half = accept_with_attrs[mid_point:]
             
-            # Calculate average attributes for each half
-            def calc_avg(interactions, attr_name):
-                values = [getattr(i, attr_name) for i in interactions if getattr(i, attr_name) is not None]
-                return sum(float(v) for v in values) / len(values) if values else 0.0
+            # Calculate average price for each half
+            def calc_avg_price(interactions):
+                values = [float(i.recommended_price) for i in interactions if i.recommended_price is not None]
+                return sum(values) / len(values) if values else 0.0
             
-            # First half averages
-            first_protein = calc_avg(first_half, 'recommended_protein')
-            first_sugar = calc_avg(first_half, 'recommended_sugar')
-            first_calories = calc_avg(first_half, 'recommended_calories')
-            first_price = calc_avg(first_half, 'recommended_price')
+            # First half and second half average prices
+            first_price = calc_avg_price(first_half)
+            second_price = calc_avg_price(second_half)
             
-            # Second half averages
-            second_protein = calc_avg(second_half, 'recommended_protein')
-            second_sugar = calc_avg(second_half, 'recommended_sugar')
-            second_calories = calc_avg(second_half, 'recommended_calories')
-            second_price = calc_avg(second_half, 'recommended_price')
-            
-            # Calculate drifts (normalized by dividing by typical values to make them comparable)
-            protein_drift = (second_protein - first_protein) / 10.0 if first_protein > 0 else 0.0
-            sugar_drift = (second_sugar - first_sugar) / 10.0 if first_sugar > 0 else 0.0
-            calories_drift = (second_calories - first_calories) / 100.0 if first_calories > 0 else 0.0
+            # Calculate price drift (normalized by dividing by 10 to make it interpretable)
             price_drift = (second_price - first_price) / 10.0 if first_price > 0 else 0.0
             
-            # Compute overall drift score: sqrt(sum of squared drifts) / 4
-            import math
-            drift_score = math.sqrt(
-                protein_drift**2 + sugar_drift**2 + calories_drift**2 + price_drift**2
-            ) / 4.0
+            # Use price drift as the overall drift score
+            drift_score = abs(price_drift)
             
-            # Interpret drift level
+            # Interpret drift level based on price drift
             if drift_score > 0.15:
                 drift_level = "High drift"
             elif drift_score >= 0.05:
@@ -2015,12 +1993,7 @@ def get_analytics_metrics():
             bds_data = {
                 "drift_score": round(drift_score, 4),
                 "drift_level": drift_level,
-                "attribute_drifts": {
-                    "protein_drift": round(protein_drift, 4),
-                    "sugar_drift": round(sugar_drift, 4),
-                    "calories_drift": round(calories_drift, 4),
-                    "price_drift": round(price_drift, 4)
-                },
+                "price_drift": round(price_drift, 4),
                 "sample_size": len(accept_with_attrs)
             }
         
@@ -2190,13 +2163,10 @@ CURRENT METRICS:
 
 8. BDS (Behavioral Drift Score): {metrics['bds']['drift_score']}
    Level: {metrics['bds']['drift_level']}
-   Protein Drift: {metrics['bds']['attribute_drifts']['protein_drift']}
-   Sugar Drift: {metrics['bds']['attribute_drifts']['sugar_drift']}
-   Calories Drift: {metrics['bds']['attribute_drifts']['calories_drift']}
-   Price Drift: {metrics['bds']['attribute_drifts']['price_drift']}
+   Price Drift: {metrics['bds']['price_drift']}
    Sample Size: {metrics['bds']['sample_size']} accepted recommendations
-   Definition: Measures changes in user preferences over time
-   Industry Context: Low drift = stable preferences, High drift = evolving tastes or poor initial recommendations
+   Definition: Measures changes in user price preferences over time
+   Industry Context: Low drift = stable price preferences, High drift = shifting budget behavior
 
 9. EAS (Explanation Acceptance Score): {metrics['eas']['explanation_lift_percent']}%
    With Explanation: {metrics['eas']['acceptance_with_explanation']}% ({metrics['eas']['with_explanation_count']} shown)

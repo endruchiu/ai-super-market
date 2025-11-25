@@ -400,47 +400,17 @@
             <div class="flex items-center justify-between mb-4">
               <div>
                 <p class="text-lg font-bold text-gray-900">BDS - Behavioral Drift Score</p>
-                <p class="text-sm text-gray-600">Tracks changes in user preferences over time</p>
+                <p class="text-sm text-gray-600">Tracks changes in user price preferences over time</p>
               </div>
               <div id="bdsBadge" class="badge badge-blue">Low drift</div>
             </div>
             
             <div class="mb-4">
               <p class="text-5xl font-bold text-gray-900 mb-2" id="bdsScore">0.00</p>
-              <p class="text-sm text-gray-500">Lower values indicate stable preferences</p>
+              <p class="text-sm text-gray-500">Lower values indicate stable price preferences</p>
             </div>
             
             <div class="space-y-3">
-              <div>
-                <div class="flex justify-between text-xs mb-1">
-                  <span class="text-gray-600">Protein Drift</span>
-                  <span id="proteinDriftValue" class="font-semibold text-gray-900">0.00</span>
-                </div>
-                <div class="mini-progress">
-                  <div id="proteinDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);"></div>
-                </div>
-              </div>
-              
-              <div>
-                <div class="flex justify-between text-xs mb-1">
-                  <span class="text-gray-600">Sugar Drift</span>
-                  <span id="sugarDriftValue" class="font-semibold text-gray-900">0.00</span>
-                </div>
-                <div class="mini-progress">
-                  <div id="sugarDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%);"></div>
-                </div>
-              </div>
-              
-              <div>
-                <div class="flex justify-between text-xs mb-1">
-                  <span class="text-gray-600">Calories Drift</span>
-                  <span id="caloriesDriftValue" class="font-semibold text-gray-900">0.00</span>
-                </div>
-                <div class="mini-progress">
-                  <div id="caloriesDriftBar" class="mini-progress-bar" style="width: 0%; background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);"></div>
-                </div>
-              </div>
-              
               <div>
                 <div class="flex justify-between text-xs mb-1">
                   <span class="text-gray-600">Price Drift</span>
@@ -966,13 +936,8 @@
         badge.className = 'badge badge-green';
       }
       
-      // Update attribute drifts
-      const drifts = bds.attribute_drifts;
-      
-      updateDriftBar('protein', drifts.protein_drift);
-      updateDriftBar('sugar', drifts.sugar_drift);
-      updateDriftBar('calories', drifts.calories_drift);
-      updateDriftBar('price', drifts.price_drift);
+      // Update price drift
+      updateDriftBar('price', bds.price_drift);
     }
     
     function updateDriftBar(attribute, value) {

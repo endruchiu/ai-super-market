@@ -97,7 +97,7 @@ Preferred communication style: Simple, everyday language.
     5. BCR (Basket Change Rate): % of AI items later removed from cart
     6. Dismiss Rate: % of recommendations dismissed
     7. Removal Rate: % of accepted items removed from cart
-    8. BDS (Behavioral Drift Score): Detects preference shifts over time (protein, sugar, calories, price)
+    8. BDS (Behavioral Drift Score): Detects price preference shifts over time
     9. EAS (Explanation Acceptance Score): Measures effectiveness of AI explanations on acceptance rates
   - **GET /api/analytics/llm-insights**: AI-powered insights using GPT-4o-mini to analyze all metrics and provide recommendations
   - Supports user-specific filtering and time period filtering (7d, 30d, all)
