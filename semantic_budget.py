@@ -225,13 +225,29 @@ def _template_explain(slots:Dict[str,Any]) -> str:
     subcat = slots.get("subcat","same category")
     save = slots.get("save",0.0)
     sr = slots.get("size_ratio",None)
+    
+    # NEVER show "Save $0.00" - be honest about savings
+    savings_msg = ""
+    if save > 0.50:
+        savings_msg = f", saves ${save:.2f}"
+    elif save > 0:
+        savings_msg = f", saves {int(save * 100)}¢"
+    else:
+        savings_msg = ""  # No savings message if $0 or negative
+    
     if "no_size" in tags:
-        return f"Same category ({subcat}), no size comparison available, saves ${save:.2f} per unit"
+        return f"Same category ({subcat}), no size comparison available{savings_msg}"
     if "size_close" in tags and sr is not None:
-        return f"Same category ({subcat}), similar size (×{sr:.2f}), lower unit price, saves ${save:.2f}"
+        return f"Same category ({subcat}), similar size (×{sr:.2f}), lower unit price{savings_msg}"
     if "health_better" in tags:
-        return f"Same category ({subcat}), lower sugar/calories and saves ${save:.2f}"
-    return f"Same category ({subcat}), similar function and cheaper, saves ${save:.2f}"
+        base = f"Same category ({subcat}), lower sugar/calories"
+        return f"{base}{savings_msg}" if savings_msg else base
+    
+    # Default message
+    if savings_msg:
+        return f"Same category ({subcat}), similar function{savings_msg}"
+    else:
+        return f"Same category ({subcat}), similar function"
 
 def _explain(slots:Dict[str,Any]) -> str:
     pipe = _maybe_explainer()

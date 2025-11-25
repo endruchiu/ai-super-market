@@ -257,7 +257,12 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
         recommended = random.choice([p for p in products if p['id'] != original['id']])
         
         price_diff = original['price'] - recommended['price']
-        saving = max(0, price_diff)
+        actual_saving = price_diff  # Can be negative
+        
+        # CRITICAL: expected_saving in database must be non-negative to prevent analytics skew
+        # But we track whether this is an upsell for honest explanation generation
+        is_premium_upsell = actual_saving < 0
+        saving_for_db = max(0, actual_saving)  # Non-negative for database
         
         has_explanation = random.random() < metrics['has_explanation_prob']
         
@@ -273,13 +278,34 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
         scroll_depth = int(random.gauss(metrics['avg_scroll_depth'], 10))
         scroll_depth = max(0, min(100, scroll_depth))
         
-        reasons = [
-            f"Save ${saving:.2f} with healthier alternative",
-            f"Better nutrition profile - lower sugar",
-            f"Popular substitute in your category",
-            f"Budget-friendly option - ${saving:.2f} cheaper",
-            f"Similar product with better value",
-        ]
+        # Generate honest explanations - NEVER show "Save $0.00"
+        # Use actual_saving for explanation logic (can be negative)
+        reasons = []
+        if actual_saving > 0.50:
+            # Genuine savings > 50¢
+            reasons = [
+                f"Save ${actual_saving:.2f} with healthier alternative",
+                f"Better nutrition profile - ${actual_saving:.2f} cheaper",
+                f"Budget-friendly option - ${actual_saving:.2f} cheaper",
+                f"Popular substitute, saves ${actual_saving:.2f}",
+            ]
+        elif actual_saving > 0:
+            # Small savings (1¢-49¢) - show in cents
+            cents = int(actual_saving * 100)
+            reasons = [
+                f"Healthier alternative, saves {cents}¢",
+                f"Better nutrition profile",
+                f"Popular substitute in your category",
+                f"Similar product, {cents}¢ cheaper",
+            ]
+        else:
+            # Zero savings or premium upsell - honest messaging WITHOUT mentioning savings
+            reasons = [
+                f"Better nutrition profile - lower sugar",
+                f"Popular premium alternative in your category",
+                f"Higher quality product for discerning shoppers",
+                f"Upgraded option with better ingredients",
+            ]
         
         # Generate synthetic ML scores with realistic behavioral noise
         # Real users don't perfectly follow ML predictions - add overlap and exceptions
@@ -326,7 +352,7 @@ def simulate_session(session_id: int, user_id: int, products: List[Dict], db_ses
             'recommended_product_id': recommended['id'],
             'original_product_title': original['title'],
             'recommended_product_title': recommended['title'],
-            'expected_saving': Decimal(str(round(saving, 2))),
+            'expected_saving': Decimal(str(round(saving_for_db, 2))),  # Non-negative for analytics
             'recommendation_reason': random.choice(reasons) if has_explanation else None,
             'has_explanation': has_explanation,
             'shown_at': shown_at,

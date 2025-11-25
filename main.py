@@ -1447,14 +1447,26 @@ def generate_llm_recommendation_message(intent_score: float, product_name: str, 
         return message
     
     except Exception as e:
-        # Fallback templates if LLM fails
+        # Fallback templates if LLM fails - NEVER show "Save $0.00"
         print(f"⚠️ LLM generation failed: {e}")
-        if intent_score > 0.6:
-            return f"Maintains quality, saves ${savings:.2f}"
-        elif intent_score < 0.4:
-            return f"Save ${savings:.2f} ({discount_pct}% off)"
+        
+        # Format savings message honestly
+        if savings > 0.50:
+            savings_msg = f"saves ${savings:.2f}"
+        elif savings > 0:
+            savings_msg = f"saves {int(savings * 100)}¢"
         else:
-            return f"Quality choice, saves ${savings:.2f}"
+            savings_msg = "similar quality"  # No savings - focus on quality
+        
+        if intent_score > 0.6:
+            return f"Maintains quality, {savings_msg}"
+        elif intent_score < 0.4:
+            if savings > 0:
+                return f"{savings_msg.capitalize()} ({discount_pct}% off)"
+            else:
+                return "Similar product, great alternative"
+        else:
+            return f"Quality choice, {savings_msg}"
 
 @app.route("/api/replenishment/due-soon", methods=["GET"])
 def get_replenishment_due_soon():
