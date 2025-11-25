@@ -33,15 +33,63 @@ function getProductImage(product) {
   const title = (product.title || '').toLowerCase();
   const subcat = (product.subcat || '').toLowerCase();
   
-  // Map products to stock images based on keywords
+  // Map products to stock images based on keywords and subcategories
   // Note: More specific matches must come BEFORE broader matches
   
   // Specific beverage types first
   if (title.includes('water') || title.includes('sparkling')) {
     return '/static/images/bottled_water_sparkl_cea6f071.jpg';
   }
-  if (title.includes('wellness shot') || title.includes('juice')) {
+  if (title.includes('wellness shot') || title.includes('juice') || subcat.includes('beverage')) {
     return '/static/images/wellness_shot_bottle_b29ff9a1.jpg';
+  }
+  
+  // Meat & Protein categories
+  if (subcat.includes('poultry') || title.includes('chicken') || title.includes('turkey')) {
+    return '/static/images/fresh_chicken_poultr_930f1a21.jpg';
+  }
+  if (subcat.includes('seafood') || title.includes('fish') || title.includes('salmon') || title.includes('shrimp') || title.includes('lobster') || title.includes('crab')) {
+    return '/static/images/fresh_seafood_fish_s_160d34f8.jpg';
+  }
+  if (subcat.includes('meat') || title.includes('beef') || title.includes('steak') || title.includes('pork') || title.includes('lamb')) {
+    return '/static/images/fresh_raw_meat_beef__f642431c.jpg';
+  }
+  if (subcat.includes('deli') || title.includes('ham') || title.includes('salami') || title.includes('prosciutto')) {
+    return '/static/images/deli_meats_cheese_sl_e62bae94.jpg';
+  }
+  
+  // Breakfast items
+  if (subcat.includes('breakfast') || title.includes('cereal') || title.includes('oatmeal') || title.includes('pancake') || title.includes('waffle') || title.includes('egg')) {
+    return '/static/images/breakfast_cereal_egg_41770c14.jpg';
+  }
+  
+  // Candy & Sweets
+  if (subcat.includes('candy') || title.includes('candy') || title.includes('chocolate') || title.includes('gummy') || title.includes('licorice')) {
+    return '/static/images/candy_chocolates_swe_1935bb22.jpg';
+  }
+  
+  // Cleaning & Household
+  if (subcat.includes('cleaning') || title.includes('cleaner') || title.includes('soap') || title.includes('disinfect')) {
+    return '/static/images/cleaning_supplies_bo_b97b39fc.jpg';
+  }
+  if (subcat.includes('laundry') || title.includes('detergent') || title.includes('fabric softener') || title.includes('laundry')) {
+    return '/static/images/laundry_detergent_fa_182cca51.jpg';
+  }
+  if (subcat.includes('household') || title.includes('battery') || title.includes('lightbulb')) {
+    return '/static/images/household_items_esse_1e89647b.jpg';
+  }
+  if (subcat.includes('paper') || subcat.includes('plastic') || title.includes('paper towel') || title.includes('napkin') || title.includes('tissue') || title.includes('toilet paper')) {
+    return '/static/images/paper_towels_napkins_9c2e69cb.jpg';
+  }
+  
+  // Floral
+  if (subcat.includes('floral') || title.includes('flower') || title.includes('bouquet') || title.includes('rose') || title.includes('tulip')) {
+    return '/static/images/flower_bouquet_flora_920e5e84.jpg';
+  }
+  
+  // Gift Baskets
+  if (subcat.includes('gift') || title.includes('gift') || title.includes('basket') || title.includes('assortment')) {
+    return '/static/images/gift_basket_wrapped__7474c478.jpg';
   }
   
   // Specific food types
@@ -66,8 +114,13 @@ function getProductImage(product) {
   if (title.includes('milk') || title.includes('dairy')) {
     return '/static/images/fresh_milk_dairy_bot_706ccfc9.jpg';
   }
-  if (title.includes('vegetable') || title.includes('produce') || title.includes('organic')) {
+  if (title.includes('vegetable') || title.includes('produce') || title.includes('organic') || subcat.includes('organic')) {
     return '/static/images/fresh_organic_produc_bb814e70.jpg';
+  }
+  
+  // Kirkland Signature - general grocery
+  if (subcat.includes('kirkland')) {
+    return '/static/images/gift_basket_wrapped__7474c478.jpg';
   }
   
   // Default: return null (will use fallback SVG icon)
