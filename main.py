@@ -2412,6 +2412,181 @@ def get_model_performance():
             "error": f"Evaluation error: {str(e)}"
         }), 500
 
+@app.route("/api/analytics/time-series", methods=["GET"])
+def get_time_series_metrics():
+    """
+    Get behavioral metrics over time (daily aggregation)
+    
+    Query params:
+    - user_id (optional): Filter by specific user
+    - granularity (optional): "hour" | "day" (default: "day")
+    
+    Returns time series data with metrics calculated per time period
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, case
+        
+        user_session_id = request.args.get("user_id")
+        granularity = request.args.get("granularity", "day")
+        
+        # Build base query
+        query = db.session.query(RecommendationInteraction)
+        
+        # Filter by user if specified
+        if user_session_id:
+            user = db.session.query(User).filter_by(email=user_session_id).first()
+            if user:
+                query = query.filter_by(user_id=user.id)
+        
+        interactions = query.order_by(RecommendationInteraction.shown_at).all()
+        
+        if not interactions:
+            return jsonify({
+                "success": True,
+                "data": [],
+                "summary": {
+                    "total_periods": 0,
+                    "date_range": None
+                }
+            })
+        
+        # Group by date
+        from collections import defaultdict
+        time_buckets = defaultdict(lambda: {
+            'shown': 0,
+            'accepts': 0,
+            'dismisses': 0,
+            'time_to_accept_sum': 0,
+            'time_to_accept_count': 0,
+            'scroll_depth_sum': 0,
+            'scroll_depth_count': 0,
+            'removed': 0
+        })
+        
+        for interaction in interactions:
+            if granularity == "hour":
+                bucket_key = interaction.shown_at.strftime("%Y-%m-%d %H:00")
+            else:
+                bucket_key = interaction.shown_at.strftime("%Y-%m-%d")
+            
+            bucket = time_buckets[bucket_key]
+            
+            if interaction.action_type == 'shown':
+                bucket['shown'] += 1
+                if interaction.scroll_depth_percent is not None:
+                    bucket['scroll_depth_sum'] += interaction.scroll_depth_percent
+                    bucket['scroll_depth_count'] += 1
+                    
+            elif interaction.action_type == 'accept_swap':
+                bucket['accepts'] += 1
+                if interaction.time_to_action_seconds is not None:
+                    bucket['time_to_accept_sum'] += interaction.time_to_action_seconds
+                    bucket['time_to_accept_count'] += 1
+                    
+            elif interaction.action_type == 'dismiss':
+                bucket['dismisses'] += 1
+            
+            if interaction.was_removed:
+                bucket['removed'] += 1
+        
+        # Calculate metrics for each period
+        time_series_data = []
+        for date_str in sorted(time_buckets.keys()):
+            bucket = time_buckets[date_str]
+            
+            total_actions = bucket['accepts'] + bucket['dismisses']
+            
+            if total_actions > 0:
+                rar = (bucket['accepts'] / total_actions) * 100
+                acr = (bucket['accepts'] / total_actions) * 100
+                dismiss_rate = (bucket['dismisses'] / total_actions) * 100
+            else:
+                rar = acr = dismiss_rate = 0
+            
+            avg_time_to_accept = (bucket['time_to_accept_sum'] / bucket['time_to_accept_count'] 
+                                 if bucket['time_to_accept_count'] > 0 else 0)
+            
+            avg_scroll_depth = (bucket['scroll_depth_sum'] / bucket['scroll_depth_count'] 
+                               if bucket['scroll_depth_count'] > 0 else 0)
+            
+            removal_rate = (bucket['removed'] / bucket['accepts'] * 100 
+                           if bucket['accepts'] > 0 else 0)
+            
+            time_series_data.append({
+                'date': date_str,
+                'rar': round(rar, 2),
+                'acr': round(acr, 2),
+                'dismiss_rate': round(dismiss_rate, 2),
+                'time_to_accept_seconds': round(avg_time_to_accept, 2),
+                'scroll_depth_percent': round(avg_scroll_depth, 2),
+                'removal_rate': round(removal_rate, 2),
+                'shown_count': bucket['shown'],
+                'accept_count': bucket['accepts'],
+                'dismiss_count': bucket['dismisses']
+            })
+        
+        # Detect spikes (values > 1.5x standard deviation from mean)
+        if len(time_series_data) > 3:
+            import numpy as np
+            
+            rar_values = [d['rar'] for d in time_series_data]
+            time_values = [d['time_to_accept_seconds'] for d in time_series_data]
+            
+            rar_mean = np.mean(rar_values)
+            rar_std = np.std(rar_values)
+            
+            time_mean = np.mean(time_values)
+            time_std = np.std(time_values)
+            
+            spikes = []
+            for data_point in time_series_data:
+                spike_info = {'date': data_point['date'], 'metrics': []}
+                
+                if abs(data_point['rar'] - rar_mean) > 1.5 * rar_std:
+                    spike_info['metrics'].append({
+                        'metric': 'RAR',
+                        'value': data_point['rar'],
+                        'mean': round(rar_mean, 2),
+                        'deviation': round((data_point['rar'] - rar_mean) / rar_std, 2)
+                    })
+                
+                if abs(data_point['time_to_accept_seconds'] - time_mean) > 1.5 * time_std and data_point['time_to_accept_seconds'] > 0:
+                    spike_info['metrics'].append({
+                        'metric': 'Time to Accept',
+                        'value': data_point['time_to_accept_seconds'],
+                        'mean': round(time_mean, 2),
+                        'deviation': round((data_point['time_to_accept_seconds'] - time_mean) / time_std, 2)
+                    })
+                
+                if spike_info['metrics']:
+                    spikes.append(spike_info)
+        else:
+            spikes = []
+        
+        return jsonify({
+            "success": True,
+            "data": time_series_data,
+            "spikes": spikes,
+            "summary": {
+                "total_periods": len(time_series_data),
+                "date_range": {
+                    "start": time_series_data[0]['date'] if time_series_data else None,
+                    "end": time_series_data[-1]['date'] if time_series_data else None
+                },
+                "granularity": granularity
+            }
+        })
+        
+    except Exception as e:
+        print(f"Time series error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory('static', filename)
