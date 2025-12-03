@@ -1,0 +1,67 @@
+# Cache directories
+.cache/
+__pycache__/
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Package caches
+.pip/
+pip-cache/
+.uv/
+
+# Development files
+*.ipynb
+.git/
+.gitignore
+.replit
+replit.nix
+
+# Test and evaluation files
+test_*.py
+*_test.py
+demo_*.py
+simulate_*.py
+
+# Training scripts (not needed in production)
+train_*.py
+prepare_*.py
+generate_*.py
+
+# Documentation
+*.md
+!README.md
+
+# Attached assets (old uploads, screenshots, notebooks)
+attached_assets/
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+/tmp/
+
+# IDE files
+.vscode/
+.idea/
+
+# Large data files not needed for production
+*.csv
+ml_data/checkpoints/
+ml_data/*.csv
+ml_data/*.parquet
+
+# Model training artifacts (keep only final models)
+ml_data/events_unified.*
+
+# Captured/debug files
+captured_*.json
+
+# Evaluation files
+*_evaluation.py
+*_metrics.py
+
+# Stock images directory
+attached_assets/stock_images/
